@@ -370,6 +370,33 @@ static int generic_instance_open (hashcat_ctx_t *hashcat_ctx, const generic_role
   return rc;
 }
 
+int generic_wordlist_keyspace (hashcat_ctx_t *hashcat_ctx, const char *path, u64 *keyspace)
+{
+  generic_ctx_t generic_ctx;
+
+  memset (&generic_ctx, 0, sizeof (generic_ctx));
+
+  char *workv[2] = { "wordlist", (char *) path };
+
+  generic_ctx.workc = 2;
+  generic_ctx.workv = workv;
+
+  if (generic_instance_init (hashcat_ctx, &generic_ctx, false) == -1) return -1;
+
+  keyspace[0] = generic_ctx.keyspace;
+
+  generic_instance_destroy (hashcat_ctx, &generic_ctx);
+
+  if (keyspace[0] == GENERIC_KEYSPACE_UNKNOWN)
+  {
+    event_log_error (hashcat_ctx, "%s: feed cannot report a keyspace.", path);
+
+    return -1;
+  }
+
+  return 0;
+}
+
 // Open the base word instance over one path, replacing whatever it held before.
 //
 // This is the per round scope. An attack that is really a queue of attacks reads one dictionary per
@@ -542,6 +569,25 @@ int generic_ctx_init (hashcat_ctx_t *hashcat_ctx)
   //
   // Both are created whatever base_source says, because the count is wanted even when the wordlist
   // reader is the one doing the reading.
+
+  if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+  {
+    const int dicts_cnt = (int) user_options->attack_mode - 8;
+
+    for (int i = 0; i < dicts_cnt; i++)
+    {
+      if (hc_path_is_file (user_options_extra->hc_workv[i]) == false)
+      {
+        event_log_error (hashcat_ctx, "%s: Not a regular file.", user_options_extra->hc_workv[i]);
+
+        return -1;
+      }
+    }
+
+    if (generic_instance_open (hashcat_ctx, GENERIC_ROLE_AMP, dicts_cnt - 1, dicts_cnt) == -1) return -1;
+
+    return 0;
+  }
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {

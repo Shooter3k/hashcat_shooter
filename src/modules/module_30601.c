@@ -259,7 +259,7 @@ void module_init (module_ctx_t *module_ctx)
   module_ctx->module_hook_salt_size           = MODULE_DEFAULT;
   module_ctx->module_hook_size                = MODULE_DEFAULT;
   module_ctx->module_jit_build_options        = blowfish_module_jit_build_options;
-  module_ctx->module_jit_cache_disable        = blowfish_module_jit_cache_disable;
+  module_ctx->module_jit_cache_disable        = MODULE_DEFAULT;
   module_ctx->module_kernel_accel_max         = MODULE_DEFAULT;
   module_ctx->module_kernel_accel_min         = MODULE_DEFAULT;
   module_ctx->module_kernel_loops_max         = MODULE_DEFAULT;

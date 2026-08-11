@@ -353,6 +353,30 @@ int ResumeThreads (hashcat_ctx_t *hashcat_ctx)
   return 0;
 }
 
+int SuspendRuntime (hashcat_ctx_t *hashcat_ctx)
+{
+  status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  hc_timer_set (&status_ctx->timer_runtime_paused);
+
+  status_ctx->runtime_status = STATUS_PAUSED;
+
+  return 0;
+}
+
+int ResumeRuntime (hashcat_ctx_t *hashcat_ctx)
+{
+  status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  const double msec_runtime_paused = hc_timer_get (status_ctx->timer_runtime_paused);
+
+  status_ctx->msec_runtime_paused += msec_runtime_paused;
+
+  status_ctx->runtime_status = STATUS_RUNNING;
+
+  return 0;
+}
+
 int stop_at_checkpoint (hashcat_ctx_t *hashcat_ctx)
 {
   status_ctx_t *status_ctx = hashcat_ctx->status_ctx;

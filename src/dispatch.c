@@ -660,6 +660,180 @@ static int fill_generic (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_p
   return 0;
 }
 
+typedef struct multi_fill_state
+{
+  HCFILE fps[5];
+  int opened;
+  int base_cnt;
+
+  u64 words_cnt[5];
+  u64 strides[5];
+  u64 words_cur;
+
+  u8  word_buf[5][PW_MAX + 1];
+  int word_len[5];
+  char *line_buf;
+
+} multi_fill_state_t;
+
+static int multi_fill_step (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, const u64 pos)
+{
+  for (int i = 0; i < mf->base_cnt; i++)
+  {
+    if ((pos % mf->strides[i]) != 0) continue;
+
+    int line_len = fgetl (&mf->fps[i], mf->line_buf, HCBUFSIZ_LARGE);
+
+    if (line_len == -1) return -1;
+
+    line_len = convert_from_hex (hashcat_ctx, mf->line_buf, line_len);
+
+    mf->word_len[i] = line_len;
+
+    if (line_len <= PW_MAX) memcpy (mf->word_buf[i], mf->line_buf, line_len);
+
+    for (int j = i + 1; j < mf->base_cnt; j++) hc_rewind (&mf->fps[j]);
+  }
+
+  return 0;
+}
+
+static int multi_fill_init (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, const int dicts_cnt)
+{
+  combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+  memset (mf, 0, sizeof (*mf));
+
+  char *dictfiles[6] =
+  {
+    combinator_ctx->dict1,
+    combinator_ctx->dict2,
+    combinator_ctx->dict3,
+    combinator_ctx->dict4,
+    combinator_ctx->dict5,
+    combinator_ctx->dict6
+  };
+
+  u64 words_cnt[6] =
+  {
+    combinator_ctx->combs1_cnt,
+    combinator_ctx->combs2_cnt,
+    combinator_ctx->combs3_cnt,
+    combinator_ctx->combs4_cnt,
+    combinator_ctx->combs5_cnt,
+    combinator_ctx->combs6_cnt
+  };
+
+  mf->base_cnt = dicts_cnt - 1;
+
+  for (int i = 0; i < mf->base_cnt; i++)
+  {
+    mf->words_cnt[i] = words_cnt[i];
+
+    if (hc_fopen (&mf->fps[i], dictfiles[i], "rb") == false)
+    {
+      event_log_error (hashcat_ctx, "%s: %s", dictfiles[i], strerror (errno));
+
+      return -1;
+    }
+
+    mf->opened++;
+  }
+
+  for (int i = 0; i < mf->base_cnt; i++) mf->strides[i] = 1;
+
+  for (int i = mf->base_cnt - 2; i >= 0; i--) mf->strides[i] = mf->strides[i + 1] * mf->words_cnt[i + 1];
+
+  mf->line_buf = (char *) hcmalloc (HCBUFSIZ_LARGE);
+
+  return 0;
+}
+
+static void multi_fill_destroy (multi_fill_state_t *mf)
+{
+  for (int i = 0; i < mf->opened; i++) hc_fclose (&mf->fps[i]);
+
+  hcfree (mf->line_buf);
+}
+
+static int fill_multi (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, pw_batch_t *batch, void *state)
+{
+  hashconfig_t *hashconfig = hashcat_ctx->hashconfig;
+  status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  multi_fill_state_t *mf = (multi_fill_state_t *) state;
+
+  u64 words_extra = -1U;
+
+  while (words_extra)
+  {
+    const u64 work_cnt = get_work (hashcat_ctx, device_param, words_extra);
+
+    if (work_cnt == 0) break;
+
+    words_extra = 0;
+
+    const u64 words_off = device_param->words_off;
+
+    batch->words_off = words_off;
+
+    while (mf->words_cur < words_off)
+    {
+      if (multi_fill_step (hashcat_ctx, mf, mf->words_cur) == -1)
+      {
+        event_log_error (hashcat_ctx, "Unexpected end of multi-way combination wordlist.");
+
+        return -1;
+      }
+
+      mf->words_cur++;
+    }
+
+    u64 work_cur = 0;
+
+    for (work_cur = 0; work_cur < work_cnt; work_cur++, mf->words_cur++)
+    {
+      if (multi_fill_step (hashcat_ctx, mf, mf->words_cur) == -1)
+      {
+        event_log_error (hashcat_ctx, "Unexpected end of multi-way combination wordlist.");
+
+        return -1;
+      }
+
+      int combined_len = 0;
+
+      for (int i = 0; i < mf->base_cnt; i++) combined_len += mf->word_len[i];
+
+      if (combined_len > (int) hashconfig->pw_max)
+      {
+        if (fill_reject (hashcat_ctx, false, batch, &words_extra, words_off + work_cur) == -1) return -1;
+
+        continue;
+      }
+
+      u8 combined_buf[PW_MAX + 1];
+      int combined_pos = 0;
+
+      for (int i = 0; i < mf->base_cnt; i++)
+      {
+        memcpy (combined_buf + combined_pos, mf->word_buf[i], mf->word_len[i]);
+
+        combined_pos += mf->word_len[i];
+      }
+
+      pw_add (batch, device_param->kernel_power, combined_buf, combined_len);
+
+      if (status_ctx->run_thread_level1 == false) break;
+    }
+
+    if (work_cur > 0) batch->words_fin = words_off + work_cur;
+
+    if (status_ctx->run_thread_level1 == false) break;
+  }
+
+  return 0;
+}
+
 // Take batches off the pipeline and launch them until the producer runs dry. Every attack mode does
 // this the same way, which is what pwpipe.h means by the producer being a callback: the mode chooses
 // what fills a batch, not what happens to it afterwards.
@@ -1007,7 +1181,28 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
     // whole of what BASE_SOURCE_MASK means, so the test that used to spell that out by attack mode and
     // kernel type is the one below.
 
-    if (base_source == BASE_SOURCE_MASK)
+    if ((attack_mode >= ATTACK_MODE_COMBI3) && (attack_mode <= ATTACK_MODE_COMBI6))
+    {
+      multi_fill_state_t mf;
+
+      if (multi_fill_init (hashcat_ctx, &mf, (int) attack_mode - 8) == -1)
+      {
+        multi_fill_destroy (&mf);
+
+        return -1;
+      }
+
+      pw_pipe_t pipe;
+
+      pw_pipe_start (&pipe, hashcat_ctx, device_param, fill_multi, &mf, false);
+
+      const int rc_final = pipe_run (hashcat_ctx, device_param, &pipe, false, combinator_ctx->combs_cnt);
+
+      multi_fill_destroy (&mf);
+
+      if (rc_final == -1) return -1;
+    }
+    else if (base_source == BASE_SOURCE_MASK)
     {
       while (status_ctx->run_thread_level1 == true)
       {

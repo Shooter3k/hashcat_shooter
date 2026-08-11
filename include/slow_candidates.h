@@ -44,6 +44,64 @@ typedef struct extra_info_combi
 
 } extra_info_combi_t;
 
+typedef struct extra_info_combi3
+{
+  u64 pos;
+
+  HCFILE base_fp;
+  HCFILE mid_fp;
+  HCFILE combs_fp;
+
+  u64 mid_pos_prev;
+  u64 mid_pos;
+  u64 comb_pos_prev;
+  u64 comb_pos;
+
+  char *scratch_buf;
+
+  u8  base_buf[256];
+  u32 base_len;
+
+  u8  mid_buf[256];
+  u32 mid_len;
+
+  u8  out_buf[256];
+  u32 out_len;
+
+} extra_info_combi3_t;
+
+typedef struct extra_info_combi4
+{
+  u64 pos;
+
+  HCFILE base_fp;
+  HCFILE mid1_fp;
+  HCFILE mid2_fp;
+  HCFILE combs_fp;
+
+  u64 mid1_pos_prev;
+  u64 mid1_pos;
+  u64 mid2_pos_prev;
+  u64 mid2_pos;
+  u64 comb_pos_prev;
+  u64 comb_pos;
+
+  char *scratch_buf;
+
+  u8  base_buf[256];
+  u32 base_len;
+
+  u8  mid1_buf[256];
+  u32 mid1_len;
+
+  u8  mid2_buf[256];
+  u32 mid2_len;
+
+  u8  out_buf[256];
+  u32 out_len;
+
+} extra_info_combi4_t;
+
 typedef struct extra_info_mask
 {
   u64 pos;

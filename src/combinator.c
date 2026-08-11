@@ -58,6 +58,47 @@ static int combinator_count_dicts (hashcat_ctx_t *hashcat_ctx, const char *dictf
   return 0;
 }
 
+static int combinator_ctx_init_multi (hashcat_ctx_t *hashcat_ctx, const int dicts_cnt)
+{
+  combinator_ctx_t     *combinator_ctx     = hashcat_ctx->combinator_ctx;
+  user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+
+  char *dictfiles[6] = { 0 };
+  u64   words_cnt[6] = { 0 };
+
+  for (int i = 0; i < dicts_cnt; i++)
+  {
+    dictfiles[i] = user_options_extra->hc_workv[i];
+
+    if (generic_wordlist_keyspace (hashcat_ctx, dictfiles[i], &words_cnt[i]) == -1) return -1;
+
+    if (words_cnt[i] == 0)
+    {
+      event_log_error (hashcat_ctx, "%s: empty file.", dictfiles[i]);
+
+      return -1;
+    }
+  }
+
+  combinator_ctx->dict1 = dictfiles[0];
+  combinator_ctx->dict2 = dictfiles[1];
+  combinator_ctx->dict3 = dictfiles[2];
+  combinator_ctx->dict4 = (dicts_cnt >= 4) ? dictfiles[3] : NULL;
+  combinator_ctx->dict5 = (dicts_cnt >= 5) ? dictfiles[4] : NULL;
+  combinator_ctx->dict6 = (dicts_cnt >= 6) ? dictfiles[5] : NULL;
+
+  combinator_ctx->combs_mode = COMBINATOR_MODE_BASE_LEFT;
+  combinator_ctx->combs_cnt  = words_cnt[dicts_cnt - 1];
+  combinator_ctx->combs1_cnt = words_cnt[0];
+  combinator_ctx->combs2_cnt = words_cnt[1];
+  combinator_ctx->combs3_cnt = words_cnt[2];
+  combinator_ctx->combs4_cnt = (dicts_cnt >= 4) ? words_cnt[3] : 0;
+  combinator_ctx->combs5_cnt = (dicts_cnt >= 5) ? words_cnt[4] : 0;
+  combinator_ctx->combs6_cnt = (dicts_cnt >= 6) ? words_cnt[5] : 0;
+
+  return 0;
+}
+
 int combinator_ctx_init (hashcat_ctx_t *hashcat_ctx)
 {
   combinator_ctx_t     *combinator_ctx      = hashcat_ctx->combinator_ctx;
@@ -76,10 +117,19 @@ int combinator_ctx_init (hashcat_ctx_t *hashcat_ctx)
   if (user_options->version      == true) return 0;
 
   if ((user_options->attack_mode != ATTACK_MODE_COMBI)
+   && (user_options->attack_mode != ATTACK_MODE_COMBI3)
+   && (user_options->attack_mode != ATTACK_MODE_COMBI4)
+   && (user_options->attack_mode != ATTACK_MODE_COMBI5)
+   && (user_options->attack_mode != ATTACK_MODE_COMBI6)
    && (user_options->attack_mode != ATTACK_MODE_HYBRID1)
    && (user_options->attack_mode != ATTACK_MODE_HYBRID2)) return 0;
 
   combinator_ctx->enabled = true;
+
+  if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+  {
+    return combinator_ctx_init_multi (hashcat_ctx, (int) user_options->attack_mode - 8);
+  }
 
   if (user_options->slow_candidates == true)
   {

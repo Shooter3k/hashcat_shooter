@@ -884,6 +884,10 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
      && (user_options->attack_mode != ATTACK_MODE_HYBRID2)
      && (user_options->attack_mode != ATTACK_MODE_GENERIC)
      && (user_options->attack_mode != ATTACK_MODE_ASSOCIATION)
+     && (user_options->attack_mode != ATTACK_MODE_COMBI3)
+     && (user_options->attack_mode != ATTACK_MODE_COMBI4)
+     && (user_options->attack_mode != ATTACK_MODE_COMBI5)
+     && (user_options->attack_mode != ATTACK_MODE_COMBI6)
      && (user_options->attack_mode != ATTACK_MODE_NONE))
     {
       event_log_error (hashcat_ctx, "Invalid attack mode (-a) value specified.");
@@ -1997,6 +2001,13 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
         show_error = false;
       }
     }
+    else if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+    {
+      if (user_options->hc_argc == ((int) user_options->attack_mode - 8))
+      {
+        show_error = false;
+      }
+    }
     else if (user_options->attack_mode == ATTACK_MODE_BF)
     {
       if (user_options->hc_argc == 1)
@@ -2119,6 +2130,13 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
     else if (user_options->attack_mode == ATTACK_MODE_COMBI)
     {
       if (user_options->hc_argc == 3)
+      {
+        show_error = false;
+      }
+    }
+    else if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+    {
+      if (user_options->hc_argc == ((int) user_options->attack_mode - 7))
       {
         show_error = false;
       }
@@ -2851,6 +2869,10 @@ void user_options_extra_init (hashcat_ctx_t *hashcat_ctx)
   {
     case ATTACK_MODE_STRAIGHT:      user_options_extra->attack_kern = ATTACK_KERN_STRAIGHT; break;
     case ATTACK_MODE_COMBI:         user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
+    case ATTACK_MODE_COMBI3:        user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
+    case ATTACK_MODE_COMBI4:        user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
+    case ATTACK_MODE_COMBI5:        user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
+    case ATTACK_MODE_COMBI6:        user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
     case ATTACK_MODE_BF:            user_options_extra->attack_kern = ATTACK_KERN_BF;       break;
     case ATTACK_MODE_HYBRID1:       user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
     case ATTACK_MODE_HYBRID2:       user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
@@ -3303,6 +3325,44 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
       }
     }
   }
+  else if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+  {
+    const int dicts_cnt = (int) user_options->attack_mode - 8;
+
+    if (user_options_extra->hc_workc == dicts_cnt)
+    {
+      for (int i = 0; i < dicts_cnt; i++)
+      {
+        char *dictfile = user_options_extra->hc_workv[i];
+
+        if (hc_path_exist (dictfile) == false)
+        {
+          event_log_error (hashcat_ctx, "%s: %s", dictfile, strerror (errno));
+
+          return -1;
+        }
+
+        if (hc_path_is_directory (dictfile) == true)
+        {
+          event_log_error (hashcat_ctx, "%s: A directory cannot be used as a wordlist argument.", dictfile);
+
+          return -1;
+        }
+
+        if (hc_path_read (dictfile) == false)
+        {
+          event_log_error (hashcat_ctx, "%s: %s", dictfile, strerror (errno));
+
+          return -1;
+        }
+
+        if (hc_path_has_bom (dictfile) == true)
+        {
+          event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", dictfile);
+        }
+      }
+    }
+  }
   else if (user_options->attack_mode == ATTACK_MODE_BF)
   {
     // if the file exist it's a maskfile and then it must be readable
@@ -3659,6 +3719,23 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
         event_log_error (hashcat_ctx, "Outfile and wordlist cannot point to the same file.");
 
         return -1;
+      }
+    }
+  }
+  else if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+  {
+    const int dicts_cnt = (int) user_options->attack_mode - 8;
+
+    if (user_options_extra->hc_workc == dicts_cnt)
+    {
+      for (int i = 0; i < dicts_cnt; i++)
+      {
+        if (hc_same_files (outfile_ctx->filename, user_options_extra->hc_workv[i]) == true)
+        {
+          event_log_error (hashcat_ctx, "Outfile and wordlist cannot point to the same file.");
+
+          return -1;
+        }
       }
     }
   }

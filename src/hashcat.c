@@ -457,6 +457,13 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
   backend_ctx_devices_sync_tuning (hashcat_ctx);
 
   /**
+   * Persist successful RTX 4090 autotuning after all device threads have
+   * completed and identical-device results have been synchronized.
+   */
+
+  autotune_cache_finalize (hashcat_ctx);
+
+  /**
    * autotune modified kernel_accel, which modifies backend_ctx->kernel_power_all
    */
 
@@ -2280,6 +2287,10 @@ int hashcat_get_status (hashcat_ctx_t *hashcat_ctx, hashcat_status_t *hashcat_st
   hashcat_status->guess_base_count            = status_get_guess_base_count           (hashcat_ctx);
   hashcat_status->guess_base_percent          = status_get_guess_base_percent         (hashcat_ctx);
   hashcat_status->guess_mod                   = status_get_guess_mod                  (hashcat_ctx);
+  hashcat_status->guess_mod2                  = status_get_guess_mod2                 (hashcat_ctx);
+  hashcat_status->guess_mod3                  = status_get_guess_mod3                 (hashcat_ctx);
+  hashcat_status->guess_mod4                  = status_get_guess_mod4                 (hashcat_ctx);
+  hashcat_status->guess_mod5                  = status_get_guess_mod5                 (hashcat_ctx);
   hashcat_status->guess_mod_offset            = status_get_guess_mod_offset           (hashcat_ctx);
   hashcat_status->guess_mod_count             = status_get_guess_mod_count            (hashcat_ctx);
   hashcat_status->guess_mod_percent           = status_get_guess_mod_percent          (hashcat_ctx);

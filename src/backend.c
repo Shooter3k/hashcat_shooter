@@ -4003,7 +4003,8 @@ int run_copy (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, const
     {
       if (hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL)
       {
-        if (user_options->attack_mode == ATTACK_MODE_COMBI)
+        if ((user_options->attack_mode == ATTACK_MODE_COMBI)
+         || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6)))
         {
           if (combinator_ctx->combs_mode == COMBINATOR_MODE_BASE_RIGHT)
           {
@@ -4099,7 +4100,8 @@ int run_copy (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, const
       }
       else
       {
-        if (user_options->attack_mode == ATTACK_MODE_COMBI)
+        if ((user_options->attack_mode == ATTACK_MODE_COMBI)
+         || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6)))
         {
           if (device_param->is_cuda == true)
           {
@@ -4471,7 +4473,8 @@ static int amp_prepare (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_pa
     {
       if (hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL)
       {
-        if (user_options->attack_mode == ATTACK_MODE_COMBI)
+        if ((user_options->attack_mode == ATTACK_MODE_COMBI)
+         || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6)))
         {
           u64 i = 0;
           u64 r = 0;
@@ -4572,7 +4575,9 @@ static int amp_prepare (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_pa
       }
       else
       {
-        if ((user_options->attack_mode == ATTACK_MODE_COMBI) || (user_options->attack_mode == ATTACK_MODE_HYBRID2))
+        if ((user_options->attack_mode == ATTACK_MODE_COMBI)
+         || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+         || (user_options->attack_mode == ATTACK_MODE_HYBRID2))
         {
           u64 i = 0;
           u64 r = 0;
@@ -4719,7 +4724,9 @@ static int run_cracker_salt_major (hashcat_ctx_t *hashcat_ctx, hc_device_param_t
     }
     else
     {
-      if ((user_options->attack_mode == ATTACK_MODE_COMBI) || (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (user_options->attack_mode == ATTACK_MODE_HYBRID2)))
+      if ((user_options->attack_mode == ATTACK_MODE_COMBI)
+       || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+       || (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (user_options->attack_mode == ATTACK_MODE_HYBRID2)))
       {
         // Back to the first amplifier word for this pass. It says where to start rather than leaving
         // it to wherever the last chunk stopped, which is the same thing the rewind did and is now
@@ -4994,7 +5001,9 @@ static int run_cracker_amp_major (hashcat_ctx_t *hashcat_ctx, hc_device_param_t 
   // Back to the first amplifier word, once for this batch rather than once per salt. Every salt reads
   // the same amplifier, so it is read once here and the chunk is shared.
 
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI) || (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (user_options->attack_mode == ATTACK_MODE_HYBRID2)))
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI)
+   || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+   || (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (user_options->attack_mode == ATTACK_MODE_HYBRID2)))
   {
     if (generic_thread_seek (hashcat_ctx, GENERIC_ROLE_AMP, device_param->device_id, 0) != 0)
     {
@@ -6459,6 +6468,8 @@ static void backend_ctx_devices_init_cuda (hashcat_ctx_t *hashcat_ctx, int *virt
 
       if (hc_cuCtxCreate (hashcat_ctx, &device_param->cuda_context, CU_CTX_SCHED_BLOCKING_SYNC, device_param->cuda_device) == -1)
       {
+        backend_ctx->cuda_ctx_create_error = true;
+
         device_param->skipped = true;
 
         continue;

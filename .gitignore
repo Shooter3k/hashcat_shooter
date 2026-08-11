@@ -12,6 +12,7 @@ hashcat.dll
 *.potfile
 *.restore
 *.dictstat2
+hashcat.autotune-cache
 *.pot
 *.pid
 *.log

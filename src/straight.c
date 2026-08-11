@@ -355,6 +355,48 @@ int straight_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
       return 0;
     }
   }
+  else if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+  {
+    char *dictfiles[6] =
+    {
+      combinator_ctx->dict1,
+      combinator_ctx->dict2,
+      combinator_ctx->dict3,
+      combinator_ctx->dict4,
+      combinator_ctx->dict5,
+      combinator_ctx->dict6
+    };
+
+    u64 words_cnt[6] =
+    {
+      combinator_ctx->combs1_cnt,
+      combinator_ctx->combs2_cnt,
+      combinator_ctx->combs3_cnt,
+      combinator_ctx->combs4_cnt,
+      combinator_ctx->combs5_cnt,
+      combinator_ctx->combs6_cnt
+    };
+
+    const int dicts_cnt = (int) user_options->attack_mode - 8;
+
+    u64 total = 1;
+
+    for (int i = 0; i < dicts_cnt; i++)
+    {
+      logfile_sub_string (dictfiles[i]);
+
+      if (overflow_check_u64_mul (total, words_cnt[i]) == true)
+      {
+        event_log_error (hashcat_ctx, "Integer overflow detected in multi-way combination keyspace.");
+
+        return -1;
+      }
+
+      total *= words_cnt[i];
+    }
+
+    status_ctx->words_cnt = total;
+  }
   else if (user_options->attack_mode == ATTACK_MODE_BF)
   {
     logfile_sub_string (mask_ctx->mask);

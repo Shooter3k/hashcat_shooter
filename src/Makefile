@@ -6,7 +6,7 @@
 SHARED                  ?= 0
 DEBUG                   := 0
 PRODUCTION              := 0
-PRODUCTION_VERSION      := v7.1.2
+PRODUCTION_VERSION      := v7.1.2-shooter
 MACOS_UNIVERSAL_BINARY  ?= 0
 ENABLE_LTO              ?= 0
 ENABLE_CUBIN            ?= 1

@@ -16,16 +16,29 @@
 
 int get_runtime_left (const hashcat_ctx_t *hashcat_ctx)
 {
-  const status_ctx_t   *status_ctx   = hashcat_ctx->status_ctx;
+  status_ctx_t         *status_ctx   = hashcat_ctx->status_ctx;
   const user_options_t *user_options = hashcat_ctx->user_options;
 
   double msec_paused = status_ctx->msec_paused;
+  double msec_runtime_paused = status_ctx->msec_runtime_paused;
 
   if (status_ctx->devices_status == STATUS_PAUSED)
   {
     double msec_paused_tmp = hc_timer_get (status_ctx->timer_paused);
 
     msec_paused += msec_paused_tmp;
+
+    hc_timer_set (&status_ctx->timer_runtime_paused);
+  }
+  else if (status_ctx->runtime_status == STATUS_PAUSED)
+  {
+    double msec_runtime_paused_tmp = hc_timer_get (status_ctx->timer_runtime_paused);
+
+    msec_runtime_paused += msec_runtime_paused_tmp;
+  }
+  else
+  {
+    hc_timer_set (&status_ctx->timer_runtime_paused);
   }
 
   time_t runtime_cur;
@@ -35,6 +48,7 @@ int get_runtime_left (const hashcat_ctx_t *hashcat_ctx)
   const int runtime_left = (int) (status_ctx->runtime_start
                                 + user_options->runtime
                                 + (msec_paused / 1000)
+                                + (msec_runtime_paused / 1000)
                                 - runtime_cur);
 
   return runtime_left;
@@ -133,7 +147,18 @@ static int monitor (hashcat_ctx_t *hashcat_ctx)
 
   while (status_ctx->shutdown_inner == false)
   {
-    sleep (sleep_time);
+    // fine-grained sleep: keep the ~1s monitoring cadence, but react to shutdown_inner
+    // within ~100ms instead of waiting up to a full second. This shaves up to ~900ms
+    // off shutdown latency at the end of every run.
+
+    for (int slept = 0; slept < sleep_time * 10; slept++)
+    {
+      if (status_ctx->shutdown_inner == true) break;
+
+      usleep (100000);
+    }
+
+    if (status_ctx->shutdown_inner == true) break;
 
     if (status_ctx->devices_status == STATUS_INIT) continue;
 

@@ -1,0 +1,117 @@
+========================================================================
+ HOW TO COMPILE THIS HASHCAT BUILD (Windows / MSYS2 MinGW64)
+========================================================================
+
+This is hashcat_shooter based on the latest GitHub master, with the local
+beta improvements ported forward. It is compiled on Windows using the MSYS2
+MinGW64 toolchain. The steps below reproduce how hashcat.exe is built.
+
+------------------------------------------------------------------------
+ PREREQUISITES (one-time)
+------------------------------------------------------------------------
+- MSYS2 installed at:  M:\msys64
+- The MinGW64 toolchain + build tools installed inside MSYS2. If you ever
+  need to (re)install them, open the "MSYS2 MSYS" shell and run:
+
+    pacman -S --needed \
+      mingw-w64-x86_64-gcc \
+      mingw-w64-x86_64-make \
+      make git
+
+- Source tree lives at:  M:\github\hashcat_shooter
+  In MSYS2, the M: drive is reached as /m
+  (so this path = /m/github/hashcat_shooter).
+
+- CUDA is loaded at RUN time (not needed to compile). The compiled .exe
+  finds CUDA via the NVIDIA driver at runtime.
+
+------------------------------------------------------------------------
+ BUILD (the normal way - run from a Windows PowerShell prompt)
+------------------------------------------------------------------------
+This is the exact command used to build. It launches an MSYS2 MinGW64
+login shell, changes into the source dir, and runs a parallel make:
+
+    $env:MSYSTEM='MINGW64'; & 'M:\msys64\usr\bin\bash.exe' -lc 'cd /m/github/hashcat_shooter && make -j 2>&1 | tail -20; echo RC=${PIPESTATUS[0]}'
+
+Notes:
+- $env:MSYSTEM='MINGW64'  selects the MinGW64 environment (so gcc =
+  the mingw64 compiler that produces native Windows .exe files).
+- make -j          builds using all CPU cores (parallel).
+- RC=0 printed at the end means the build succeeded. Any other value
+  means it failed - scroll up in the output for the first error.
+- IMPORTANT: after editing include/types.h, use the CLEAN REBUILD below.
+  This Makefile does not track every header dependency; an incremental build
+  can mix incompatible structure layouts and produce an access-violation
+  crash. Editing only a .c file can use the normal incremental build.
+
+Output binary:
+    M:\github\hashcat_shooter\hashcat.exe
+
+------------------------------------------------------------------------
+ BUILD (alternative - from inside an MSYS2 MinGW64 shell directly)
+------------------------------------------------------------------------
+1. Launch the shell:  M:\msys64\mingw64.exe
+   (this is the "MSYS2 MinGW x64" shortcut)
+
+2. Then run:
+
+    cd /m/github/hashcat_shooter
+    make -j
+
+------------------------------------------------------------------------
+ CLEAN REBUILD (from scratch)
+------------------------------------------------------------------------
+If a build behaves oddly or you want a guaranteed-fresh binary, clean
+first, then build:
+
+    $env:MSYSTEM='MINGW64'; & 'M:\msys64\usr\bin\bash.exe' -lc 'cd /m/github/hashcat_shooter && make clean && make -j 2>&1 | tail -20; echo RC=${PIPESTATUS[0]}'
+
+(make clean deletes the obj/ artifacts so everything recompiles.)
+
+------------------------------------------------------------------------
+ RUNNING WHAT YOU BUILT (quick sanity check)
+------------------------------------------------------------------------
+Run from PowerShell. Put the MinGW64 runtime DLLs on PATH first so the
+exe launches, then let it find CUDA via the NVIDIA driver:
+
+    $env:PATH = "M:\msys64\mingw64\bin;$env:PATH"
+    M:\github\hashcat_shooter\hashcat.exe --version
+    M:\github\hashcat_shooter\hashcat.exe -I
+    M:\github\hashcat_shooter\hashcat.exe --help  # confirm -a 11 through -a 14 are listed
+
+Quick tests for the extended modes are documented in:
+    M:\github\hashcat_shooter\docs\multi-way-combination.md
+
+RTX 4090 persisted-autotune behavior, invalidation, and cache reset are
+documented in:
+    M:\github\hashcat_shooter\RTX_4090_AUTOTUNE_CACHE.md
+
+The runtime cache is written beside hashcat.exe as:
+    M:\github\hashcat_shooter\hashcat.autotune-cache
+
+It is generated automatically and ignored by Git. A rebuilt hashcat.exe gets
+a new build identifier, so old entries are not reused.
+
+IMPORTANT: Run the .exe from PowerShell, NOT from inside the MSYS2 bash
+shell. Launching it from MSYS2 bash strips the Windows PATH and it will
+report "No CUDA platform found".
+
+------------------------------------------------------------------------
+ TROUBLESHOOTING
+------------------------------------------------------------------------
+- "No CUDA platform found" at runtime:
+    You launched from MSYS2 bash. Run it from PowerShell instead (see above).
+
+- Exit code 1 after a crack run:
+    Normal - it just means not every hash was cracked. Not an error.
+
+- Exit code -1073741819:
+    That is a crash (access violation), not a normal exit.
+
+- Build says nothing rebuilt / exe timestamp doesn't change:
+    make detected no changed source files, so there was nothing to do.
+    That is correct. Use the CLEAN REBUILD above to force a full rebuild.
+
+- Spurious ">: empty file." keyspace errors on tiny test wordlists:
+    Delete the stale dictionary cache and rerun:
+        Remove-Item M:\github\hashcat_shooter\hashcat.dictstat2 -Force

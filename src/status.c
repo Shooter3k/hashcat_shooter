@@ -491,6 +491,26 @@ int status_get_guess_mode (const hashcat_ctx_t *hashcat_ctx)
     return GUESS_MODE_COMBINATOR_BASE_RIGHT;
   }
 
+  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
+  {
+    return GUESS_MODE_COMBINATOR3;
+  }
+
+  if (user_options->attack_mode == ATTACK_MODE_COMBI4)
+  {
+    return GUESS_MODE_COMBINATOR4;
+  }
+
+  if (user_options->attack_mode == ATTACK_MODE_COMBI5)
+  {
+    return GUESS_MODE_COMBINATOR5;
+  }
+
+  if (user_options->attack_mode == ATTACK_MODE_COMBI6)
+  {
+    return GUESS_MODE_COMBINATOR6;
+  }
+
   if (user_options->attack_mode == ATTACK_MODE_BF)
   {
     if (has_mask_cs == true)
@@ -622,6 +642,20 @@ char *status_get_guess_base (const hashcat_ctx_t *hashcat_ctx)
     return strdup (combinator_ctx->dict2);
   }
 
+  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
+  {
+    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+    return strdup (combinator_ctx->dict1);
+  }
+
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
+  {
+    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+    return strdup (combinator_ctx->dict1);
+  }
+
   if (user_options->attack_mode == ATTACK_MODE_BF)
   {
     const mask_ctx_t *mask_ctx = hashcat_ctx->mask_ctx;
@@ -683,6 +717,16 @@ int status_get_guess_base_offset (const hashcat_ctx_t *hashcat_ctx)
     return 1;
   }
 
+  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
+  {
+    return 1;
+  }
+
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
+  {
+    return 1;
+  }
+
   if (user_options->attack_mode == ATTACK_MODE_BF)
   {
     const mask_ctx_t *mask_ctx = hashcat_ctx->mask_ctx;
@@ -740,6 +784,16 @@ int status_get_guess_base_count (const hashcat_ctx_t *hashcat_ctx)
   }
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
+  {
+    return 1;
+  }
+
+  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
+  {
+    return 1;
+  }
+
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
   {
     return 1;
   }
@@ -807,6 +861,20 @@ char *status_get_guess_mod (const hashcat_ctx_t *hashcat_ctx)
     return strdup (combinator_ctx->dict1);
   }
 
+  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
+  {
+    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+    return strdup (combinator_ctx->dict2);
+  }
+
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
+  {
+    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+    return strdup (combinator_ctx->dict2);
+  }
+
   if (user_options->attack_mode == ATTACK_MODE_BF)
   {
 
@@ -841,6 +909,69 @@ char *status_get_guess_mod (const hashcat_ctx_t *hashcat_ctx)
   return NULL;
 }
 
+char *status_get_guess_mod2 (const hashcat_ctx_t *hashcat_ctx)
+{
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
+  {
+    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+    return strdup (combinator_ctx->dict3);
+  }
+
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
+  {
+    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+    return strdup (combinator_ctx->dict3);
+  }
+
+  return NULL;
+}
+
+char *status_get_guess_mod3 (const hashcat_ctx_t *hashcat_ctx)
+{
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
+  {
+    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+    return strdup (combinator_ctx->dict4);
+  }
+
+  return NULL;
+}
+
+char *status_get_guess_mod4 (const hashcat_ctx_t *hashcat_ctx)
+{
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
+  {
+    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+    return strdup (combinator_ctx->dict5);
+  }
+
+  return NULL;
+}
+
+char *status_get_guess_mod5 (const hashcat_ctx_t *hashcat_ctx)
+{
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  if (user_options->attack_mode == ATTACK_MODE_COMBI6)
+  {
+    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+    return strdup (combinator_ctx->dict6);
+  }
+
+  return NULL;
+}
+
 int status_get_guess_mod_offset (const hashcat_ctx_t *hashcat_ctx)
 {
   const hashconfig_t         *hashconfig         = hashcat_ctx->hashconfig;
@@ -853,6 +984,16 @@ int status_get_guess_mod_offset (const hashcat_ctx_t *hashcat_ctx)
   }
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
+  {
+    return 1;
+  }
+
+  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
+  {
+    return 1;
+  }
+
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
   {
     return 1;
   }
@@ -900,6 +1041,16 @@ int status_get_guess_mod_count (const hashcat_ctx_t *hashcat_ctx)
   }
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
+  {
+    return 1;
+  }
+
+  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
+  {
+    return 1;
+  }
+
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
   {
     return 1;
   }
@@ -2724,6 +2875,7 @@ int status_ctx_init (hashcat_ctx_t *hashcat_ctx)
   status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
 
   status_ctx->devices_status = STATUS_INIT;
+  status_ctx->runtime_status = STATUS_RUNNING;
 
   status_ctx->run_main_level1     = true;
   status_ctx->run_main_level2     = true;
@@ -2779,6 +2931,10 @@ void status_status_destroy (hashcat_ctx_t *hashcat_ctx, hashcat_status_t *hashca
   hcfree (hashcat_status->speed_sec_all);
   hcfree (hashcat_status->guess_base);
   hcfree (hashcat_status->guess_mod);
+  hcfree (hashcat_status->guess_mod2);
+  hcfree (hashcat_status->guess_mod3);
+  hcfree (hashcat_status->guess_mod4);
+  hcfree (hashcat_status->guess_mod5);
   hcfree (hashcat_status->guess_charset);
   hcfree (hashcat_status->cpt);
   #ifdef WITH_BRAIN
@@ -2796,6 +2952,10 @@ void status_status_destroy (hashcat_ctx_t *hashcat_ctx, hashcat_status_t *hashca
   hashcat_status->speed_sec_all           = NULL;
   hashcat_status->guess_base              = NULL;
   hashcat_status->guess_mod               = NULL;
+  hashcat_status->guess_mod2              = NULL;
+  hashcat_status->guess_mod3              = NULL;
+  hashcat_status->guess_mod4              = NULL;
+  hashcat_status->guess_mod5              = NULL;
   hashcat_status->guess_charset           = NULL;
   hashcat_status->cpt                     = NULL;
   #ifdef WITH_BRAIN

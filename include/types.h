@@ -341,6 +341,10 @@ typedef enum attack_mode
   ATTACK_MODE_HYBRID2     = 7,
   ATTACK_MODE_GENERIC     = 8,
   ATTACK_MODE_ASSOCIATION = 9,
+  ATTACK_MODE_COMBI3      = 11,
+  ATTACK_MODE_COMBI4      = 12,
+  ATTACK_MODE_COMBI5      = 13,
+  ATTACK_MODE_COMBI6      = 14,
   ATTACK_MODE_NONE        = 100
 
 } attack_mode_t;
@@ -746,6 +750,10 @@ typedef enum guess_mode
   GUESS_MODE_GENERIC                    = 15,
   GUESS_MODE_GENERIC_RULES_FILE         = 16,
   GUESS_MODE_GENERIC_RULES_GEN          = 17,
+  GUESS_MODE_COMBINATOR3                = 18,
+  GUESS_MODE_COMBINATOR4                = 19,
+  GUESS_MODE_COMBINATOR5                = 20,
+  GUESS_MODE_COMBINATOR6                = 21,
 
 } guess_mode_t;
 
@@ -1408,6 +1416,10 @@ typedef struct hc_device_param
   at_status_t at_status;        // autotune status
 
   int     at_rc;                // autotune rc
+
+  bool    autotune_cache_eligible;
+  bool    autotune_cache_hit;
+  double  autotune_cache_msec;
 
   int     vector_width;
 
@@ -2136,6 +2148,7 @@ typedef struct backend_ctx
   bool                extra_size_warning;
   bool                mixed_warnings;
   bool                self_test_warnings;
+  bool                cuda_ctx_create_error;  // set when cuCtxCreate fails; triggers auto-retry
 
   // generic
 
@@ -2877,9 +2890,19 @@ typedef struct combinator_ctx
 
   char *dict1;
   char *dict2;
+  char *dict3;
+  char *dict4;
+  char *dict5;
+  char *dict6;
 
   u32 combs_mode;
   u64 combs_cnt;
+  u64 combs1_cnt;
+  u64 combs2_cnt;
+  u64 combs3_cnt;
+  u64 combs4_cnt;
+  u64 combs5_cnt;
+  u64 combs6_cnt;
 
 } combinator_ctx_t;
 
@@ -3123,6 +3146,10 @@ typedef struct hashcat_status
   int         guess_base_count;
   double      guess_base_percent;
   char       *guess_mod;
+  char       *guess_mod2;
+  char       *guess_mod3;
+  char       *guess_mod4;
+  char       *guess_mod5;
   int         guess_mod_offset;
   int         guess_mod_count;
   double      guess_mod_percent;
@@ -3298,6 +3325,14 @@ typedef struct status_ctx
    */
 
   u32  stdin_read_timeout_cnt;
+
+  /**
+   * runtime limit pause / [e]xtend feature (appended to preserve struct layout)
+   */
+
+  u32         runtime_status;
+  hc_timer_t  timer_runtime_paused;
+  double      msec_runtime_paused;
 
 } status_ctx_t;
 

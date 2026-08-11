@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <unistd.h>
 
 #include "types.h"
 #include "user_options.h"
@@ -1483,43 +1484,60 @@ int main (int argc, char **argv)
 
   int rc_final = -1;
 
-  if (hashcat_session_init (hashcat_ctx, install_folder, shared_folder, argc, argv, COMPTIME) == 0)
+  #define CUDA_CTX_RETRY_MAX   10
+  #define CUDA_CTX_RETRY_DELAY 2000000  /* 2 seconds in microseconds */
+
+  for (int retry = 0; retry <= CUDA_CTX_RETRY_MAX; retry++)
   {
-    if (user_options->usage > 0)
+    if (retry > 0)
     {
-      usage_big_print (hashcat_ctx);
+      fprintf (stderr, "\nNOTICE: cuCtxCreate failed on startup — retrying (%d/%d) ...\n\n", retry, CUDA_CTX_RETRY_MAX);
 
-      rc_final = 0;
+      usleep (CUDA_CTX_RETRY_DELAY);
     }
-    else if (user_options->hash_info > 0)
+
+    if (hashcat_session_init (hashcat_ctx, install_folder, shared_folder, argc, argv, COMPTIME) == 0)
     {
-      hash_info (hashcat_ctx);
+      if (user_options->usage > 0)
+      {
+        usage_big_print (hashcat_ctx);
 
-      rc_final = 0;
+        rc_final = 0;
+      }
+      else if (user_options->hash_info > 0)
+      {
+        hash_info (hashcat_ctx);
+
+        rc_final = 0;
+      }
+      else if (user_options->backend_info > 0)
+      {
+        // if this is just backend_info, no need to execute some real cracking session
+
+        backend_info (hashcat_ctx);
+
+        rc_final = 0;
+      }
+      else
+      {
+        // now execute hashcat
+
+        backend_info_compact (hashcat_ctx);
+
+        user_options_info (hashcat_ctx);
+
+        rc_final = hashcat_session_execute (hashcat_ctx);
+      }
     }
-    else if (user_options->backend_info > 0)
-    {
-      // if this is just backend_info, no need to execute some real cracking session
 
-      backend_info (hashcat_ctx);
+    // finish the hashcat session, this shuts down backend devices, hwmon, etc
 
-      rc_final = 0;
-    }
-    else
-    {
-      // now execute hashcat
+    const bool should_retry = ((backend_ctx_t *) hashcat_ctx->backend_ctx)->cuda_ctx_create_error;
 
-      backend_info_compact (hashcat_ctx);
+    hashcat_session_destroy (hashcat_ctx);
 
-      user_options_info (hashcat_ctx);
-
-      rc_final = hashcat_session_execute (hashcat_ctx);
-    }
+    if (!should_retry || rc_final == 0) break;
   }
-
-  // finish the hashcat session, this shuts down backend devices, hwmon, etc
-
-  hashcat_session_destroy (hashcat_ctx);
 
   // finished with hashcat, clean up
 

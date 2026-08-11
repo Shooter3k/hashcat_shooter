@@ -64,6 +64,7 @@ int  generic_association_in_sync   (hashcat_ctx_t *hashcat_ctx, const generic_ct
 
 int  generic_ctx_base_round  (hashcat_ctx_t *hashcat_ctx, const char *path);
 int  generic_ctx_base_discard (hashcat_ctx_t *hashcat_ctx, const int device_id, const u64 count);
+int  generic_wordlist_keyspace (hashcat_ctx_t *hashcat_ctx, const char *path, u64 *keyspace);
 
 int  generic_ctx_init        (hashcat_ctx_t *hashcat_ctx);
 void generic_ctx_roles_swap  (hashcat_ctx_t *hashcat_ctx);

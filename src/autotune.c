@@ -8,6 +8,8 @@
 #include "event.h"
 #include "backend.h"
 #include "bridges.h"
+#include "filehandling.h"
+#include "memory.h"
 #include "status.h"
 #include "shared.h"
 #include "autotune.h"
@@ -35,6 +37,406 @@
 #define BRIDGE_WAVES_MIN        32
 #define BRIDGE_WAVES_MSEC_SCALE 16
 
+#define AUTOTUNE_CACHE_VERSION 2
+#define AUTOTUNE_CACHE_FILENAME "hashcat.autotune-cache"
+
+typedef struct autotune_cache_key
+{
+  u32 version;
+
+  int comptime;
+  int cuda_driver_version;
+  int sm_major;
+  int sm_minor;
+
+  u32 device_processors;
+  int vector_width;
+
+  int hash_mode;
+  u32 kern_type;
+  u32 attack_mode;
+  u32 attack_kern;
+  u32 slow_candidates;
+  u32 workload_profile;
+  u32 attack_exec;
+  u32 opti_type;
+  u64 opts_type;
+
+  u32 salts_cnt;
+  u32 digests_cnt;
+
+  u32 kernel_accel_min;
+  u32 kernel_accel_max;
+  u32 kernel_loops_min;
+  u32 kernel_loops_max;
+  u32 kernel_threads_min;
+  u32 kernel_threads_max;
+
+} autotune_cache_key_t;
+
+typedef struct autotune_cache_entry
+{
+  autotune_cache_key_t key;
+
+  u32 kernel_accel;
+  u32 kernel_loops;
+  u32 kernel_threads;
+
+  double exec_msec;
+
+} autotune_cache_entry_t;
+
+static bool autotune_cache_allowed (const hashcat_ctx_t *hashcat_ctx, const hc_device_param_t *device_param)
+{
+  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  if (device_param->is_cuda == false) return false;
+  if (device_param->device_name == NULL) return false;
+  if (strstr (device_param->device_name, "GeForce RTX 4090") == NULL) return false;
+
+  // The CMIYC modes are deliberately outside this general-purpose cache.
+
+  if (hashconfig->hash_mode == 29960) return false;
+  if (hashconfig->hash_mode == 29970) return false;
+  if (hashconfig->hash_mode == 29990) return false;
+
+  if (user_options->attack_mode == ATTACK_MODE_NONE) return false;
+
+  if (hashconfig->bridge_type != 0) return false;
+  if (hashconfig->warmup_disable == true) return false;
+
+  if (user_options->force == true) return false;
+
+  // Explicit command-line settings must always take precedence.
+
+  if (user_options->kernel_accel_chgd == true) return false;
+  if (user_options->kernel_loops_chgd == true) return false;
+  if (user_options->kernel_threads_chgd == true) return false;
+
+  const char *disable = getenv ("HASHCAT_AUTOTUNE_CACHE_DISABLE");
+
+  if ((disable != NULL) && (disable[0] != 0) && (strcmp (disable, "0") != 0)) return false;
+
+  // A fully fixed tuning has no search cost worth caching.
+
+  if ((device_param->kernel_accel_min   == device_param->kernel_accel_max)
+   && (device_param->kernel_loops_min   == device_param->kernel_loops_max)
+   && (device_param->kernel_threads_min == device_param->kernel_threads_max)) return false;
+
+  return true;
+}
+
+static void autotune_cache_key_init (const hashcat_ctx_t *hashcat_ctx, const hc_device_param_t *device_param, autotune_cache_key_t *key)
+{
+  const backend_ctx_t *backend_ctx = hashcat_ctx->backend_ctx;
+  const hashconfig_t *hashconfig = hashcat_ctx->hashconfig;
+  const hashes_t *hashes = hashcat_ctx->hashes;
+  const user_options_t *user_options = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+
+  memset (key, 0, sizeof (*key));
+
+  key->version = AUTOTUNE_CACHE_VERSION;
+
+  key->comptime = backend_ctx->comptime;
+  key->cuda_driver_version = backend_ctx->cuda_driver_version;
+  key->sm_major = device_param->sm_major;
+  key->sm_minor = device_param->sm_minor;
+
+  key->device_processors = device_param->device_processors;
+  key->vector_width = device_param->vector_width;
+
+  key->hash_mode = hashconfig->hash_mode;
+  key->kern_type = hashconfig->kern_type;
+  key->attack_mode = user_options->attack_mode;
+  key->attack_kern = user_options_extra->attack_kern;
+  key->slow_candidates = user_options->slow_candidates;
+  key->workload_profile = user_options->workload_profile;
+  key->attack_exec = hashconfig->attack_exec;
+  key->opti_type = hashconfig->opti_type;
+  key->opts_type = hashconfig->opts_type;
+
+  key->salts_cnt = hashes->salts_cnt;
+  key->digests_cnt = hashes->digests_cnt;
+
+  key->kernel_accel_min = device_param->kernel_accel_min;
+  key->kernel_accel_max = device_param->kernel_accel_max;
+  key->kernel_loops_min = device_param->kernel_loops_min;
+  key->kernel_loops_max = device_param->kernel_loops_max;
+  key->kernel_threads_min = device_param->kernel_threads_min;
+  key->kernel_threads_max = device_param->kernel_threads_max;
+}
+
+static int autotune_cache_entry_parse (const char *line_buf, autotune_cache_entry_t *entry)
+{
+  memset (entry, 0, sizeof (*entry));
+
+  return sscanf (line_buf,
+    "%u %d %d %d %d %u %d %d %u %u %u %u %u %u %u %" SCNu64 " %u %u %u %u %u %u %u %u %u %u %u %lf",
+    &entry->key.version,
+    &entry->key.comptime,
+    &entry->key.cuda_driver_version,
+    &entry->key.sm_major,
+    &entry->key.sm_minor,
+    &entry->key.device_processors,
+    &entry->key.vector_width,
+    &entry->key.hash_mode,
+    &entry->key.kern_type,
+    &entry->key.attack_mode,
+    &entry->key.attack_kern,
+    &entry->key.slow_candidates,
+    &entry->key.workload_profile,
+    &entry->key.attack_exec,
+    &entry->key.opti_type,
+    &entry->key.opts_type,
+    &entry->key.salts_cnt,
+    &entry->key.digests_cnt,
+    &entry->key.kernel_accel_min,
+    &entry->key.kernel_accel_max,
+    &entry->key.kernel_loops_min,
+    &entry->key.kernel_loops_max,
+    &entry->key.kernel_threads_min,
+    &entry->key.kernel_threads_max,
+    &entry->kernel_accel,
+    &entry->kernel_loops,
+    &entry->kernel_threads,
+    &entry->exec_msec);
+}
+
+static bool autotune_cache_entry_valid (const hc_device_param_t *device_param, const autotune_cache_entry_t *entry)
+{
+  if (entry->kernel_accel < device_param->kernel_accel_min) return false;
+  if (entry->kernel_accel > device_param->kernel_accel_max) return false;
+
+  if (entry->kernel_loops < device_param->kernel_loops_min) return false;
+  if (entry->kernel_loops > device_param->kernel_loops_max) return false;
+
+  if (entry->kernel_threads == 0) return false;
+  if (entry->kernel_threads > device_param->device_maxworkgroup_size) return false;
+
+  if (entry->exec_msec <= 0) return false;
+  if (entry->exec_msec > 2000) return false;
+
+  return true;
+}
+
+static bool autotune_cache_lookup (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, u32 *kernel_accel, u32 *kernel_loops, u32 *kernel_threads)
+{
+  if (autotune_cache_allowed (hashcat_ctx, device_param) == false) return false;
+
+  device_param->autotune_cache_eligible = true;
+
+  const folder_config_t *folder_config = hashcat_ctx->folder_config;
+
+  char *filename = NULL;
+
+  hc_asprintf (&filename, "%s/%s", folder_config->cache_dir, AUTOTUNE_CACHE_FILENAME);
+
+  HCFILE fp;
+
+  if (hc_fopen (&fp, filename, "rb") == false)
+  {
+    hcfree (filename);
+
+    return false;
+  }
+
+  hcfree (filename);
+
+  autotune_cache_key_t wanted_key;
+
+  autotune_cache_key_init (hashcat_ctx, device_param, &wanted_key);
+
+  bool found = false;
+
+  char line_buf[1024];
+
+  while (hc_fgets (line_buf, sizeof (line_buf), &fp) != NULL)
+  {
+    if (line_buf[0] == '#') continue;
+
+    autotune_cache_entry_t entry;
+
+    if (autotune_cache_entry_parse (line_buf, &entry) != 28) continue;
+    if (memcmp (&wanted_key, &entry.key, sizeof (wanted_key)) != 0) continue;
+    if (autotune_cache_entry_valid (device_param, &entry) == false) continue;
+
+    *kernel_accel = entry.kernel_accel;
+    *kernel_loops = entry.kernel_loops;
+    *kernel_threads = entry.kernel_threads;
+
+    device_param->autotune_cache_msec = entry.exec_msec;
+
+    found = true;
+  }
+
+  hc_fclose (&fp);
+
+  return found;
+}
+
+static int autotune_cache_entry_write (HCFILE *fp, const autotune_cache_entry_t *entry)
+{
+  return hc_fprintf (fp,
+    "%u %d %d %d %d %u %d %d %u %u %u %u %u %u %u %" PRIu64 " %u %u %u %u %u %u %u %u %u %u %u %.6f\n",
+    entry->key.version,
+    entry->key.comptime,
+    entry->key.cuda_driver_version,
+    entry->key.sm_major,
+    entry->key.sm_minor,
+    entry->key.device_processors,
+    entry->key.vector_width,
+    entry->key.hash_mode,
+    entry->key.kern_type,
+    entry->key.attack_mode,
+    entry->key.attack_kern,
+    entry->key.slow_candidates,
+    entry->key.workload_profile,
+    entry->key.attack_exec,
+    entry->key.opti_type,
+    entry->key.opts_type,
+    entry->key.salts_cnt,
+    entry->key.digests_cnt,
+    entry->key.kernel_accel_min,
+    entry->key.kernel_accel_max,
+    entry->key.kernel_loops_min,
+    entry->key.kernel_loops_max,
+    entry->key.kernel_threads_min,
+    entry->key.kernel_threads_max,
+    entry->kernel_accel,
+    entry->kernel_loops,
+    entry->kernel_threads,
+    entry->exec_msec);
+}
+
+void autotune_cache_finalize (hashcat_ctx_t *hashcat_ctx)
+{
+  backend_ctx_t *backend_ctx = hashcat_ctx->backend_ctx;
+  const folder_config_t *folder_config = hashcat_ctx->folder_config;
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  if (backend_ctx->enabled == false) return;
+
+  int cache_hits = 0;
+  int cache_entries_saved = 0;
+
+  HCFILE fp;
+
+  bool fp_open = false;
+
+  char *filename = NULL;
+
+  for (int device_idx = 0; device_idx < backend_ctx->backend_devices_cnt; device_idx++)
+  {
+    hc_device_param_t *device_param = &backend_ctx->devices_param[device_idx];
+
+    if (device_param->skipped == true) continue;
+    if (device_param->skipped_warning == true) continue;
+    if (device_param->autotune_cache_eligible == false) continue;
+
+    if (device_param->autotune_cache_hit == true)
+    {
+      cache_hits++;
+
+      continue;
+    }
+
+    if (device_param->at_status != AT_STATUS_PASSED) continue;
+    if (device_param->autotune_cache_msec <= 0) continue;
+
+    autotune_cache_key_t key;
+
+    autotune_cache_key_init (hashcat_ctx, device_param, &key);
+
+    // Identical 4090s intentionally share one profile. Do not write the same
+    // key once per board on a multi-GPU machine.
+
+    bool duplicate = false;
+
+    for (int previous_idx = 0; previous_idx < device_idx; previous_idx++)
+    {
+      hc_device_param_t *previous = &backend_ctx->devices_param[previous_idx];
+
+      if (previous->autotune_cache_eligible == false) continue;
+
+      autotune_cache_key_t previous_key;
+
+      autotune_cache_key_init (hashcat_ctx, previous, &previous_key);
+
+      if (memcmp (&key, &previous_key, sizeof (key)) == 0)
+      {
+        duplicate = true;
+
+        break;
+      }
+    }
+
+    if (duplicate == true) continue;
+
+    if (fp_open == false)
+    {
+      hc_asprintf (&filename, "%s/%s", folder_config->cache_dir, AUTOTUNE_CACHE_FILENAME);
+
+      if (hc_fopen (&fp, filename, "ab") == false)
+      {
+        if (user_options->quiet == false) event_log_warning (hashcat_ctx, "RTX 4090 autotune cache: %s: %s", filename, strerror (errno));
+
+        hcfree (filename);
+
+        filename = NULL;
+
+        break;
+      }
+
+      fp_open = true;
+
+      struct stat cache_stat;
+
+      memset (&cache_stat, 0, sizeof (cache_stat));
+
+      if ((hc_fstat (&fp, &cache_stat) == 0) && (cache_stat.st_size == 0))
+      {
+        hc_fprintf (&fp, "# hashcat_shooter RTX 4090 autotune cache\n");
+        hc_fprintf (&fp, "# Generated automatically. Set HASHCAT_AUTOTUNE_CACHE_DISABLE=1 to bypass.\n");
+      }
+    }
+
+    autotune_cache_entry_t entry;
+
+    memset (&entry, 0, sizeof (entry));
+
+    entry.key = key;
+    entry.kernel_accel = device_param->kernel_accel;
+    entry.kernel_loops = device_param->kernel_loops;
+    entry.kernel_threads = device_param->kernel_threads;
+    entry.exec_msec = device_param->autotune_cache_msec;
+
+    if (autotune_cache_entry_write (&fp, &entry) < 0)
+    {
+      if (user_options->quiet == false) event_log_warning (hashcat_ctx, "RTX 4090 autotune cache: failed to write %s", filename);
+
+      break;
+    }
+
+    cache_entries_saved++;
+  }
+
+  if (fp_open == true)
+  {
+    hc_fflush (&fp);
+    hc_fsync (&fp);
+    hc_fclose (&fp);
+  }
+
+  if (user_options->quiet == false)
+  {
+    if (cache_hits > 0) event_log_info (hashcat_ctx, "RTX 4090 autotune cache: reused settings on %d device(s).", cache_hits);
+    if (cache_entries_saved > 0) event_log_info (hashcat_ctx, "RTX 4090 autotune cache: saved %d new profile(s) to %s.", cache_entries_saved, filename);
+  }
+
+  hcfree (filename);
+}
 int find_tuning_function (hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED hc_device_param_t *device_param)
 {
   hashconfig_t *hashconfig = hashcat_ctx->hashconfig;
@@ -279,6 +681,54 @@ static int autotune (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
   u32 kernel_loops = kernel_loops_min;
   u32 kernel_threads = kernel_threads_min;
 
+  device_param->autotune_cache_eligible = false;
+  device_param->autotune_cache_hit = false;
+  device_param->autotune_cache_msec = 0;
+
+  bool cache_hit = autotune_cache_lookup (hashcat_ctx, device_param, &kernel_accel, &kernel_loops, &kernel_threads);
+
+  if (cache_hit == true)
+  {
+    // Two short launches both warm the runtime and make sure a material clock,
+    // power, or thermal change does not leave a stale profile in service.
+
+    const double cached_msec = device_param->autotune_cache_msec;
+    const double measured_msec = try_run_times (hashcat_ctx, device_param, kernel_accel, kernel_loops, kernel_threads, 2);
+
+    // Very small keyspaces can produce launches below 0.02 ms. At that scale,
+    // normal CUDA event jitter is larger than a relative-only 35 percent band.
+    // Keep the relative guard for real workloads, but give tiny validation
+    // launches a small absolute tolerance so they do not retune forever.
+
+    const double measured_delta = (measured_msec > cached_msec)
+                                ? measured_msec - cached_msec
+                                : cached_msec - measured_msec;
+    const double allowed_delta = MAX (cached_msec * 0.35, 0.250);
+
+    if ((measured_msec <= 0)
+     || (measured_msec > 2000)
+     || (measured_delta > allowed_delta))
+    {
+      if (user_options->quiet == false)
+      {
+        event_log_info (hashcat_ctx, "RTX 4090 autotune cache: rejected cached profile on device #%u (cached %.3f ms, measured %.3f ms); retuning.", device_param->device_id + 1, cached_msec, measured_msec);
+      }
+
+      cache_hit = false;
+
+      kernel_accel = kernel_accel_min;
+      kernel_loops = kernel_loops_min;
+      kernel_threads = kernel_threads_min;
+
+      device_param->autotune_cache_msec = 0;
+    }
+    else
+    {
+      device_param->autotune_cache_hit = true;
+      device_param->autotune_cache_msec = measured_msec;
+    }
+  }
+
   // for the threads we take as initial value what we receive from the runtime
   // but is only to start with something, we will fine tune this value as soon as we have our workload specified
   // this thread limiting is also performed inside run_kernel() so we need to redo it here, too
@@ -324,7 +774,10 @@ static int autotune (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
   // no way to tune anything
   // but we need to run a few caching rounds
 
-  if ((kernel_threads_min == kernel_threads_max) && (kernel_accel_min == kernel_accel_max) && (kernel_loops_min == kernel_loops_max))
+  if (cache_hit == true)
+  {
+  }
+  else if ((kernel_threads_min == kernel_threads_max) && (kernel_accel_min == kernel_accel_max) && (kernel_loops_min == kernel_loops_max))
   {
     #if defined (DEBUG)
 
@@ -817,6 +1270,11 @@ static int autotune (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
     }
   }
 
+  if ((device_param->autotune_cache_eligible == true) && (device_param->autotune_cache_hit == false))
+  {
+    device_param->autotune_cache_msec = try_run_times (hashcat_ctx, device_param, kernel_accel, kernel_loops, kernel_threads, 2);
+  }
+
   // reset them fake words
   // reset other buffers in case autotune cracked something
 
@@ -949,4 +1407,3 @@ HC_API_CALL void *thread_autotune (void *p)
 
   return 0;
 }
-
