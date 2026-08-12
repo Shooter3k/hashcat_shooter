@@ -13,6 +13,7 @@
 #include "backend.h"
 #include "shared.h"
 #include "thread.h"
+#include "outfile.h"
 #include "stdout.h"
 
 static void out_flush (out_t *out)
@@ -70,21 +71,8 @@ int process_stdout (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param,
 
   if (filename)
   {
-    if (hc_fopen (&out.fp, filename, "ab") == false)
+    if (outfile_open_file (hashcat_ctx, &out.fp) == -1)
     {
-      event_log_error (hashcat_ctx, "%s: %s", filename, strerror (errno));
-
-      hc_thread_mutex_unlock (outfile_ctx->mux_outfile);
-
-      return -1;
-    }
-
-    if (hc_lockfile (&out.fp) == -1)
-    {
-      hc_fclose (&out.fp);
-
-      event_log_error (hashcat_ctx, "%s: %s", filename, strerror (errno));
-
       hc_thread_mutex_unlock (outfile_ctx->mux_outfile);
 
       return -1;

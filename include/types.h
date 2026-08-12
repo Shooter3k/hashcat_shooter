@@ -2415,6 +2415,12 @@ typedef struct outfile_ctx
 
   char   *filename;
 
+  // After one full retry window fails, later cracks still try the outfile
+  // once but do not repeatedly stall the cracking threads. A new timed retry
+  // window is allowed when this cooldown expires.
+
+  time_t retry_after;
+
   hc_thread_mutex_t mux_outfile;
 
 } outfile_ctx_t;

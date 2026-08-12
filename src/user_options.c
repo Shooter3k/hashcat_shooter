@@ -3656,23 +3656,9 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
 
         return -1;
       }
-
-      if (hc_path_write (outfile_ctx->filename) == false)
-      {
-        event_log_error (hashcat_ctx, "%s: %s", outfile_ctx->filename, strerror (errno));
-
-        return -1;
-      }
     }
-    else
-    {
-      if (hc_path_create (outfile_ctx->filename) == false)
-      {
-        event_log_error (hashcat_ctx, "%s: %s", outfile_ctx->filename, strerror (errno));
 
-        return -1;
-      }
-    }
+    if (outfile_test_write (hashcat_ctx) == -1) return -1;
   }
 
   // check for outfile vs. hashfile

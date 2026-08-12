@@ -18,6 +18,55 @@
 #include "thread.h"
 #include "outfile.h"
 
+// Windows can temporarily return EACCES while another process, antivirus
+// scanner, synchronizer, or indexer holds an exclusive handle to the outfile.
+// Successful opens take the original single-call fast path. Only a failed
+// open enters this bounded retry path.
+
+#define OUTFILE_RETRY_COUNT          20
+#define OUTFILE_RETRY_DELAY_USEC 250000
+#define OUTFILE_RETRY_COOLDOWN_SEC    30
+
+static bool outfile_error_retryable (const int error)
+{
+  if (error == EACCES) return true;
+  if (error == EAGAIN) return true;
+  if (error == EBUSY)  return true;
+  if (error == EINTR)  return true;
+  if (error == ENOLCK) return true;
+  if (error == EPERM)  return true;
+
+  return false;
+}
+
+static bool outfile_path_writable (const char *filename)
+{
+  if (hc_path_exist (filename) == true)
+  {
+    return hc_path_write (filename);
+  }
+
+  return hc_path_create (filename);
+}
+
+static bool outfile_open_and_lock (outfile_ctx_t *outfile_ctx, HCFILE *fp)
+{
+  if (hc_fopen (fp, outfile_ctx->filename, "ab") == false) return false;
+
+  if (hc_lockfile (fp) == -1)
+  {
+    const int lock_error = errno;
+
+    hc_fclose (fp);
+
+    errno = lock_error;
+
+    return false;
+  }
+
+  return true;
+}
+
 u32 outfile_format_parse (const char *format_string)
 {
   if (format_string == NULL) return 0;
@@ -508,6 +557,7 @@ int outfile_init (hashcat_ctx_t *hashcat_ctx)
   outfile_ctx->outfile_autohex = user_options->outfile_autohex;
   outfile_ctx->outfile_json    = user_options->outfile_json;
   outfile_ctx->is_fifo         = hc_path_is_fifo (outfile_ctx->filename);
+  outfile_ctx->retry_after     = 0;
 
   hc_thread_mutex_init (outfile_ctx->mux_outfile);
 
@@ -530,6 +580,119 @@ void outfile_destroy (hashcat_ctx_t *hashcat_ctx)
   memset (outfile_ctx, 0, sizeof (outfile_ctx_t));
 }
 
+int outfile_test_write (hashcat_ctx_t *hashcat_ctx)
+{
+  outfile_ctx_t *outfile_ctx = hashcat_ctx->outfile_ctx;
+
+  if (outfile_ctx->filename == NULL) return 0;
+
+  if (outfile_path_writable (outfile_ctx->filename) == true) return 0;
+
+  int last_error = errno;
+
+  if (outfile_error_retryable (last_error) == true)
+  {
+    event_log_warning (hashcat_ctx, "%s: %s; retrying outfile access for up to %d seconds.", outfile_ctx->filename, strerror (last_error), (OUTFILE_RETRY_COUNT * OUTFILE_RETRY_DELAY_USEC) / 1000000);
+
+    for (int retry = 1; retry <= OUTFILE_RETRY_COUNT; retry++)
+    {
+      usleep (OUTFILE_RETRY_DELAY_USEC);
+
+      if (outfile_path_writable (outfile_ctx->filename) == true)
+      {
+        event_log_info (hashcat_ctx, "Outfile access recovered after %d retry(s): %s", retry, outfile_ctx->filename);
+
+        return 0;
+      }
+
+      last_error = errno;
+
+      if (outfile_error_retryable (last_error) == false) break;
+    }
+  }
+
+  errno = last_error;
+
+  event_log_error (hashcat_ctx, "%s: %s", outfile_ctx->filename, strerror (last_error));
+
+  return -1;
+}
+
+int outfile_open_file (hashcat_ctx_t *hashcat_ctx, HCFILE *fp)
+{
+  outfile_ctx_t *outfile_ctx = hashcat_ctx->outfile_ctx;
+
+  if (outfile_ctx->filename == NULL) return 0;
+
+  // Keep the successful path identical to upstream: one open and one lock,
+  // with no sleep, timer read, or retry bookkeeping in the cracking path.
+
+  if (outfile_open_and_lock (outfile_ctx, fp) == true)
+  {
+    if (outfile_ctx->retry_after != 0)
+    {
+      event_log_info (hashcat_ctx, "Outfile is available again; resumed writing: %s", outfile_ctx->filename);
+    }
+
+    outfile_ctx->retry_after = 0;
+
+    return 0;
+  }
+
+  int last_error = errno;
+
+  const time_t now = time (NULL);
+
+  const bool retryable = outfile_error_retryable (last_error);
+  const bool retry_window = (retryable == true)
+                         && ((outfile_ctx->retry_after == 0) || (now >= outfile_ctx->retry_after));
+
+  if (retry_window == true)
+  {
+    event_log_warning (hashcat_ctx, "%s: %s; retrying outfile open for up to %d seconds.", outfile_ctx->filename, strerror (last_error), (OUTFILE_RETRY_COUNT * OUTFILE_RETRY_DELAY_USEC) / 1000000);
+
+    for (int retry = 1; retry <= OUTFILE_RETRY_COUNT; retry++)
+    {
+      usleep (OUTFILE_RETRY_DELAY_USEC);
+
+      if (outfile_open_and_lock (outfile_ctx, fp) == true)
+      {
+        outfile_ctx->retry_after = 0;
+
+        event_log_info (hashcat_ctx, "Outfile open recovered after %d retry(s); resumed writing: %s", retry, outfile_ctx->filename);
+
+        return 0;
+      }
+
+      last_error = errno;
+
+      if (outfile_error_retryable (last_error) == false) break;
+    }
+  }
+
+  if (outfile_error_retryable (last_error) == true)
+  {
+    // Log once per retry window. During the cooldown every cracked result
+    // still gets one immediate open attempt, but repeated failures neither
+    // sleep nor flood the terminal.
+
+    if (retry_window == true)
+    {
+      outfile_ctx->retry_after = time (NULL) + OUTFILE_RETRY_COOLDOWN_SEC;
+
+      event_log_error (hashcat_ctx, "%s: %s after %d seconds; continuing without repeated delays and retrying immediately for each later result.", outfile_ctx->filename, strerror (last_error), (OUTFILE_RETRY_COUNT * OUTFILE_RETRY_DELAY_USEC) / 1000000);
+    }
+  }
+  else
+  {
+    event_log_error (hashcat_ctx, "%s: %s", outfile_ctx->filename, strerror (last_error));
+  }
+
+  errno = last_error;
+
+  return -1;
+}
+
 int outfile_write_open (hashcat_ctx_t *hashcat_ctx)
 {
   outfile_ctx_t *outfile_ctx = hashcat_ctx->outfile_ctx;
@@ -538,21 +701,7 @@ int outfile_write_open (hashcat_ctx_t *hashcat_ctx)
 
   if (outfile_ctx->is_fifo == false || outfile_ctx->fp.pfp == NULL)
   {
-    if (hc_fopen (&outfile_ctx->fp, outfile_ctx->filename, "ab") == false)
-    {
-      event_log_error (hashcat_ctx, "%s: %s", outfile_ctx->filename, strerror (errno));
-
-      return -1;
-    }
-
-    if (hc_lockfile (&outfile_ctx->fp) == -1)
-    {
-      hc_fclose (&outfile_ctx->fp);
-
-      event_log_error (hashcat_ctx, "%s: %s", outfile_ctx->filename, strerror (errno));
-
-      return -1;
-    }
+    return outfile_open_file (hashcat_ctx, &outfile_ctx->fp);
   }
 
   return 0;

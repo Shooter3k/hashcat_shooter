@@ -1,5 +1,45 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260812.7
+
+Transient Windows outfile-access recovery.
+
+### Added
+
+- Added bounded retry handling when the `-o` path temporarily returns
+  `Permission denied`, `busy`, or another retryable access error. Startup path
+  validation and result-time append opens retry for up to 5 seconds at 250 ms
+  intervals.
+- Added a 30-second retry cooldown after a full retry window is exhausted.
+  Later recovered results still make one immediate open attempt, but persistent
+  failures cannot impose another 5-second stall or duplicate the same error for
+  every result. A timed retry window becomes eligible again after the cooldown.
+- Added explicit recovery messages when the outfile becomes available and
+  result writing resumes.
+
+### Performance
+
+- Successful outfile opens retain the original single-open fast path. They do
+  not sleep, read a timer, or enter retry bookkeeping, so normal cracking and
+  outfile performance are unchanged. Delays occur only after an actual outfile
+  access failure.
+
+### Verified
+
+- Completed a clean Windows MSYS2/MinGW64 production build and confirmed
+  `hashcat.exe --version` reports `v7.1.2-shooter.20260812.7`.
+- A startup `Permission denied` caused by a read-only outfile recovered after
+  9 retries when the file became writable; the attack cracked and the expected
+  result was written.
+- A result-time `Permission denied` caused by an exclusive Windows file lock
+  recovered after 11 retries when the handle was released; the attack cracked
+  and the expected result was written.
+- A persistent exclusive lock during a three-hash test produced exactly one
+  5-second retry window and one final error. Later results used immediate
+  attempts instead of adding two more 5-second delays.
+- An unlocked warm-cache control run cracked normally, wrote the expected
+  result, and emitted zero outfile retry messages.
+
 ## v7.1.2-shooter.20260812.6
 
 RTX 4090 persisted-autotune cache validation correctness.

@@ -70,6 +70,9 @@ generated when make starts):
 The RTX 4090 autotune-cache validation fix reports:
     v7.1.2-shooter.20260812.6
 
+The transient Windows outfile-access retry build reports:
+    v7.1.2-shooter.20260812.7
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:
@@ -149,6 +152,16 @@ report "No CUDA platform found".
 
 - Exit code -1073741819:
     That is a crash (access violation), not a normal exit.
+
+- "Permission denied" for the `-o` file:
+    This build retries transient Windows access and sharing failures every
+    250 ms for up to 5 seconds. If the file stays unavailable, later results
+    still make one immediate write attempt without repeatedly stalling the
+    cracking threads; another timed retry window is allowed after 30 seconds.
+    Close the program holding the file or correct its permissions if the final
+    error remains. If `--potfile-disable` is in use, do not ignore that final
+    error: results recovered while the file remains unavailable cannot be
+    appended to `-o`.
 
 - Build says nothing rebuilt / exe timestamp doesn't change:
     make detected no changed source files, so there was nothing to do.
