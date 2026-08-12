@@ -193,7 +193,7 @@ int build_plain (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, pl
   }
   else
   {
-    if ((user_options->attack_mode == ATTACK_MODE_STRAIGHT) || (user_options->attack_mode == ATTACK_MODE_GENERIC) || (user_options->attack_mode == ATTACK_MODE_ASSOCIATION))
+    if ((user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT) || (user_options_extra->whole_candidate_rules == true))
     {
       pw_t pw;
 
@@ -234,7 +234,7 @@ int build_plain (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, pl
         plain_len = apply_rules (straight_ctx->kernel_rules_buf[off].cmds, plain_buf, pw.pw_len);
       }
     }
-    else if ((user_options->attack_mode == ATTACK_MODE_COMBI) || (user_options->attack_mode == ATTACK_MODE_COMBI3) || (user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
+    else if (user_options->attack_mode == ATTACK_MODE_COMBI)
     {
       pw_t pw;
 

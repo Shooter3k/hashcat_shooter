@@ -4003,8 +4003,7 @@ int run_copy (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, const
     {
       if (hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL)
       {
-        if ((user_options->attack_mode == ATTACK_MODE_COMBI)
-         || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6)))
+        if (user_options->attack_mode == ATTACK_MODE_COMBI)
         {
           if (combinator_ctx->combs_mode == COMBINATOR_MODE_BASE_RIGHT)
           {
@@ -4100,8 +4099,7 @@ int run_copy (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, const
       }
       else
       {
-        if ((user_options->attack_mode == ATTACK_MODE_COMBI)
-         || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6)))
+        if (user_options->attack_mode == ATTACK_MODE_COMBI)
         {
           if (device_param->is_cuda == true)
           {
@@ -4473,8 +4471,7 @@ static int amp_prepare (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_pa
     {
       if (hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL)
       {
-        if ((user_options->attack_mode == ATTACK_MODE_COMBI)
-         || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6)))
+        if (user_options->attack_mode == ATTACK_MODE_COMBI)
         {
           u64 i = 0;
           u64 r = 0;
@@ -4576,7 +4573,6 @@ static int amp_prepare (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_pa
       else
       {
         if ((user_options->attack_mode == ATTACK_MODE_COMBI)
-         || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
          || (user_options->attack_mode == ATTACK_MODE_HYBRID2))
         {
           u64 i = 0;
@@ -4724,9 +4720,9 @@ static int run_cracker_salt_major (hashcat_ctx_t *hashcat_ctx, hc_device_param_t
     }
     else
     {
-      if ((user_options->attack_mode == ATTACK_MODE_COMBI)
-       || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
-       || (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (user_options->attack_mode == ATTACK_MODE_HYBRID2)))
+      if ((user_options_extra->attack_kern == ATTACK_KERN_COMBI)
+       && ((user_options->attack_mode == ATTACK_MODE_COMBI)
+        || (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (user_options->attack_mode == ATTACK_MODE_HYBRID2))))
       {
         // Back to the first amplifier word for this pass. It says where to start rather than leaving
         // it to wherever the last chunk stopped, which is the same thing the rewind did and is now
@@ -5001,9 +4997,9 @@ static int run_cracker_amp_major (hashcat_ctx_t *hashcat_ctx, hc_device_param_t 
   // Back to the first amplifier word, once for this batch rather than once per salt. Every salt reads
   // the same amplifier, so it is read once here and the chunk is shared.
 
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI)
-   || ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
-   || (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (user_options->attack_mode == ATTACK_MODE_HYBRID2)))
+  if ((user_options_extra->attack_kern == ATTACK_KERN_COMBI)
+   && ((user_options->attack_mode == ATTACK_MODE_COMBI)
+    || (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (user_options->attack_mode == ATTACK_MODE_HYBRID2))))
   {
     if (generic_thread_seek (hashcat_ctx, GENERIC_ROLE_AMP, device_param->device_id, 0) != 0)
     {
@@ -11664,8 +11660,9 @@ static int backend_session_setup_opencl_kernel_shared (hashcat_ctx_t *hashcat_ct
 
 static int backend_session_setup_cuda_kernel_types (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, int kern_type)
 {
-  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
-  const user_options_t *user_options = hashcat_ctx->user_options;
+  const hashconfig_t         *hashconfig         = hashcat_ctx->hashconfig;
+  const user_options_t       *user_options       = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
   char kernel_name[64] = { 0 };
 
@@ -11855,7 +11852,7 @@ static int backend_session_setup_cuda_kernel_types (hashcat_ctx_t *hashcat_ctx, 
     }
     else
     {
-      if (user_options->attack_mode == ATTACK_MODE_BF)
+      if ((user_options->attack_mode == ATTACK_MODE_BF) && (user_options_extra->attack_kern != ATTACK_KERN_STRAIGHT))
       {
         if (hashconfig->opts_type & OPTS_TYPE_TM_KERNEL)
         {
@@ -12221,6 +12218,9 @@ static int backend_session_setup_cuda_kernel_types (hashcat_ctx_t *hashcat_ctx, 
   if (user_options->slow_candidates == true)
   {
   }
+  else if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
+  {
+  }
   else
   {
     if (user_options->attack_mode == ATTACK_MODE_BF)
@@ -12377,8 +12377,9 @@ static int backend_session_setup_cuda_kernel_types (hashcat_ctx_t *hashcat_ctx, 
 
 static int backend_session_setup_hip_kernel_types (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, int kern_type)
 {
-  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
-  const user_options_t *user_options = hashcat_ctx->user_options;
+  const hashconfig_t         *hashconfig         = hashcat_ctx->hashconfig;
+  const user_options_t       *user_options       = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
   char kernel_name[64] = { 0 };
 
@@ -12568,7 +12569,7 @@ static int backend_session_setup_hip_kernel_types (hashcat_ctx_t *hashcat_ctx, h
     }
     else
     {
-      if (user_options->attack_mode == ATTACK_MODE_BF)
+      if ((user_options->attack_mode == ATTACK_MODE_BF) && (user_options_extra->attack_kern != ATTACK_KERN_STRAIGHT))
       {
         if (hashconfig->opts_type & OPTS_TYPE_TM_KERNEL)
         {
@@ -12934,6 +12935,9 @@ static int backend_session_setup_hip_kernel_types (hashcat_ctx_t *hashcat_ctx, h
   if (user_options->slow_candidates == true)
   {
   }
+  else if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
+  {
+  }
   else
   {
     if (user_options->attack_mode == ATTACK_MODE_BF)
@@ -13091,8 +13095,9 @@ static int backend_session_setup_hip_kernel_types (hashcat_ctx_t *hashcat_ctx, h
 #if defined (__APPLE__)
 static int backend_session_setup_metal_kernel_types (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, int kern_type)
 {
-  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
-  const user_options_t *user_options = hashcat_ctx->user_options;
+  const hashconfig_t         *hashconfig         = hashcat_ctx->hashconfig;
+  const user_options_t       *user_options       = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
   char kernel_name[64] = { 0 };
 
@@ -13286,7 +13291,7 @@ static int backend_session_setup_metal_kernel_types (hashcat_ctx_t *hashcat_ctx,
     }
     else
     {
-      if (user_options->attack_mode == ATTACK_MODE_BF)
+      if ((user_options->attack_mode == ATTACK_MODE_BF) && (user_options_extra->attack_kern != ATTACK_KERN_STRAIGHT))
       {
         if (hashconfig->opts_type & OPTS_TYPE_TM_KERNEL)
         {
@@ -13647,6 +13652,9 @@ static int backend_session_setup_metal_kernel_types (hashcat_ctx_t *hashcat_ctx,
   if (user_options->slow_candidates == true)
   {
   }
+  else if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
+  {
+  }
   else
   {
     if (user_options->attack_mode == ATTACK_MODE_BF)
@@ -13771,8 +13779,9 @@ static int backend_session_setup_metal_kernel_types (hashcat_ctx_t *hashcat_ctx,
 
 static int backend_session_setup_opencl_kernel_types (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, int kern_type)
 {
-  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
-  const user_options_t *user_options = hashcat_ctx->user_options;
+  const hashconfig_t         *hashconfig         = hashcat_ctx->hashconfig;
+  const user_options_t       *user_options       = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
   // GPU autotune init
 
@@ -13979,7 +13988,7 @@ static int backend_session_setup_opencl_kernel_types (hashcat_ctx_t *hashcat_ctx
     }
     else
     {
-      if (user_options->attack_mode == ATTACK_MODE_BF)
+      if ((user_options->attack_mode == ATTACK_MODE_BF) && (user_options_extra->attack_kern != ATTACK_KERN_STRAIGHT))
       {
         if (hashconfig->opts_type & OPTS_TYPE_TM_KERNEL)
         {
@@ -14336,6 +14345,9 @@ static int backend_session_setup_opencl_kernel_types (hashcat_ctx_t *hashcat_ctx
   // MP start
 
   if (user_options->slow_candidates == true)
+  {
+  }
+  else if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
   {
   }
   else
@@ -16111,7 +16123,7 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
     }
     else
     {
-      if ((user_options->attack_mode != ATTACK_MODE_STRAIGHT) && (user_options->attack_mode != ATTACK_MODE_GENERIC) && (user_options->attack_mode != ATTACK_MODE_ASSOCIATION))
+      if (user_options_extra->attack_kern != ATTACK_KERN_STRAIGHT)
       {
         /**
          * kernel mp source filename
@@ -17624,9 +17636,7 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
     // this is required because inside the kernels there is this:
     // __local pw_t s_pws[64];
 
-    if ((user_options->attack_mode == ATTACK_MODE_STRAIGHT)
-     || (user_options->attack_mode == ATTACK_MODE_GENERIC)
-     || (user_options->attack_mode == ATTACK_MODE_ASSOCIATION)
+    if ((user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
      || (user_options->slow_candidates == true))
     {
       if (hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL)

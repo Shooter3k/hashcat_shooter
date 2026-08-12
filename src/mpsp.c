@@ -1326,6 +1326,55 @@ static char *mask_ctx_parse_maskfile_find_mask (char *line_buf, const size_t lin
   return mask_buf;
 }
 
+// When a mask-based attack has whole-candidate rules, the complete mask is a host-built base word
+// and the GPU amplifier is reserved for the rule set. Build the full Markov keyspace here without
+// splitting it into the normal left/right device mask kernels.
+
+static int mask_ctx_update_loop_whole_rules (hashcat_ctx_t *hashcat_ctx)
+{
+  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
+  const user_options_t *user_options = hashcat_ctx->user_options;
+  mask_ctx_t           *mask_ctx     = hashcat_ctx->mask_ctx;
+
+  mask_ctx->mask = mask_ctx->masks[mask_ctx->masks_pos];
+
+  if (mask_ctx_parse_maskfile (hashcat_ctx) == -1) return -1;
+
+  if (mp_gen_css (hashcat_ctx, mask_ctx->mask, strlen (mask_ctx->mask), mask_ctx->mp_sys, mask_ctx->mp_usr, mask_ctx->css_buf, &mask_ctx->css_cnt) == -1) return -1;
+
+  if (user_options->attack_mode == ATTACK_MODE_BF)
+  {
+    if ((mask_ctx->css_cnt < hashconfig->pw_min) || (mask_ctx->css_cnt > hashconfig->pw_max))
+    {
+      event_log_warning (hashcat_ctx, "Skipping mask '%s' because its base length is outside the kernel range.", mask_ctx->mask);
+      event_log_warning (hashcat_ctx, NULL);
+
+      return -1;
+    }
+  }
+
+  u32 **uniq_tbls = (u32 **) hcmalloc (SP_PW_MAX * sizeof (u32 *));
+
+  for (int i = 0; i < SP_PW_MAX; i++) uniq_tbls[i] = (u32 *) hcmalloc (CHARSIZ * sizeof (u32));
+
+  mp_css_to_uniq_tbl (hashcat_ctx, mask_ctx->css_cnt, mask_ctx->css_buf, uniq_tbls);
+
+  sp_tbl_to_css (mask_ctx->root_table_buf, mask_ctx->markov_table_buf, mask_ctx->root_css_buf, mask_ctx->markov_css_buf, user_options->markov_threshold, uniq_tbls);
+
+  for (int i = 0; i < SP_PW_MAX; i++) hcfree (uniq_tbls[i]);
+
+  hcfree (uniq_tbls);
+
+  if (sp_get_sum (0, mask_ctx->css_cnt, mask_ctx->root_css_buf, &mask_ctx->bfs_cnt) == -1)
+  {
+    event_log_error (hashcat_ctx, "Integer overflow detected in keyspace of mask: %s", mask_ctx->mask);
+
+    return -1;
+  }
+
+  return 0;
+}
+
 int mask_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
 {
   combinator_ctx_t     *combinator_ctx     = hashcat_ctx->combinator_ctx;
@@ -1336,6 +1385,14 @@ int mask_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
   status_ctx_t         *status_ctx         = hashcat_ctx->status_ctx;
   user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
   user_options_t       *user_options       = hashcat_ctx->user_options;
+
+  if ((user_options_extra->whole_candidate_rules == true)
+   && ((user_options->attack_mode == ATTACK_MODE_BF)
+    || (user_options->attack_mode == ATTACK_MODE_HYBRID1)
+    || (user_options->attack_mode == ATTACK_MODE_HYBRID2)))
+  {
+    return mask_ctx_update_loop_whole_rules (hashcat_ctx);
+  }
 
   if (user_options_extra->attack_kern == ATTACK_KERN_COMBI)
   {
@@ -1547,10 +1604,6 @@ int mask_ctx_init (hashcat_ctx_t *hashcat_ctx)
 
   if (user_options->attack_mode  == ATTACK_MODE_STRAIGHT)    return 0;
   if (user_options->attack_mode  == ATTACK_MODE_COMBI)       return 0;
-  if (user_options->attack_mode  == ATTACK_MODE_COMBI3)      return 0;
-  if (user_options->attack_mode  == ATTACK_MODE_COMBI4)      return 0;
-  if (user_options->attack_mode  == ATTACK_MODE_COMBI5)      return 0;
-  if (user_options->attack_mode  == ATTACK_MODE_COMBI6)      return 0;
   if (user_options->attack_mode  == ATTACK_MODE_GENERIC)     return 0;
   if (user_options->attack_mode  == ATTACK_MODE_ASSOCIATION) return 0;
 

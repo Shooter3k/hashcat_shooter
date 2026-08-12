@@ -1,5 +1,130 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260812.14 (local source build)
+
+Dynamic multi-file combination through attack mode 1.
+
+### Added
+
+- Attack mode 1 now accepts two or more wordlists and concatenates one word
+  from every file in command-line order. There is no fixed six-file array in
+  the implementation.
+- Three-or-more-file attacks use the pipelined host producer for the first
+  `N - 1` files and the existing GPU combinator amplifier for the final file.
+- Multi-GPU range startup converts the assigned Cartesian offset directly to
+  its mixed-radix wordlist positions. A later GPU no longer replays all base
+  combinations assigned before its range.
+- Whole-candidate `-r` and `-g` rules work with any supported number of mode-1
+  files. `-j` applies to file 1, `-k` applies to files 2 through `N`, and the
+  ordinary rule then applies after concatenation.
+
+### Changed
+
+- Removed private attack modes 11, 12, 13, and 14. Their fixed three- through
+  six-file layouts are now written as `-a 1` with the same wordlists, and mode
+  1 also permits more files.
+- The original two-file, no-whole-rule mode-1 path remains unchanged and keeps
+  the native optimized combinator behavior.
+- Status reports every multi-file input as `Guess.File.#NN`; help and usage no
+  longer list modes 11-14.
+- Updated the README, Windows compilation notes, change summary, combination
+  guide, and whole-candidate-rule guide for the new syntax and accounting.
+
+### Compatibility
+
+- Three-or-more-file mode 1 is rejected with `-S/--slow-candidates` and brain
+  client operation. The unchanged two-file no-rule path retains its prior
+  compatibility.
+- The implementation detects 64-bit Cartesian-product overflow. Candidate
+  length and Windows command-line length remain practical upper bounds on the
+  number of inputs.
+- Without whole-candidate rules, `--keyspace` and restore positions count the
+  product of files 1 through `N - 1`; `--total-candidates` includes file `N`
+  as the GPU amplifier. With whole-candidate rules, all files form the base and
+  the loaded rules are the amplifier.
+
+### Verified
+
+- Forced a full Windows MSYS2/MinGW64 production rebuild after the structure
+  changes and confirmed `hashcat.exe --version` reports
+  `v7.1.2-shooter.20260812.14`.
+- Confirmed modes 11-14 are absent from help and each is rejected as an invalid
+  attack mode.
+- Verified exact `--stdout` Cartesian ordering with two, three, and eight
+  wordlists; repeated the three- and eight-file tests with a `$!`
+  whole-candidate rule.
+- Ran RTX 4090 MD5 known-answer cracks through the unchanged two-file path, the
+  eight-file path, and the eight-file whole-rule path. Every expected plaintext
+  was recovered. Also verified `-j`, `-k`, and final `-r` ordering as
+  `a1b2c2d2!` across four files.
+- Verified `--skip 3 --limit 2` resumes at the correct three-file base work
+  unit and emits only its two final-word amplifications.
+- Requested an interactive checkpoint at 47.19% of a three-file attack,
+  restored the saved session, and verified it resumed from that base position
+  and exhausted at exactly 100% without repeating the prefix.
+- Ran a 1,000,000,000,000-candidate three-file MD5 attack on all twelve RTX
+  4090s. All devices initialized and reported nonzero sustained speed; status
+  listed all three files and the attack exhausted the exact total. The final
+  short-run aggregate was 645.4 GH/s on that test workload.
+
+## v7.1.2-shooter.20260812.13 (local source build)
+
+Whole-candidate rules on existing attacks and visible quit progress.
+
+### Added
+
+- Added optional `-r`/`--rules-file` and `-g`/`--generate-rules` processing to
+  attack modes 1, 3, 6, 7, and 11-14. The rule is applied after the mode has
+  assembled its complete candidate, not to only one component.
+- Attack mode 8 retains its upstream native rule support. Mode 9 also retains
+  its existing native association-rule behavior.
+- Whole-candidate rule runs preserve stacked rule files, generated rules,
+  `--stdout`, keyspace/total-candidate accounting, skip/limit, status,
+  checkpoint, and restore paths supported by the underlying attack.
+- Standard combinator side rules keep their normal order: `-j` and `-k`
+  transform their respective mode-1 inputs before concatenation, and `-r` or
+  `-g` then transforms the completed candidate.
+- Pressing `q` or `Q` now prints progress while shutdown proceeds: candidate
+  dispatch/GPU-kernel drain, GPU-worker completion, session-service shutdown,
+  GPU-resource release, and final restore/session-file finalization.
+
+### Changed
+
+- Removed the unreleased attack-mode-15 implementation. Its use case is now
+  handled directly by `-a 1 ... -r rules`, so existing attack numbering and
+  the optimized no-rule combinator path remain intact.
+- Modes 1, 3, 6, 7, and 11-14 retain their original fast GPU paths whenever no
+  ordinary rule file or generated-rule request is supplied. The new host-side
+  complete-candidate producer is selected only for a whole-candidate rule run.
+- Status identifies the native attack layout and separately reports the rule
+  source as `Whole Candidate`, rather than presenting a synthetic attack mode.
+
+### Compatibility
+
+- `--slow-candidates` and brain-client operation are rejected for the new
+  whole-candidate rule paths. The existing behavior without whole-candidate
+  rules is unchanged.
+- Candidate-length checks occur after the mode's inputs are assembled and
+  before the GPU rule is applied, matching straight-kernel base-word behavior.
+
+### Verified
+
+- Clean-built and versioned the Windows production binary as
+  `v7.1.2-shooter.20260812.13`.
+- Ran RTX 4090 known-answer MD5/rules tests for modes 1, 3, 6, 7, 8, and 11-14.
+  The recovered candidates confirmed that `$!` was applied to the completed
+  candidate in every mode.
+- Repeated known-answer tests without `-r` for the same nine modes, confirming
+  the existing native paths and candidate layouts still work.
+- Verified `--stdout` output for ruled modes 1, 3, 6, 7, 8, and 11-14 byte for
+  byte; the emitted values ranged from `abcd!` for mode 1 through `abcdef!`
+  for mode 14. Confirmed generated-rule accounting with `-g 3` as well.
+- Ran a generated-rule mode-3 workload on all twelve RTX 4090 devices. Every
+  GPU initialized, received work, and reported a nonzero speed until the
+  intentional five-second runtime limit.
+- Confirmed a live long-running GPU session accepts quit and prints each new
+  shutdown-progress stage before its final Started/Stopped/Total Time summary.
+
 ## v7.1.2-shooter.20260812.10 (local source build)
 
 Atomic CUDA startup retry for multi-GPU jobs.

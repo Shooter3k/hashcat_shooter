@@ -30,6 +30,22 @@
 int _dowildcard = -1;
 #endif
 
+// Most attacks with an interactive prompt read their base candidates through the mask or generic
+// feed. A multi-file -a 1 builds candidates in its own host producer, so its wordlist_mode remains
+// NONE even though it needs the same keyboard/status handling.
+
+static bool main_has_terminal_prompt (const hashcat_ctx_t *hashcat_ctx)
+{
+  const user_options_t       *user_options       = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+
+  if (user_options_extra->wordlist_mode == WL_MODE_MASK)    return true;
+  if (user_options_extra->wordlist_mode == WL_MODE_GENERIC) return true;
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI) && (user_options_extra->hc_workc > 2)) return true;
+
+  return false;
+}
+
 static void main_log_clear_line (MAYBE_UNUSED const size_t prev_len, MAYBE_UNUSED FILE *fp)
 {
   const bool is_terminal = (fp == stderr) ? is_stderr_terminal () : is_stdout_terminal ();
@@ -192,8 +208,7 @@ static void main_log_error (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSE
 
 static void main_outerloop_starting (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  const user_options_t       *user_options       = hashcat_ctx->user_options;
-  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
   hashcat_user_t *hashcat_user = hashcat_ctx->hashcat_user;
   status_ctx_t   *status_ctx   = hashcat_ctx->status_ctx;
@@ -215,7 +230,7 @@ static void main_outerloop_starting (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MA
   if (user_options->speed_only   == true) return;
   if (user_options->identify     == true) return;
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     // see thread_keypress() how to access status information
 
@@ -272,7 +287,7 @@ static void main_cracker_starting (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYB
 
   // Tell the user we're about to start
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     if ((show_prompt == true) && (user_options->speed_only == false))
     {
@@ -292,9 +307,8 @@ static void main_cracker_starting (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYB
 
 static void main_cracker_finished (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  const hashes_t             *hashes             = hashcat_ctx->hashes;
-  const user_options_t       *user_options       = hashcat_ctx->user_options;
-  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+  const hashes_t       *hashes       = hashcat_ctx->hashes;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
   if (user_options->backend_info  > 0)    return;
   if (user_options->hash_info     > 0)    return;
@@ -302,7 +316,7 @@ static void main_cracker_finished (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYB
   if (user_options->keyspace     == true) return;
   if (user_options->stdout_flag == true)
   {
-    if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+    if (main_has_terminal_prompt (hashcat_ctx) == true)
     {
       if (user_options->speed_only == false) clear_prompt (hashcat_ctx);
     }
@@ -312,7 +326,7 @@ static void main_cracker_finished (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYB
 
   // if we had a prompt, clear it
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     if ((user_options->speed_only == false) && (user_options->quiet == false))
     {
@@ -376,14 +390,13 @@ static void main_cracker_finished (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYB
 
 static void main_cracker_hash_cracked (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  outfile_ctx_t         *outfile_ctx        = hashcat_ctx->outfile_ctx;
-  status_ctx_t          *status_ctx         = hashcat_ctx->status_ctx;
-  user_options_t        *user_options       = hashcat_ctx->user_options;
-  user_options_extra_t  *user_options_extra = hashcat_ctx->user_options_extra;
+  outfile_ctx_t  *outfile_ctx  = hashcat_ctx->outfile_ctx;
+  status_ctx_t   *status_ctx   = hashcat_ctx->status_ctx;
+  user_options_t *user_options = hashcat_ctx->user_options;
 
   if (outfile_ctx->fp.pfp != NULL) return; // cracked hash was not written to an outfile
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     if (outfile_ctx->filename == NULL) if (user_options->quiet == false) clear_prompt (hashcat_ctx);
   }
@@ -394,7 +407,7 @@ static void main_cracker_hash_cracked (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, 
   if (user_options->color_cracked == true && is_stdout_terminal()) fwrite("\033[0m", 4, 1, stdout);
   fwrite (EOL, strlen (EOL), 1, stdout);
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     if (status_ctx->devices_status != STATUS_CRACKED)
     {
@@ -523,12 +536,13 @@ static void main_potfile_all_cracked (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, M
 
 static void main_outerloop_mainscreen (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  const bitmap_ctx_t   *bitmap_ctx   = hashcat_ctx->bitmap_ctx;
-  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
-  const hashes_t       *hashes       = hashcat_ctx->hashes;
-  const hwmon_ctx_t    *hwmon_ctx    = hashcat_ctx->hwmon_ctx;
-  const straight_ctx_t *straight_ctx = hashcat_ctx->straight_ctx;
-  const user_options_t *user_options = hashcat_ctx->user_options;
+  const bitmap_ctx_t         *bitmap_ctx         = hashcat_ctx->bitmap_ctx;
+  const hashconfig_t         *hashconfig         = hashcat_ctx->hashconfig;
+  const hashes_t             *hashes             = hashcat_ctx->hashes;
+  const hwmon_ctx_t          *hwmon_ctx          = hashcat_ctx->hwmon_ctx;
+  const straight_ctx_t       *straight_ctx       = hashcat_ctx->straight_ctx;
+  const user_options_t       *user_options       = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
   /**
    * In benchmark-mode, inform user which algorithm is checked
@@ -569,7 +583,7 @@ static void main_outerloop_mainscreen (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, 
   event_log_info (hashcat_ctx, "Hashes: %u digests; %u unique digests, %u unique salts", hashes->hashes_cnt_orig, hashes->digests_cnt, hashes->salts_cnt);
   event_log_info (hashcat_ctx, "Bitmaps: %u bits, %u entries, 0x%08x mask, %u bytes, %u/%u rotates", bitmap_ctx->bitmap_bits, bitmap_ctx->bitmap_nums, bitmap_ctx->bitmap_mask, bitmap_ctx->bitmap_size, bitmap_ctx->bitmap_shift1, bitmap_ctx->bitmap_shift2);
 
-  if ((user_options->attack_mode == ATTACK_MODE_STRAIGHT) || (user_options->attack_mode == ATTACK_MODE_GENERIC) || (user_options->attack_mode == ATTACK_MODE_ASSOCIATION))
+  if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
   {
     event_log_info (hashcat_ctx, "Rules: %u", straight_ctx->kernel_rules_cnt);
   }
@@ -760,12 +774,11 @@ static void main_set_kernel_power_final (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx
 
 static void main_monitor_throttle1 (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  const user_options_t       *user_options       = hashcat_ctx->user_options;
-  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
   if (user_options->quiet == true) return;
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     clear_prompt (hashcat_ctx);
   }
@@ -774,7 +787,7 @@ static void main_monitor_throttle1 (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAY
 
   event_log_warning (hashcat_ctx, "Driver temperature threshold met on GPU #%u. Expect reduced performance.", *device_id + 1);
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     send_prompt (hashcat_ctx);
   }
@@ -782,12 +795,11 @@ static void main_monitor_throttle1 (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAY
 
 static void main_monitor_throttle2 (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  const user_options_t       *user_options       = hashcat_ctx->user_options;
-  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
   if (user_options->quiet == true) return;
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     clear_prompt (hashcat_ctx);
   }
@@ -796,7 +808,7 @@ static void main_monitor_throttle2 (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAY
 
   event_log_warning (hashcat_ctx, "Driver temperature threshold met on GPU #%u. Expect reduced performance.", *device_id + 1);
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     send_prompt (hashcat_ctx);
   }
@@ -804,12 +816,11 @@ static void main_monitor_throttle2 (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAY
 
 static void main_monitor_throttle3 (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  const user_options_t       *user_options       = hashcat_ctx->user_options;
-  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
   if (user_options->quiet == true) return;
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     clear_prompt (hashcat_ctx);
   }
@@ -819,7 +830,7 @@ static void main_monitor_throttle3 (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAY
   event_log_warning (hashcat_ctx, "Driver temperature threshold met on GPU #%u. Expect reduced performance.", *device_id + 1);
   event_log_warning (hashcat_ctx, NULL);
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     send_prompt (hashcat_ctx);
   }
@@ -836,7 +847,7 @@ static void main_monitor_performance_hint (MAYBE_UNUSED hashcat_ctx_t *hashcat_c
 
   if (backend_ctx->kernel_power_final > 0) return;
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     clear_prompt (hashcat_ctx);
   }
@@ -885,7 +896,7 @@ static void main_monitor_performance_hint (MAYBE_UNUSED hashcat_ctx_t *hashcat_c
   event_log_advice (hashcat_ctx, "  https://hashcat.net/faq/morework");
   event_log_advice (hashcat_ctx, NULL);
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     send_prompt (hashcat_ctx);
   }
@@ -915,10 +926,9 @@ static void main_monitor_noinput_abort (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx,
 
 static void main_monitor_temp_abort_feeder (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  const user_options_t       *user_options       = hashcat_ctx->user_options;
-  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
-  if (((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC)) && user_options->quiet == false)
+  if ((main_has_terminal_prompt (hashcat_ctx) == true) && (user_options->quiet == false))
   {
     clear_prompt (hashcat_ctx);
   }
@@ -928,11 +938,10 @@ static void main_monitor_temp_abort_feeder (MAYBE_UNUSED hashcat_ctx_t *hashcat_
 
 static void main_monitor_temp_abort (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  const user_options_t       *user_options       = hashcat_ctx->user_options;
-  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
 
-  if (((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC)) && user_options->quiet == false)
+  if ((main_has_terminal_prompt (hashcat_ctx) == true) && (user_options->quiet == false))
   {
     clear_prompt (hashcat_ctx);
   }
@@ -944,12 +953,11 @@ static void main_monitor_temp_abort (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MA
 
 static void main_monitor_runtime_limit (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  const user_options_t       *user_options       = hashcat_ctx->user_options;
-  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
   if (user_options->quiet == true) return;
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     clear_prompt (hashcat_ctx);
   }
@@ -965,7 +973,7 @@ static void main_monitor_status_refresh (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx
 
   if (status_ctx->accessible == false) return;
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     if (user_options->quiet == false)
     {
@@ -978,7 +986,7 @@ static void main_monitor_status_refresh (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx
 
   status_display (hashcat_ctx);
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if (main_has_terminal_prompt (hashcat_ctx) == true)
   {
     if (user_options->quiet == false)
     {

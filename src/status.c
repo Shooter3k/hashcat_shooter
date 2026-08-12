@@ -45,7 +45,7 @@ static const char UNITS[7] = { ' ', 'k', 'M', 'G', 'T', 'P', 'E' };
 static const char *const  ETA_ABSOLUTE_MAX_EXCEEDED = "Next Big Bang"; // in honor of ighashgpu
 static const char *const  ETA_RELATIVE_MAX_EXCEEDED = "> 10 years";
 
-static char *status_get_rules_file (const hashcat_ctx_t *hashcat_ctx)
+char *status_get_rules_file (const hashcat_ctx_t *hashcat_ctx)
 {
   const user_options_t *user_options = hashcat_ctx->user_options;
 
@@ -453,7 +453,9 @@ int status_get_guess_mode (const hashcat_ctx_t *hashcat_ctx)
   // when the base words come from one, because the label describes how a candidate is put together and
   // that has not changed: the mask is still one half of it and the second wordlist is still the other.
 
-  if ((user_options_extra->base_source == BASE_SOURCE_FEED) && (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT))
+  if ((user_options_extra->base_source == BASE_SOURCE_FEED)
+   && (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
+   && (user_options_extra->whole_candidate_rules == false))
   {
     if (has_rule_file == true)
     {
@@ -484,31 +486,13 @@ int status_get_guess_mode (const hashcat_ctx_t *hashcat_ctx)
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {
+    if (hashcat_ctx->combinator_ctx->dicts_cnt > 2) return GUESS_MODE_COMBINATOR_MULTI;
+
     if (has_base_left == true)
     {
       return GUESS_MODE_COMBINATOR_BASE_LEFT;
     }
     return GUESS_MODE_COMBINATOR_BASE_RIGHT;
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
-  {
-    return GUESS_MODE_COMBINATOR3;
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI4)
-  {
-    return GUESS_MODE_COMBINATOR4;
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI5)
-  {
-    return GUESS_MODE_COMBINATOR5;
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI6)
-  {
-    return GUESS_MODE_COMBINATOR6;
   }
 
   if (user_options->attack_mode == ATTACK_MODE_BF)
@@ -635,25 +619,13 @@ char *status_get_guess_base (const hashcat_ctx_t *hashcat_ctx)
   {
     const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
 
+    if (combinator_ctx->dicts_cnt > 2) return strdup (combinator_ctx->dicts[0]);
+
     if (combinator_ctx->combs_mode == COMBINATOR_MODE_BASE_LEFT)
     {
       return strdup (combinator_ctx->dict1);
     }
     return strdup (combinator_ctx->dict2);
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
-  {
-    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
-
-    return strdup (combinator_ctx->dict1);
-  }
-
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
-  {
-    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
-
-    return strdup (combinator_ctx->dict1);
   }
 
   if (user_options->attack_mode == ATTACK_MODE_BF)
@@ -713,16 +685,6 @@ int status_get_guess_base_offset (const hashcat_ctx_t *hashcat_ctx)
   }
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
-  {
-    return 1;
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
-  {
-    return 1;
-  }
-
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
   {
     return 1;
   }
@@ -788,16 +750,6 @@ int status_get_guess_base_count (const hashcat_ctx_t *hashcat_ctx)
     return 1;
   }
 
-  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
-  {
-    return 1;
-  }
-
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
-  {
-    return 1;
-  }
-
   if (user_options->attack_mode == ATTACK_MODE_BF)
   {
     const mask_ctx_t *mask_ctx = hashcat_ctx->mask_ctx;
@@ -854,25 +806,13 @@ char *status_get_guess_mod (const hashcat_ctx_t *hashcat_ctx)
   {
     const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
 
+    if (combinator_ctx->dicts_cnt > 2) return strdup (combinator_ctx->dicts[combinator_ctx->dicts_cnt - 1]);
+
     if (combinator_ctx->combs_mode == COMBINATOR_MODE_BASE_LEFT)
     {
       return strdup (combinator_ctx->dict2);
     }
     return strdup (combinator_ctx->dict1);
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
-  {
-    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
-
-    return strdup (combinator_ctx->dict2);
-  }
-
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
-  {
-    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
-
-    return strdup (combinator_ctx->dict2);
   }
 
   if (user_options->attack_mode == ATTACK_MODE_BF)
@@ -911,63 +851,28 @@ char *status_get_guess_mod (const hashcat_ctx_t *hashcat_ctx)
 
 char *status_get_guess_mod2 (const hashcat_ctx_t *hashcat_ctx)
 {
-  const user_options_t *user_options = hashcat_ctx->user_options;
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
-  {
-    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
-
-    return strdup (combinator_ctx->dict3);
-  }
-
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
-  {
-    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
-
-    return strdup (combinator_ctx->dict3);
-  }
+  (void) hashcat_ctx;
 
   return NULL;
 }
 
 char *status_get_guess_mod3 (const hashcat_ctx_t *hashcat_ctx)
 {
-  const user_options_t *user_options = hashcat_ctx->user_options;
-
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
-  {
-    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
-
-    return strdup (combinator_ctx->dict4);
-  }
+  (void) hashcat_ctx;
 
   return NULL;
 }
 
 char *status_get_guess_mod4 (const hashcat_ctx_t *hashcat_ctx)
 {
-  const user_options_t *user_options = hashcat_ctx->user_options;
-
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
-  {
-    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
-
-    return strdup (combinator_ctx->dict5);
-  }
+  (void) hashcat_ctx;
 
   return NULL;
 }
 
 char *status_get_guess_mod5 (const hashcat_ctx_t *hashcat_ctx)
 {
-  const user_options_t *user_options = hashcat_ctx->user_options;
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI6)
-  {
-    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
-
-    return strdup (combinator_ctx->dict6);
-  }
+  (void) hashcat_ctx;
 
   return NULL;
 }
@@ -984,16 +889,6 @@ int status_get_guess_mod_offset (const hashcat_ctx_t *hashcat_ctx)
   }
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
-  {
-    return 1;
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
-  {
-    return 1;
-  }
-
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
   {
     return 1;
   }
@@ -1041,16 +936,6 @@ int status_get_guess_mod_count (const hashcat_ctx_t *hashcat_ctx)
   }
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
-  {
-    return 1;
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_COMBI3)
-  {
-    return 1;
-  }
-
-  if ((user_options->attack_mode == ATTACK_MODE_COMBI4) || (user_options->attack_mode == ATTACK_MODE_COMBI5) || (user_options->attack_mode == ATTACK_MODE_COMBI6))
   {
     return 1;
   }
@@ -1415,7 +1300,9 @@ time_t status_get_sec_etc (const hashcat_ctx_t *hashcat_ctx)
 
   time_t sec_etc = 0;
 
-  if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+  if ((user_options_extra->wordlist_mode == WL_MODE_MASK)
+   || (user_options_extra->wordlist_mode == WL_MODE_GENERIC)
+   || ((hashcat_ctx->user_options->attack_mode == ATTACK_MODE_COMBI) && (hashcat_ctx->combinator_ctx->dicts_cnt > 2)))
   {
     if (status_ctx->devices_status != STATUS_CRACKED)
     {

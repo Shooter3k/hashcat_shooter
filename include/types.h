@@ -341,10 +341,6 @@ typedef enum attack_mode
   ATTACK_MODE_HYBRID2     = 7,
   ATTACK_MODE_GENERIC     = 8,
   ATTACK_MODE_ASSOCIATION = 9,
-  ATTACK_MODE_COMBI3      = 11,
-  ATTACK_MODE_COMBI4      = 12,
-  ATTACK_MODE_COMBI5      = 13,
-  ATTACK_MODE_COMBI6      = 14,
   ATTACK_MODE_NONE        = 100
 
 } attack_mode_t;
@@ -750,10 +746,7 @@ typedef enum guess_mode
   GUESS_MODE_GENERIC                    = 15,
   GUESS_MODE_GENERIC_RULES_FILE         = 16,
   GUESS_MODE_GENERIC_RULES_GEN          = 17,
-  GUESS_MODE_COMBINATOR3                = 18,
-  GUESS_MODE_COMBINATOR4                = 19,
-  GUESS_MODE_COMBINATOR5                = 20,
-  GUESS_MODE_COMBINATOR6                = 21,
+  GUESS_MODE_COMBINATOR_MULTI           = 18,
 
 } guess_mode_t;
 
@@ -2829,6 +2822,7 @@ typedef struct user_options_extra
   // makes, with the wordlist taken out of the hash file instead of out of a second file.
 
   bool   association_autosplit;
+  bool   whole_candidate_rules;
 
 } user_options_extra_t;
 
@@ -2915,6 +2909,10 @@ typedef struct straight_ctx
 typedef struct combinator_ctx
 {
   bool enabled;
+
+  int    dicts_cnt;
+  char **dicts;
+  u64   *combs_counts;
 
   char *dict1;
   char *dict2;

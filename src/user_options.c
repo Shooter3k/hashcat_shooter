@@ -31,6 +31,25 @@ static const char *const short_options = "hHVvm:a:r:j:k:g:o:t:d:D:n:u:T:c:p:s:l:
 
 static char *const SEPARATOR = ":";
 
+static bool attack_mode_uses_whole_candidate_rules (const u32 attack_mode)
+{
+  if (attack_mode == ATTACK_MODE_COMBI)   return true;
+  if (attack_mode == ATTACK_MODE_BF)      return true;
+  if (attack_mode == ATTACK_MODE_HYBRID1) return true;
+  if (attack_mode == ATTACK_MODE_HYBRID2) return true;
+
+  return false;
+}
+
+static int attack_mode_combi_file_count (const user_options_t *user_options)
+{
+  if (user_options->attack_mode != ATTACK_MODE_COMBI) return 0;
+
+  if ((user_options->keyspace == true) || (user_options->total_candidates == true) || (user_options->stdout_flag == true)) return user_options->hc_argc;
+
+  return user_options->hc_argc - 1;
+}
+
 static const struct option long_options[] =
 {
   {"advice-disable",            no_argument,       NULL, IDX_ADVICE_DISABLE},
@@ -884,10 +903,6 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
      && (user_options->attack_mode != ATTACK_MODE_HYBRID2)
      && (user_options->attack_mode != ATTACK_MODE_GENERIC)
      && (user_options->attack_mode != ATTACK_MODE_ASSOCIATION)
-     && (user_options->attack_mode != ATTACK_MODE_COMBI3)
-     && (user_options->attack_mode != ATTACK_MODE_COMBI4)
-     && (user_options->attack_mode != ATTACK_MODE_COMBI5)
-     && (user_options->attack_mode != ATTACK_MODE_COMBI6)
      && (user_options->attack_mode != ATTACK_MODE_NONE))
     {
       event_log_error (hashcat_ctx, "Invalid attack mode (-a) value specified.");
@@ -895,6 +910,22 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
       return -1;
     }
   }
+
+  if ((attack_mode_combi_file_count (user_options) > 2) && (user_options->slow_candidates == true))
+  {
+    event_log_error (hashcat_ctx, "Multi-file attack mode 1 is not compatible with -S/--slow-candidates.");
+
+    return -1;
+  }
+
+  #ifdef WITH_BRAIN
+  if ((attack_mode_combi_file_count (user_options) > 2) && (user_options->brain_client == true))
+  {
+    event_log_error (hashcat_ctx, "Multi-file attack mode 1 is not compatible with brain-client mode.");
+
+    return -1;
+  }
+  #endif
 
   if (user_options->hccapx_message_pair_chgd == true)
   {
@@ -1142,12 +1173,34 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
 
   if ((user_options->rp_files_cnt > 0) || (user_options->rp_gen > 0))
   {
-    if ((user_options->attack_mode != ATTACK_MODE_STRAIGHT) && (user_options->attack_mode != ATTACK_MODE_GENERIC) && (user_options->attack_mode != ATTACK_MODE_ASSOCIATION))
+    if ((user_options->attack_mode != ATTACK_MODE_STRAIGHT)
+     && (user_options->attack_mode != ATTACK_MODE_COMBI)
+     && (user_options->attack_mode != ATTACK_MODE_BF)
+     && (user_options->attack_mode != ATTACK_MODE_HYBRID1)
+     && (user_options->attack_mode != ATTACK_MODE_HYBRID2)
+     && (user_options->attack_mode != ATTACK_MODE_GENERIC)
+     && (user_options->attack_mode != ATTACK_MODE_ASSOCIATION))
     {
-      event_log_error (hashcat_ctx, "Use of -r/--rules-file and -g/--rules-generate requires attack mode 0, 8 or 9.");
+      event_log_error (hashcat_ctx, "Use of -r/--rules-file and -g/--rules-generate is not supported by attack mode %u.", user_options->attack_mode);
 
       return -1;
     }
+
+    if ((attack_mode_uses_whole_candidate_rules (user_options->attack_mode) == true) && (user_options->slow_candidates == true))
+    {
+      event_log_error (hashcat_ctx, "Whole-candidate rules are not compatible with -S/--slow-candidates.");
+
+      return -1;
+    }
+
+    #ifdef WITH_BRAIN
+    if ((attack_mode_uses_whole_candidate_rules (user_options->attack_mode) == true) && (user_options->brain_client == true))
+    {
+      event_log_error (hashcat_ctx, "Whole-candidate rules are not compatible with brain-client mode.");
+
+      return -1;
+    }
+    #endif
   }
 
   if (user_options->bitmap_min > user_options->bitmap_max)
@@ -1996,14 +2049,7 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
     }
     else if (user_options->attack_mode == ATTACK_MODE_COMBI)
     {
-      if (user_options->hc_argc == 2)
-      {
-        show_error = false;
-      }
-    }
-    else if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
-    {
-      if (user_options->hc_argc == ((int) user_options->attack_mode - 8))
+      if (user_options->hc_argc >= 2)
       {
         show_error = false;
       }
@@ -2056,7 +2102,7 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
     }
     else if (user_options->attack_mode == ATTACK_MODE_COMBI)
     {
-      if (user_options->hc_argc == 2)
+      if (user_options->hc_argc >= 2)
       {
         show_error = false;
       }
@@ -2129,14 +2175,7 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
     }
     else if (user_options->attack_mode == ATTACK_MODE_COMBI)
     {
-      if (user_options->hc_argc == 3)
-      {
-        show_error = false;
-      }
-    }
-    else if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
-    {
-      if (user_options->hc_argc == ((int) user_options->attack_mode - 7))
+      if (user_options->hc_argc >= 3)
       {
         show_error = false;
       }
@@ -2398,7 +2437,14 @@ void user_options_preprocess (hashcat_ctx_t *hashcat_ctx)
     user_options->outfile_format        = OUTFILE_FMT_PLAIN;
     user_options->quiet                 = true;
 
-    if (user_options->attack_mode == ATTACK_MODE_STRAIGHT)
+    const bool whole_candidate_rules = (((user_options->rp_files_cnt > 0) || (user_options->rp_gen > 0))
+                                      && (attack_mode_uses_whole_candidate_rules (user_options->attack_mode) == true));
+
+    if (whole_candidate_rules == true)
+    {
+      user_options->kernel_loops = KERNEL_RULES;
+    }
+    else if (user_options->attack_mode == ATTACK_MODE_STRAIGHT)
     {
       user_options->kernel_loops = KERNEL_RULES;
     }
@@ -2840,7 +2886,7 @@ void user_options_extra_init_late (hashcat_ctx_t *hashcat_ctx)
 
   if (user_options_extra->base_source != BASE_SOURCE_MASK) return;
 
-  if ((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) return;
+  if ((user_options_extra->whole_candidate_rules == false) && ((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0)) return;
 
   user_options_extra->base_source   = BASE_SOURCE_FEED;
   user_options_extra->wordlist_mode = WL_MODE_GENERIC;
@@ -2858,6 +2904,21 @@ void user_options_extra_init (hashcat_ctx_t *hashcat_ctx)
     user_options_extra->separator = user_options->separator[0];
   }
 
+  // Whole-candidate rules use the straight kernel's rule amplifier after the requested attack has
+  // built its complete candidate. Modes 0, 8 and 9 already have that layout natively.
+
+  const bool has_rules = (user_options->rp_files_cnt > 0) || (user_options->rp_gen > 0);
+
+  user_options_extra->whole_candidate_rules = false;
+
+  if (has_rules == true)
+  {
+    if (attack_mode_uses_whole_candidate_rules (user_options->attack_mode) == true)
+    {
+      user_options_extra->whole_candidate_rules = true;
+    }
+  }
+
   // attack-kern
 
   user_options_extra->attack_kern = ATTACK_KERN_NONE;
@@ -2865,14 +2926,10 @@ void user_options_extra_init (hashcat_ctx_t *hashcat_ctx)
   switch (user_options->attack_mode)
   {
     case ATTACK_MODE_STRAIGHT:      user_options_extra->attack_kern = ATTACK_KERN_STRAIGHT; break;
-    case ATTACK_MODE_COMBI:         user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
-    case ATTACK_MODE_COMBI3:        user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
-    case ATTACK_MODE_COMBI4:        user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
-    case ATTACK_MODE_COMBI5:        user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
-    case ATTACK_MODE_COMBI6:        user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
-    case ATTACK_MODE_BF:            user_options_extra->attack_kern = ATTACK_KERN_BF;       break;
-    case ATTACK_MODE_HYBRID1:       user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
-    case ATTACK_MODE_HYBRID2:       user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
+    case ATTACK_MODE_COMBI:         user_options_extra->attack_kern = (user_options_extra->whole_candidate_rules == true) ? ATTACK_KERN_STRAIGHT : ATTACK_KERN_COMBI; break;
+    case ATTACK_MODE_BF:            user_options_extra->attack_kern = (user_options_extra->whole_candidate_rules == true) ? ATTACK_KERN_STRAIGHT : ATTACK_KERN_BF; break;
+    case ATTACK_MODE_HYBRID1:       user_options_extra->attack_kern = (user_options_extra->whole_candidate_rules == true) ? ATTACK_KERN_STRAIGHT : ATTACK_KERN_COMBI; break;
+    case ATTACK_MODE_HYBRID2:       user_options_extra->attack_kern = (user_options_extra->whole_candidate_rules == true) ? ATTACK_KERN_STRAIGHT : ATTACK_KERN_COMBI; break;
     case ATTACK_MODE_GENERIC:       user_options_extra->attack_kern = ATTACK_KERN_STRAIGHT; break;
     case ATTACK_MODE_ASSOCIATION:   user_options_extra->attack_kern = ATTACK_KERN_STRAIGHT; break;
   }
@@ -3258,105 +3315,36 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
   }
   else if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {
-    // mode easy mode here because both files must exist and readable
-
-    if (user_options_extra->hc_workc == 2)
+    for (int i = 0; i < user_options_extra->hc_workc; i++)
     {
-      char *dictfile1 = user_options_extra->hc_workv[0];
-      char *dictfile2 = user_options_extra->hc_workv[1];
+      char *dictfile = user_options_extra->hc_workv[i];
 
-      if (hc_path_exist (dictfile1) == false)
+      if (hc_path_exist (dictfile) == false)
       {
-        event_log_error (hashcat_ctx, "%s: %s", dictfile1, strerror (errno));
+        event_log_error (hashcat_ctx, "%s: %s", dictfile, strerror (errno));
 
         return -1;
       }
 
-      if (hc_path_is_directory (dictfile1) == true)
+      if (hc_path_is_directory (dictfile) == true)
       {
-        event_log_error (hashcat_ctx, "%s: A directory cannot be used as a wordlist argument.", dictfile1);
+        event_log_error (hashcat_ctx, "%s: A directory cannot be used as a wordlist argument.", dictfile);
 
         return -1;
       }
 
-      if (hc_path_read (dictfile1) == false)
+      if (hc_path_read (dictfile) == false)
       {
-        event_log_error (hashcat_ctx, "%s: %s", dictfile1, strerror (errno));
+        event_log_error (hashcat_ctx, "%s: %s", dictfile, strerror (errno));
 
         return -1;
       }
 
-      if (hc_path_has_bom (dictfile1) == true)
+      if (hc_path_has_bom (dictfile) == true)
       {
-        event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", dictfile1);
+        event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", dictfile);
 
         //return -1;
-      }
-
-      if (hc_path_exist (dictfile2) == false)
-      {
-        event_log_error (hashcat_ctx, "%s: %s", dictfile2, strerror (errno));
-
-        return -1;
-      }
-
-      if (hc_path_is_directory (dictfile2) == true)
-      {
-        event_log_error (hashcat_ctx, "%s: A directory cannot be used as a wordlist argument.", dictfile2);
-
-        return -1;
-      }
-
-      if (hc_path_read (dictfile2) == false)
-      {
-        event_log_error (hashcat_ctx, "%s: %s", dictfile2, strerror (errno));
-
-        return -1;
-      }
-
-      if (hc_path_has_bom (dictfile2) == true)
-      {
-        event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", dictfile2);
-
-        //return -1;
-      }
-    }
-  }
-  else if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
-  {
-    const int dicts_cnt = (int) user_options->attack_mode - 8;
-
-    if (user_options_extra->hc_workc == dicts_cnt)
-    {
-      for (int i = 0; i < dicts_cnt; i++)
-      {
-        char *dictfile = user_options_extra->hc_workv[i];
-
-        if (hc_path_exist (dictfile) == false)
-        {
-          event_log_error (hashcat_ctx, "%s: %s", dictfile, strerror (errno));
-
-          return -1;
-        }
-
-        if (hc_path_is_directory (dictfile) == true)
-        {
-          event_log_error (hashcat_ctx, "%s: A directory cannot be used as a wordlist argument.", dictfile);
-
-          return -1;
-        }
-
-        if (hc_path_read (dictfile) == false)
-        {
-          event_log_error (hashcat_ctx, "%s: %s", dictfile, strerror (errno));
-
-          return -1;
-        }
-
-        if (hc_path_has_bom (dictfile) == true)
-        {
-          event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", dictfile);
-        }
       }
     }
   }
@@ -3685,40 +3673,13 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
   }
   else if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {
-    if (user_options_extra->hc_workc == 2)
+    for (int i = 0; i < user_options_extra->hc_workc; i++)
     {
-      char *dictfile1 = user_options_extra->hc_workv[0];
-      char *dictfile2 = user_options_extra->hc_workv[1];
-
-      if (hc_same_files (outfile_ctx->filename, dictfile1) == true)
+      if (hc_same_files (outfile_ctx->filename, user_options_extra->hc_workv[i]) == true)
       {
         event_log_error (hashcat_ctx, "Outfile and wordlist cannot point to the same file.");
 
         return -1;
-      }
-
-      if (hc_same_files (outfile_ctx->filename, dictfile2) == true)
-      {
-        event_log_error (hashcat_ctx, "Outfile and wordlist cannot point to the same file.");
-
-        return -1;
-      }
-    }
-  }
-  else if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
-  {
-    const int dicts_cnt = (int) user_options->attack_mode - 8;
-
-    if (user_options_extra->hc_workc == dicts_cnt)
-    {
-      for (int i = 0; i < dicts_cnt; i++)
-      {
-        if (hc_same_files (outfile_ctx->filename, user_options_extra->hc_workv[i]) == true)
-        {
-          event_log_error (hashcat_ctx, "Outfile and wordlist cannot point to the same file.");
-
-          return -1;
-        }
       }
     }
   }

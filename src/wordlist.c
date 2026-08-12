@@ -68,25 +68,24 @@ size_t convert_from_hex (hashcat_ctx_t *hashcat_ctx, char *line_buf, const size_
 // rule_len and rule_buf are the side this producer is filling: -j for a base word and -k for an
 // amplifier word.
 
-int pw_transform_init (pw_transform_t *transform, hashcat_ctx_t *hashcat_ctx, const generic_role_t role, const int rule_len, const char *rule_buf)
+static int pw_transform_init_options (pw_transform_t *transform, hashcat_ctx_t *hashcat_ctx, const bool autohex_enable, const bool iconv_enable, const bool rules_enable, const int rule_len, const char *rule_buf)
 {
   const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
   const user_options_t *user_options = hashcat_ctx->user_options;
-  const generic_ctx_t  *generic_ctx  = &hashcat_ctx->generic_ctx[role];
 
   memset (transform, 0, sizeof (pw_transform_t));
 
   transform->pt_uppercase     = (hashconfig->opts_type & OPTS_TYPE_PT_UPPER) ? true : false;
   transform->pt_hex           = (hashconfig->opts_type & OPTS_TYPE_PT_HEX)   ? true : false;
-  transform->wordlist_autohex = generic_ctx->autohex_enable && user_options->wordlist_autohex;
+  transform->wordlist_autohex = autohex_enable && user_options->wordlist_autohex;
 
-  if (generic_ctx->rules_enable == true)
+  if (rules_enable == true)
   {
     transform->rule_len = rule_len;
     transform->rule_buf = rule_buf;
   }
 
-  if (generic_ctx->iconv_enable == false) return 0;
+  if (iconv_enable == false) return 0;
 
   if (strcmp (user_options->encoding_from, user_options->encoding_to) == 0) return 0;
 
@@ -106,6 +105,18 @@ int pw_transform_init (pw_transform_t *transform, hashcat_ctx_t *hashcat_ctx, co
   transform->iconv_enabled = true;
 
   return 0;
+}
+
+int pw_transform_init (pw_transform_t *transform, hashcat_ctx_t *hashcat_ctx, const generic_role_t role, const int rule_len, const char *rule_buf)
+{
+  const generic_ctx_t *generic_ctx = &hashcat_ctx->generic_ctx[role];
+
+  return pw_transform_init_options (transform, hashcat_ctx, generic_ctx->autohex_enable, generic_ctx->iconv_enable, generic_ctx->rules_enable, rule_len, rule_buf);
+}
+
+int pw_transform_init_wordlist (pw_transform_t *transform, hashcat_ctx_t *hashcat_ctx, const int rule_len, const char *rule_buf)
+{
+  return pw_transform_init_options (transform, hashcat_ctx, true, true, true, rule_len, rule_buf);
 }
 
 void pw_transform_term (pw_transform_t *transform)

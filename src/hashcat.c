@@ -556,6 +556,11 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
 
   hc_thread_wait (backend_ctx->backend_devices_cnt, c_threads);
 
+  if (status_ctx->devices_status == STATUS_QUIT)
+  {
+    event_log_info (hashcat_ctx, "All GPU workers stopped. Saving final status and shutting down session services...");
+  }
+
   hcfree (c_threads);
 
   hcfree (threads_param);
@@ -1334,6 +1339,11 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
     hc_thread_wait (1, &inner_threads[thread_idx]);
   }
 
+  if (status_ctx->devices_status == STATUS_QUIT)
+  {
+    event_log_info (hashcat_ctx, "Session services stopped. Closing output files and releasing GPU resources...");
+  }
+
   hcfree (inner_threads);
 
   EVENT (EVENT_INNERLOOP1_FINISHED);
@@ -1345,6 +1355,11 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
   // finalize backend session
 
   backend_session_destroy (hashcat_ctx);
+
+  if (status_ctx->devices_status == STATUS_QUIT)
+  {
+    event_log_info (hashcat_ctx, "GPU resources released. Finalizing restore and session files...");
+  }
 
   // clean up
 

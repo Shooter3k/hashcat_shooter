@@ -503,8 +503,11 @@ int generic_ctx_base_discard (hashcat_ctx_t *hashcat_ctx, const int device_id, c
 
 static bool generic_amp_is_wordlist (const hashcat_ctx_t *hashcat_ctx)
 {
-  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
-  const user_options_t *user_options = hashcat_ctx->user_options;
+  const hashconfig_t         *hashconfig         = hashcat_ctx->hashconfig;
+  const user_options_t       *user_options       = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+
+  if (user_options_extra->whole_candidate_rules == true) return false;
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI) return true;
 
@@ -570,28 +573,11 @@ int generic_ctx_init (hashcat_ctx_t *hashcat_ctx)
   // Both are created whatever base_source says, because the count is wanted even when the wordlist
   // reader is the one doing the reading.
 
-  if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
-  {
-    const int dicts_cnt = (int) user_options->attack_mode - 8;
-
-    for (int i = 0; i < dicts_cnt; i++)
-    {
-      if (hc_path_is_file (user_options_extra->hc_workv[i]) == false)
-      {
-        event_log_error (hashcat_ctx, "%s: Not a regular file.", user_options_extra->hc_workv[i]);
-
-        return -1;
-      }
-    }
-
-    if (generic_instance_open (hashcat_ctx, GENERIC_ROLE_AMP, dicts_cnt - 1, dicts_cnt) == -1) return -1;
-
-    return 0;
-  }
-
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {
-    for (int i = 0; i < 2; i++)
+    const int dicts_cnt = user_options_extra->hc_workc;
+
+    for (int i = 0; i < dicts_cnt; i++)
     {
       // at this point we know the file actually exists
 
@@ -603,8 +589,15 @@ int generic_ctx_init (hashcat_ctx_t *hashcat_ctx)
       }
     }
 
-    if (generic_instance_open (hashcat_ctx, GENERIC_ROLE_BASE, 0, 1) == -1) return -1;
-    if (generic_instance_open (hashcat_ctx, GENERIC_ROLE_AMP,  1, 2) == -1) return -1;
+    if (user_options_extra->whole_candidate_rules == false)
+    {
+      if (dicts_cnt == 2)
+      {
+        if (generic_instance_open (hashcat_ctx, GENERIC_ROLE_BASE, 0, 1) == -1) return -1;
+      }
+
+      if (generic_instance_open (hashcat_ctx, GENERIC_ROLE_AMP, dicts_cnt - 1, dicts_cnt) == -1) return -1;
+    }
 
     return 0;
   }

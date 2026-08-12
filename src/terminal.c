@@ -430,10 +430,18 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
         break;
 
       case 'q':
+      case 'Q':
 
         event_log_info (hashcat_ctx, NULL);
 
-        myquit (hashcat_ctx);
+        if (myquit (hashcat_ctx) == 0)
+        {
+          event_log_info (hashcat_ctx, "Quit requested. Stopping candidate dispatch and waiting for active GPU kernels to return...");
+        }
+        else
+        {
+          event_log_info (hashcat_ctx, "Quit is already in progress or this session is no longer running.");
+        }
 
         break;
 
@@ -3474,11 +3482,12 @@ static void status_display_bridge_speed (hashcat_ctx_t *hashcat_ctx, const hashc
 
 void status_display (hashcat_ctx_t *hashcat_ctx)
 {
-  const bridge_ctx_t   *bridge_ctx   = hashcat_ctx->bridge_ctx;
-  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
-  const hwmon_ctx_t    *hwmon_ctx    = hashcat_ctx->hwmon_ctx;
-  const pubkey_ctx_t   *pubkey_ctx   = hashcat_ctx->pubkey_ctx;
-  const user_options_t *user_options = hashcat_ctx->user_options;
+  const bridge_ctx_t         *bridge_ctx         = hashcat_ctx->bridge_ctx;
+  const hashconfig_t         *hashconfig         = hashcat_ctx->hashconfig;
+  const hwmon_ctx_t          *hwmon_ctx          = hashcat_ctx->hwmon_ctx;
+  const pubkey_ctx_t         *pubkey_ctx         = hashcat_ctx->pubkey_ctx;
+  const user_options_t       *user_options       = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
   if (user_options->machine_readable == true)
   {
@@ -3683,39 +3692,19 @@ void status_display (hashcat_ctx_t *hashcat_ctx)
 
       break;
 
-    case GUESS_MODE_COMBINATOR3:
+    case GUESS_MODE_COMBINATOR_MULTI:
 
       event_log_info (hashcat_ctx,
-        "Guess.Base.......: File (%s), Left Side",
-        hashcat_status->guess_base);
+        "Guess.Files......: %d wordlists, concatenated in command-line order",
+        hashcat_ctx->combinator_ctx->dicts_cnt);
 
-      event_log_info (hashcat_ctx,
-        "Guess.Base.......: File (%s), Middle",
-        hashcat_status->guess_mod);
-
-      event_log_info (hashcat_ctx,
-        "Guess.Mod........: File (%s), Right Side",
-        hashcat_status->guess_mod2);
-
-      break;
-
-    case GUESS_MODE_COMBINATOR4:
-
-      event_log_info (hashcat_ctx,
-        "Guess.Base.......: File (%s), Left Side",
-        hashcat_status->guess_base);
-
-      event_log_info (hashcat_ctx,
-        "Guess.Base.......: File (%s), Middle Left",
-        hashcat_status->guess_mod);
-
-      event_log_info (hashcat_ctx,
-        "Guess.Base.......: File (%s), Middle Right",
-        hashcat_status->guess_mod2);
-
-      event_log_info (hashcat_ctx,
-        "Guess.Mod........: File (%s), Right Side",
-        hashcat_status->guess_mod3);
+      for (int i = 0; i < hashcat_ctx->combinator_ctx->dicts_cnt; i++)
+      {
+        event_log_info (hashcat_ctx,
+          "Guess.File.#%02d..: %s",
+          i + 1,
+          hashcat_ctx->combinator_ctx->dicts[i]);
+      }
 
       break;
 
@@ -3863,6 +3852,25 @@ void status_display (hashcat_ctx_t *hashcat_ctx)
         "Guess.Mod........: Rules (Generated)");
 
       break;
+  }
+
+  if (user_options_extra->whole_candidate_rules == true)
+  {
+    if (user_options->rp_files_cnt > 0)
+    {
+      char *rules_file = status_get_rules_file (hashcat_ctx);
+
+      event_log_info (hashcat_ctx,
+        "Guess.Rules......: Rules (%s), Whole Candidate",
+        rules_file);
+
+      hcfree (rules_file);
+    }
+    else
+    {
+      event_log_info (hashcat_ctx,
+        "Guess.Rules......: Rules (Generated), Whole Candidate");
+    }
   }
 
   switch (hashcat_status->guess_mode)

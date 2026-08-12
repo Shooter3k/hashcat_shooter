@@ -5,8 +5,9 @@
 and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
-The current published build is
-[`v7.1.2-shooter.20260812.8`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.8).
+The current source build is `v7.1.2-shooter.20260812.14`; the current
+published build is
+[`v7.1.2-shooter.20260812.14`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.14).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -32,8 +33,8 @@ Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 | Blowfish compiled-kernel cache | Removes upstream's forced JIT-cache disable for Blowfish-based modes `3200`, `25600`, `25800`, `28400`, `30600`, `30601`, `33800`, and `35500`, allowing their compiled kernels to be cached and reused. |
 
 The RTX 4090 autotune cache is used by the shared GPU autotune path, not by
-only one attack type. It covers standard GPU cracking attack modes, modes
-11-14, and `--slow-candidates` when the complete cache key matches. It never
+only one attack type. It covers standard GPU cracking attack modes, including
+multi-file mode 1, and `--slow-candidates` when the complete cache key matches. It never
 overrides explicit `-n`, `-u`, or `-T` settings and is disabled for bridges,
 non-cracking `--stdout`, and custom modes 29960, 29970, and 29990. Set
 `HASHCAT_AUTOTUNE_CACHE_DISABLE=1` to bypass it for a run.
@@ -42,27 +43,37 @@ See [docs/startup-optimization.md](docs/startup-optimization.md) and
 [RTX_4090_AUTOTUNE_CACHE.md](RTX_4090_AUTOTUNE_CACHE.md) for the exact guards,
 cache key, validation rules, overrides, and measurements.
 
-### New attack modes
+### Multi-file mode 1 and whole-candidate rules
 
-The Shooter build adds four multi-way combination attacks. Each candidate is
-the concatenation of one entry from every wordlist, in command-line order.
+Attack mode 1 accepts two or more wordlists. Each candidate is one entry from
+every wordlist concatenated in command-line order:
 
-| Attack mode | Candidate layout | Required wordlists |
-| --- | --- | --- |
-| `-a 11` | `word1 + word2 + word3` | 3 |
-| `-a 12` | `word1 + word2 + word3 + word4` | 4 |
-| `-a 13` | `word1 + word2 + word3 + word4 + word5` | 5 |
-| `-a 14` | `word1 + word2 + word3 + word4 + word5 + word6` | 6 |
+```powershell
+hashcat.exe -m 0 -a 1 hashes.txt words1.txt words2.txt words3.txt words4.txt
+```
 
-These modes use the pipelined CPU candidate producer for the first words and
-the existing GPU combinator kernel for the final word. Their keyspace,
-progress, restore, status, potfile, outfile, overflow, and password-length
-accounting were added to the normal hashcat paths.
+The normal two-file mode keeps hashcat's optimized native combinator path. For
+three or more files, the pipelined CPU producer concatenates the first `N - 1`
+entries and the existing GPU combinator kernel supplies the final word. Work
+ranges jump directly to their mixed-radix wordlist positions, so later GPUs do
+not replay the ranges assigned to earlier GPUs. Progress, restore, status,
+potfile, outfile, overflow, and password-length accounting use the normal
+hashcat paths.
 
-Modes 11-14 currently require normal GPU execution. They do not support
-`--slow-candidates`, brain-client operation, or `--stdout`. Full usage and
-examples are in
-[docs/multi-way-combination.md](docs/multi-way-combination.md).
+The former private modes 11-14 were removed; their fixed 3-6-file layouts are
+now expressed with `-a 1` and the corresponding number of files. Full usage
+and examples are in
+[docs/multi-file-combination.md](docs/multi-file-combination.md).
+
+Ordinary `-r` rule files and `-g` generated rules can now be applied to the
+complete candidate produced by modes 1, 3, 6, 7, and 8. For example,
+mode 1 applies the rule to `left + right`, mode 6 applies it to `word + mask`,
+and multi-file mode 1 applies it after all words have been concatenated. Mode 8
+retains its upstream native rule implementation; mode 9 keeps its native
+association-rule support. Without `-r` or `-g`, the original optimized attack
+path is unchanged. See
+[docs/whole-candidate-rules.md](docs/whole-candidate-rules.md) for ordering,
+examples, accounting, restore behavior, and compatibility limits.
 
 ### Interactive runtime controls
 
@@ -123,6 +134,7 @@ share stdin with the interactive menu. Full behavior and limitations are in
 | Transient Windows outfile recovery | When `-o` is temporarily denied or locked, startup validation and result-time append opens retry every 250 ms for up to 5 seconds. After an exhausted window, a 30-second cooldown prevents repeated five-second stalls while later results still get an immediate open attempt. The successful path remains a single open with no retry delay. |
 | Buffered stdout outfile recovery | The same outfile-open helper is used for normal recovered results and buffered `--stdout` output directed through `-o`. |
 | Resumable stdout output | `--stdout -o` checkpoints bind the candidate position to an exact outfile byte boundary and roll back any partial tail before restore. Interactive controls and messages use stderr. |
+| Visible quit progress | Pressing `q` or `Q` reports candidate-dispatch and GPU-kernel drain, GPU-worker completion, session-service shutdown, GPU-resource release, and final restore/session-file finalization instead of leaving the console apparently idle. |
 | Total elapsed time | The final summary now prints `Total Time` calculated from the displayed `Started` and `Stopped` timestamps. |
 | Dated build identity | Production builds report `v7.1.2-shooter.YYYYMMDD.REVISION`, making the binary's source/release generation visible in `hashcat.exe --version`. |
 
@@ -148,7 +160,7 @@ notes for the custom modes are in [CMIYC_GPU.md](CMIYC_GPU.md),
   [how_to_compile.txt](how_to_compile.txt), including the required clean build
   after structure/header changes and Windows runtime troubleshooting.
 - Added focused documentation for startup tuning, the autotune cache,
-  checkpoints, runtime controls, multi-way attacks, and mode 67000.
+  checkpoints, runtime controls, multi-file mode 1, and mode 67000.
 - Added release-by-release change and verification notes in
   [CHANGELOG.md](CHANGELOG.md).
 - Added [CMIYC_SHARDED_LAUNCH.ps1](CMIYC_SHARDED_LAUNCH.ps1) to split a small
@@ -166,8 +178,8 @@ inherited from hashcat rather than added by this branch.
 
 All standard upstream attack modes and hash modes remain available. The
 Shooter performance and reliability changes are implemented in shared paths
-where applicable; modes 11-14 and the private hash modules are additions, not
-replacements for the standard modes.
+where applicable. The private hash modules and multi-file extension to mode 1
+are additions, not replacements for standard modes.
 
 ## Verification on the target system
 
@@ -176,7 +188,8 @@ the intended Windows system with twelve RTX 4090 GPUs. Recorded verification
 includes:
 
 - Known-answer tests for standard attack modes 0, 1, 3, 6, 7, 8, and 9;
-  multi-way modes 11-14; `--slow-candidates`; and custom/compatibility modes.
+  mode 1 with two through eight files; whole-candidate rules; `--slow-candidates`; and
+  custom/compatibility modes.
 - A cold 12-GPU NTLM straight/rules run that saved one shared autotune profile,
   followed by two warm runs that reused it on all twelve devices with no cache
   rejection. The recorded speeds were 479.8, 479.2, and 479.1 GH/s for that

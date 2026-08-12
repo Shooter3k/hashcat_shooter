@@ -28,6 +28,7 @@ char       *status_get_session                        (const hashcat_ctx_t *hash
 const char *status_get_status_string                  (const hashcat_ctx_t *hashcat_ctx);
 int         status_get_status_number                  (const hashcat_ctx_t *hashcat_ctx);
 int         status_get_guess_mode                     (const hashcat_ctx_t *hashcat_ctx);
+char       *status_get_rules_file                     (const hashcat_ctx_t *hashcat_ctx);
 char       *status_get_guess_base                     (const hashcat_ctx_t *hashcat_ctx);
 int         status_get_guess_base_offset              (const hashcat_ctx_t *hashcat_ctx);
 int         status_get_guess_base_count               (const hashcat_ctx_t *hashcat_ctx);

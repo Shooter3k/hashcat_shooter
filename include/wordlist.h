@@ -43,10 +43,11 @@ typedef struct pw_transform
 
 } pw_transform_t;
 
-int  pw_transform_init    (pw_transform_t *transform, hashcat_ctx_t *hashcat_ctx, const generic_role_t role, const int rule_len, const char *rule_buf);
-void pw_transform_term    (pw_transform_t *transform);
-bool pw_transform_shrinks (const pw_transform_t *transform);
-int  pw_transform_apply   (const pw_transform_t *transform, u8 *buf, const int len, const int buf_size);
+int  pw_transform_init          (pw_transform_t *transform, hashcat_ctx_t *hashcat_ctx, const generic_role_t role, const int rule_len, const char *rule_buf);
+int  pw_transform_init_wordlist (pw_transform_t *transform, hashcat_ctx_t *hashcat_ctx, const int rule_len, const char *rule_buf);
+void pw_transform_term          (pw_transform_t *transform);
+bool pw_transform_shrinks       (const pw_transform_t *transform);
+int  pw_transform_apply         (const pw_transform_t *transform, u8 *buf, const int len, const int buf_size);
 
 void pw_pre_add       (hc_device_param_t *device_param, const u8 *pw_buf, const int pw_len, const u8 *base_buf, const int base_len, const int rule_idx);
 void pw_base_add      (pw_batch_t *batch, const u64 pws_max, pw_pre_t *pw_pre);

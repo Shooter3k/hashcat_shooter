@@ -6,11 +6,12 @@
 #include "common.h"
 #include "types.h"
 #include "event.h"
+#include "memory.h"
 #include "shared.h"
 #include "generic.h"
 #include "combinator.h"
 
-// The two dictionary counts of a -a 1, as the two feed instances already counted them. Neither
+// The two dictionary counts of the optimized two-file -a 1 path, as the two feed instances already counted them. Neither
 // dictionary can be chosen as the base until both are counted, which is why generic_ctx_init brings
 // both instances up before this runs and leaves them in the order the dictionaries were typed.
 //
@@ -63,38 +64,50 @@ static int combinator_ctx_init_multi (hashcat_ctx_t *hashcat_ctx, const int dict
   combinator_ctx_t     *combinator_ctx     = hashcat_ctx->combinator_ctx;
   user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
-  char *dictfiles[6] = { 0 };
-  u64   words_cnt[6] = { 0 };
+  combinator_ctx->dicts_cnt    = dicts_cnt;
+  combinator_ctx->dicts        = (char **) hccalloc (dicts_cnt, sizeof (char *));
+  combinator_ctx->combs_counts = (u64 *)   hccalloc (dicts_cnt, sizeof (u64));
+
+  u64 total = 1;
 
   for (int i = 0; i < dicts_cnt; i++)
   {
-    dictfiles[i] = user_options_extra->hc_workv[i];
+    combinator_ctx->dicts[i] = user_options_extra->hc_workv[i];
 
-    if (generic_wordlist_keyspace (hashcat_ctx, dictfiles[i], &words_cnt[i]) == -1) return -1;
+    if (generic_wordlist_keyspace (hashcat_ctx, combinator_ctx->dicts[i], &combinator_ctx->combs_counts[i]) == -1) return -1;
 
-    if (words_cnt[i] == 0)
+    if (combinator_ctx->combs_counts[i] == 0)
     {
-      event_log_error (hashcat_ctx, "%s: empty file.", dictfiles[i]);
+      event_log_error (hashcat_ctx, "%s: empty file.", combinator_ctx->dicts[i]);
 
       return -1;
     }
+
+    if (overflow_check_u64_mul (total, combinator_ctx->combs_counts[i]) == true)
+    {
+      event_log_error (hashcat_ctx, "Integer overflow detected in multi-file combination keyspace.");
+
+      return -1;
+    }
+
+    total *= combinator_ctx->combs_counts[i];
   }
 
-  combinator_ctx->dict1 = dictfiles[0];
-  combinator_ctx->dict2 = dictfiles[1];
-  combinator_ctx->dict3 = dictfiles[2];
-  combinator_ctx->dict4 = (dicts_cnt >= 4) ? dictfiles[3] : NULL;
-  combinator_ctx->dict5 = (dicts_cnt >= 5) ? dictfiles[4] : NULL;
-  combinator_ctx->dict6 = (dicts_cnt >= 6) ? dictfiles[5] : NULL;
+  combinator_ctx->dict1 = combinator_ctx->dicts[0];
+  combinator_ctx->dict2 = combinator_ctx->dicts[1];
+  combinator_ctx->dict3 = (dicts_cnt >= 3) ? combinator_ctx->dicts[2] : NULL;
+  combinator_ctx->dict4 = (dicts_cnt >= 4) ? combinator_ctx->dicts[3] : NULL;
+  combinator_ctx->dict5 = (dicts_cnt >= 5) ? combinator_ctx->dicts[4] : NULL;
+  combinator_ctx->dict6 = (dicts_cnt >= 6) ? combinator_ctx->dicts[5] : NULL;
 
   combinator_ctx->combs_mode = COMBINATOR_MODE_BASE_LEFT;
-  combinator_ctx->combs_cnt  = words_cnt[dicts_cnt - 1];
-  combinator_ctx->combs1_cnt = words_cnt[0];
-  combinator_ctx->combs2_cnt = words_cnt[1];
-  combinator_ctx->combs3_cnt = words_cnt[2];
-  combinator_ctx->combs4_cnt = (dicts_cnt >= 4) ? words_cnt[3] : 0;
-  combinator_ctx->combs5_cnt = (dicts_cnt >= 5) ? words_cnt[4] : 0;
-  combinator_ctx->combs6_cnt = (dicts_cnt >= 6) ? words_cnt[5] : 0;
+  combinator_ctx->combs_cnt  = combinator_ctx->combs_counts[dicts_cnt - 1];
+  combinator_ctx->combs1_cnt = combinator_ctx->combs_counts[0];
+  combinator_ctx->combs2_cnt = combinator_ctx->combs_counts[1];
+  combinator_ctx->combs3_cnt = (dicts_cnt >= 3) ? combinator_ctx->combs_counts[2] : 0;
+  combinator_ctx->combs4_cnt = (dicts_cnt >= 4) ? combinator_ctx->combs_counts[3] : 0;
+  combinator_ctx->combs5_cnt = (dicts_cnt >= 5) ? combinator_ctx->combs_counts[4] : 0;
+  combinator_ctx->combs6_cnt = (dicts_cnt >= 6) ? combinator_ctx->combs_counts[5] : 0;
 
   return 0;
 }
@@ -117,18 +130,16 @@ int combinator_ctx_init (hashcat_ctx_t *hashcat_ctx)
   if (user_options->version      == true) return 0;
 
   if ((user_options->attack_mode != ATTACK_MODE_COMBI)
-   && (user_options->attack_mode != ATTACK_MODE_COMBI3)
-   && (user_options->attack_mode != ATTACK_MODE_COMBI4)
-   && (user_options->attack_mode != ATTACK_MODE_COMBI5)
-   && (user_options->attack_mode != ATTACK_MODE_COMBI6)
    && (user_options->attack_mode != ATTACK_MODE_HYBRID1)
    && (user_options->attack_mode != ATTACK_MODE_HYBRID2)) return 0;
 
   combinator_ctx->enabled = true;
 
-  if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
+  if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {
-    return combinator_ctx_init_multi (hashcat_ctx, (int) user_options->attack_mode - 8);
+    if (combinator_ctx_init_multi (hashcat_ctx, user_options_extra->hc_workc) == -1) return -1;
+
+    if ((user_options_extra->hc_workc > 2) || (user_options_extra->whole_candidate_rules == true)) return 0;
   }
 
   if (user_options->slow_candidates == true)
@@ -258,6 +269,9 @@ void combinator_ctx_destroy (hashcat_ctx_t *hashcat_ctx)
   combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
 
   if (combinator_ctx->enabled == false) return;
+
+  hcfree (combinator_ctx->dicts);
+  hcfree (combinator_ctx->combs_counts);
 
   memset (combinator_ctx, 0, sizeof (combinator_ctx_t));
 }

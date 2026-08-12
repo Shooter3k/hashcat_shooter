@@ -249,6 +249,91 @@ int straight_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
   // A pipe comes here too and is the one whose keyspace is never known, so it leaves below with
   // words_cnt set to GENERIC_KEYSPACE_UNKNOWN and the run has no denominator.
 
+  if (user_options_extra->whole_candidate_rules == true)
+  {
+    u64 base_candidates = 0;
+
+    if (user_options->attack_mode == ATTACK_MODE_COMBI)
+    {
+      base_candidates = 1;
+
+      for (int i = 0; i < combinator_ctx->dicts_cnt; i++)
+      {
+        logfile_sub_string (combinator_ctx->dicts[i]);
+
+        if (overflow_check_u64_mul (base_candidates, combinator_ctx->combs_counts[i]) == true)
+        {
+          event_log_error (hashcat_ctx, "Integer overflow detected in whole-candidate combination keyspace.");
+
+          return -1;
+        }
+
+        base_candidates *= combinator_ctx->combs_counts[i];
+      }
+    }
+    else if (user_options->attack_mode == ATTACK_MODE_BF)
+    {
+      logfile_sub_string (mask_ctx->mask);
+
+      base_candidates = mask_ctx->bfs_cnt;
+    }
+    else if ((user_options->attack_mode == ATTACK_MODE_HYBRID1) || (user_options->attack_mode == ATTACK_MODE_HYBRID2))
+    {
+      const generic_ctx_t *generic_ctx = &hashcat_ctx->generic_ctx[GENERIC_ROLE_BASE];
+
+      logfile_sub_string (mask_ctx->mask);
+
+      if (overflow_check_u64_mul (generic_ctx->keyspace, mask_ctx->bfs_cnt) == true)
+      {
+        event_log_error (hashcat_ctx, "Integer overflow detected in whole-candidate hybrid keyspace.");
+
+        return -1;
+      }
+
+      base_candidates = generic_ctx->keyspace * mask_ctx->bfs_cnt;
+    }
+
+    for (u32 i = 0; i < user_options->rp_files_cnt; i++) logfile_sub_var_string ("rulefile", user_options->rp_files[i]);
+
+    if (overflow_check_u64_mul (base_candidates, straight_ctx->kernel_rules_cnt) == true)
+    {
+      event_log_error (hashcat_ctx, "Integer overflow detected after applying whole-candidate rules.");
+
+      return -1;
+    }
+
+    status_ctx->words_cnt = base_candidates * straight_ctx->kernel_rules_cnt;
+
+    return 0;
+  }
+
+  // Multi-file -a 1 builds its base candidates in fill_multi(), not through a generic base feed.
+  // Finish its full Cartesian count before the feed branch sees the intentionally unopened base
+  // instance. The final wordlist remains the GPU combinator amplifier.
+
+  if ((user_options->attack_mode == ATTACK_MODE_COMBI) && (combinator_ctx->dicts_cnt > 2))
+  {
+    u64 total = 1;
+
+    for (int i = 0; i < combinator_ctx->dicts_cnt; i++)
+    {
+      logfile_sub_string (combinator_ctx->dicts[i]);
+
+      if (overflow_check_u64_mul (total, combinator_ctx->combs_counts[i]) == true)
+      {
+        event_log_error (hashcat_ctx, "Integer overflow detected in multi-file combination keyspace.");
+
+        return -1;
+      }
+
+      total *= combinator_ctx->combs_counts[i];
+    }
+
+    status_ctx->words_cnt = total;
+
+    return 0;
+  }
+
   if (user_options_extra->base_source == BASE_SOURCE_FEED)
   {
     // An attack that is really a queue of attacks reads one dictionary per round, and this is the
@@ -328,16 +413,15 @@ int straight_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
     return 0;
   }
 
-  // What is left below is the two attacks whose base word is not a feed. -a 1 under
-  // --slow-candidates still reads its base with the wordlist reader, and -a 7 under the pure kernel
-  // takes its base words from the mask.
+  // What is left below is the attacks whose base word is not a feed. -a 1 under --slow-candidates
+  // still reads its base with the wordlist reader, and -a 7 under the pure kernel takes its base words
+  // from the mask.
   //
   // -a 0, -a 6, -a 8 and -a 9 have all returned above, and so has -a 7 under the optimized kernel.
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {
-    logfile_sub_string (combinator_ctx->dict1);
-    logfile_sub_string (combinator_ctx->dict2);
+    for (int i = 0; i < combinator_ctx->dicts_cnt; i++) logfile_sub_string (combinator_ctx->dicts[i]);
 
     // Both dictionaries were counted by their own feed instance and the base one sits in the base
     // slot, whichever of the two the combinator picked. There is nothing to re-read per round.
@@ -354,48 +438,6 @@ int straight_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
 
       return 0;
     }
-  }
-  else if ((user_options->attack_mode >= ATTACK_MODE_COMBI3) && (user_options->attack_mode <= ATTACK_MODE_COMBI6))
-  {
-    char *dictfiles[6] =
-    {
-      combinator_ctx->dict1,
-      combinator_ctx->dict2,
-      combinator_ctx->dict3,
-      combinator_ctx->dict4,
-      combinator_ctx->dict5,
-      combinator_ctx->dict6
-    };
-
-    u64 words_cnt[6] =
-    {
-      combinator_ctx->combs1_cnt,
-      combinator_ctx->combs2_cnt,
-      combinator_ctx->combs3_cnt,
-      combinator_ctx->combs4_cnt,
-      combinator_ctx->combs5_cnt,
-      combinator_ctx->combs6_cnt
-    };
-
-    const int dicts_cnt = (int) user_options->attack_mode - 8;
-
-    u64 total = 1;
-
-    for (int i = 0; i < dicts_cnt; i++)
-    {
-      logfile_sub_string (dictfiles[i]);
-
-      if (overflow_check_u64_mul (total, words_cnt[i]) == true)
-      {
-        event_log_error (hashcat_ctx, "Integer overflow detected in multi-way combination keyspace.");
-
-        return -1;
-      }
-
-      total *= words_cnt[i];
-    }
-
-    status_ctx->words_cnt = total;
   }
   else if (user_options->attack_mode == ATTACK_MODE_BF)
   {
@@ -443,7 +485,7 @@ int straight_ctx_init (hashcat_ctx_t *hashcat_ctx)
   if (user_options->show         == true) return 0;
   if (user_options->version      == true) return 0;
 
-  if (user_options->attack_mode  == ATTACK_MODE_BF)      return 0;
+  if ((user_options->attack_mode == ATTACK_MODE_BF) && (user_options_extra->whole_candidate_rules == false)) return 0;
 
   straight_ctx->enabled = true;
 

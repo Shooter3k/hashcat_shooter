@@ -8,6 +8,7 @@
 #include "event.h"
 #include "memory.h"
 #include "backend.h"
+#include "mpsp.h"
 #include "wordlist.h"
 #include "shared.h"
 #include "thread.h"
@@ -663,19 +664,46 @@ static int fill_generic (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_p
 
 typedef struct multi_fill_state
 {
-  HCFILE fps[5];
+  HCFILE *fps;
   int opened;
   int base_cnt;
+  u32 length_policy;
 
-  u64 words_cnt[5];
-  u64 strides[5];
-  u64 words_cur;
+  pw_transform_t *transforms;
+  int transforms_cnt;
 
-  u8  word_buf[5][PW_MAX + 1];
-  int word_len[5];
+  u64 *words_cnt;
+  u64 *strides;
+  u64 position;
+  bool positioned;
+
+  u8  *word_buf;
+  int *word_len;
   char *line_buf;
 
 } multi_fill_state_t;
+
+static int multi_fill_store_line (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, const int i)
+{
+  int line_len = fgetl (&mf->fps[i], mf->line_buf, HCBUFSIZ_LARGE);
+
+  if (line_len == -1) return -1;
+
+  if (i < mf->transforms_cnt)
+  {
+    line_len = pw_transform_apply (&mf->transforms[i], (u8 *) mf->line_buf, line_len, HCBUFSIZ_LARGE);
+  }
+  else
+  {
+    line_len = convert_from_hex (hashcat_ctx, mf->line_buf, line_len);
+  }
+
+  mf->word_len[i] = line_len;
+
+  if ((line_len >= 0) && (line_len <= PW_MAX)) memcpy (mf->word_buf + (i * (PW_MAX + 1)), mf->line_buf, line_len);
+
+  return 0;
+}
 
 static int multi_fill_step (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, const u64 pos)
 {
@@ -683,15 +711,7 @@ static int multi_fill_step (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, 
   {
     if ((pos % mf->strides[i]) != 0) continue;
 
-    int line_len = fgetl (&mf->fps[i], mf->line_buf, HCBUFSIZ_LARGE);
-
-    if (line_len == -1) return -1;
-
-    line_len = convert_from_hex (hashcat_ctx, mf->line_buf, line_len);
-
-    mf->word_len[i] = line_len;
-
-    if (line_len <= PW_MAX) memcpy (mf->word_buf[i], mf->line_buf, line_len);
+    if (multi_fill_store_line (hashcat_ctx, mf, i) == -1) return -1;
 
     for (int j = i + 1; j < mf->base_cnt; j++) hc_rewind (&mf->fps[j]);
   }
@@ -699,46 +719,92 @@ static int multi_fill_step (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, 
   return 0;
 }
 
-static int multi_fill_init (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, const int dicts_cnt)
+// A device may receive a range far into the Cartesian product. Walking every earlier combination
+// would make startup scale with the product and is especially damaging on many GPUs. Position each
+// wordlist directly at its mixed-radix digit instead. Subsequent candidates retain the inexpensive
+// sequential stepping path above.
+
+static int multi_fill_seek_position (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, const u64 pos)
 {
-  combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+  for (int i = 0; i < mf->base_cnt; i++)
+  {
+    const u64 line_idx = (pos / mf->strides[i]) % mf->words_cnt[i];
+
+    hc_rewind (&mf->fps[i]);
+
+    for (u64 line_pos = 0; line_pos <= line_idx; line_pos++)
+    {
+      if (multi_fill_store_line (hashcat_ctx, mf, i) == -1) return -1;
+    }
+  }
+
+  return 0;
+}
+
+static int multi_fill_position (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, const u64 pos)
+{
+  int rc = 0;
+
+  if ((mf->positioned == true) && (pos == mf->position + 1))
+  {
+    rc = multi_fill_step (hashcat_ctx, mf, pos);
+  }
+  else
+  {
+    rc = multi_fill_seek_position (hashcat_ctx, mf, pos);
+  }
+
+  if (rc == -1) return -1;
+
+  mf->position   = pos;
+  mf->positioned = true;
+
+  return 0;
+}
+
+static int multi_fill_init (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, const int base_cnt, const u32 length_policy, const bool transform_wordlists)
+{
+  combinator_ctx_t     *combinator_ctx     = hashcat_ctx->combinator_ctx;
+  user_options_t       *user_options       = hashcat_ctx->user_options;
+  user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
   memset (mf, 0, sizeof (*mf));
 
-  char *dictfiles[6] =
-  {
-    combinator_ctx->dict1,
-    combinator_ctx->dict2,
-    combinator_ctx->dict3,
-    combinator_ctx->dict4,
-    combinator_ctx->dict5,
-    combinator_ctx->dict6
-  };
+  mf->base_cnt      = base_cnt;
+  mf->length_policy = length_policy;
+  mf->fps           = (HCFILE *) hccalloc (base_cnt, sizeof (HCFILE));
+  mf->words_cnt     = (u64 *)    hccalloc (base_cnt, sizeof (u64));
+  mf->strides       = (u64 *)    hccalloc (base_cnt, sizeof (u64));
+  mf->word_buf      = (u8 *)     hccalloc (base_cnt, PW_MAX + 1);
+  mf->word_len      = (int *)    hccalloc (base_cnt, sizeof (int));
 
-  u64 words_cnt[6] =
-  {
-    combinator_ctx->combs1_cnt,
-    combinator_ctx->combs2_cnt,
-    combinator_ctx->combs3_cnt,
-    combinator_ctx->combs4_cnt,
-    combinator_ctx->combs5_cnt,
-    combinator_ctx->combs6_cnt
-  };
-
-  mf->base_cnt = dicts_cnt - 1;
+  if (transform_wordlists == true) mf->transforms = (pw_transform_t *) hccalloc (base_cnt, sizeof (pw_transform_t));
 
   for (int i = 0; i < mf->base_cnt; i++)
   {
-    mf->words_cnt[i] = words_cnt[i];
+    mf->words_cnt[i] = combinator_ctx->combs_counts[i];
 
-    if (hc_fopen (&mf->fps[i], dictfiles[i], "rb") == false)
+    if (hc_fopen (&mf->fps[i], combinator_ctx->dicts[i], "rb") == false)
     {
-      event_log_error (hashcat_ctx, "%s: %s", dictfiles[i], strerror (errno));
+      event_log_error (hashcat_ctx, "%s: %s", combinator_ctx->dicts[i], strerror (errno));
 
       return -1;
     }
 
     mf->opened++;
+  }
+
+  if (transform_wordlists == true)
+  {
+    for (int i = 0; i < mf->base_cnt; i++)
+    {
+      const int   rule_len = (i == 0) ? (int) user_options_extra->rule_len_l : (int) user_options_extra->rule_len_r;
+      const char *rule_buf = (i == 0) ?       user_options->rule_buf_l :       user_options->rule_buf_r;
+
+      if (pw_transform_init_wordlist (&mf->transforms[i], hashcat_ctx, rule_len, rule_buf) == -1) return -1;
+
+      mf->transforms_cnt++;
+    }
   }
 
   for (int i = 0; i < mf->base_cnt; i++) mf->strides[i] = 1;
@@ -754,6 +820,14 @@ static void multi_fill_destroy (multi_fill_state_t *mf)
 {
   for (int i = 0; i < mf->opened; i++) hc_fclose (&mf->fps[i]);
 
+  for (int i = 0; i < mf->transforms_cnt; i++) pw_transform_term (&mf->transforms[i]);
+
+  hcfree (mf->fps);
+  hcfree (mf->transforms);
+  hcfree (mf->words_cnt);
+  hcfree (mf->strides);
+  hcfree (mf->word_buf);
+  hcfree (mf->word_len);
   hcfree (mf->line_buf);
 }
 
@@ -778,23 +852,11 @@ static int fill_multi (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_par
 
     batch->words_off = words_off;
 
-    while (mf->words_cur < words_off)
-    {
-      if (multi_fill_step (hashcat_ctx, mf, mf->words_cur) == -1)
-      {
-        event_log_error (hashcat_ctx, "Unexpected end of multi-way combination wordlist.");
-
-        return -1;
-      }
-
-      mf->words_cur++;
-    }
-
     u64 work_cur = 0;
 
-    for (work_cur = 0; work_cur < work_cnt; work_cur++, mf->words_cur++)
+    for (work_cur = 0; work_cur < work_cnt; work_cur++)
     {
-      if (multi_fill_step (hashcat_ctx, mf, mf->words_cur) == -1)
+      if (multi_fill_position (hashcat_ctx, mf, words_off + work_cur) == -1)
       {
         event_log_error (hashcat_ctx, "Unexpected end of multi-way combination wordlist.");
 
@@ -802,10 +864,24 @@ static int fill_multi (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_par
       }
 
       int combined_len = 0;
+      bool invalid = false;
 
-      for (int i = 0; i < mf->base_cnt; i++) combined_len += mf->word_len[i];
+      for (int i = 0; i < mf->base_cnt; i++)
+      {
+        if (mf->word_len[i] < 0)
+        {
+          invalid = true;
 
-      if (combined_len > (int) hashconfig->pw_max)
+          break;
+        }
+
+        combined_len += mf->word_len[i];
+      }
+
+      const bool too_short = (mf->length_policy == BASE_LENGTH_BOTH) && (combined_len < (int) hashconfig->pw_min);
+      const bool too_long  = (combined_len > (int) hashconfig->pw_max);
+
+      if ((invalid == true) || (too_short == true) || (too_long == true))
       {
         if (fill_reject (hashcat_ctx, false, batch, &words_extra, words_off + work_cur) == -1) return -1;
 
@@ -817,9 +893,178 @@ static int fill_multi (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_par
 
       for (int i = 0; i < mf->base_cnt; i++)
       {
-        memcpy (combined_buf + combined_pos, mf->word_buf[i], mf->word_len[i]);
+        memcpy (combined_buf + combined_pos, mf->word_buf + (i * (PW_MAX + 1)), mf->word_len[i]);
 
         combined_pos += mf->word_len[i];
+      }
+
+      pw_add (batch, device_param->kernel_power, combined_buf, combined_len);
+
+      if (status_ctx->run_thread_level1 == false) break;
+    }
+
+    if (work_cur > 0) batch->words_fin = words_off + work_cur;
+
+    if (status_ctx->run_thread_level1 == false) break;
+  }
+
+  return 0;
+}
+
+typedef struct mask_rule_fill_state
+{
+  u64 words_cur;
+
+} mask_rule_fill_state_t;
+
+static int fill_mask_rules (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, pw_batch_t *batch, void *state)
+{
+  const mask_ctx_t   *mask_ctx   = hashcat_ctx->mask_ctx;
+  const status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  mask_rule_fill_state_t *mr = (mask_rule_fill_state_t *) state;
+
+  u64 words_extra = -1U;
+
+  while (words_extra)
+  {
+    const u64 work_cnt = get_work (hashcat_ctx, device_param, words_extra);
+
+    if (work_cnt == 0) break;
+
+    words_extra = 0;
+
+    const u64 words_off = device_param->words_off;
+
+    batch->words_off = words_off;
+
+    mr->words_cur = words_off;
+
+    u64 work_cur = 0;
+
+    for (work_cur = 0; work_cur < work_cnt; work_cur++, mr->words_cur++)
+    {
+      u8 candidate[PW_MAX + 1] = { 0 };
+
+      sp_exec (mr->words_cur, (char *) candidate, mask_ctx->root_css_buf, mask_ctx->markov_css_buf, 0, mask_ctx->css_cnt);
+
+      pw_add (batch, device_param->kernel_power, candidate, mask_ctx->css_cnt);
+
+      if (status_ctx->run_thread_level1 == false) break;
+    }
+
+    if (work_cur > 0) batch->words_fin = words_off + work_cur;
+
+    if (status_ctx->run_thread_level1 == false) break;
+  }
+
+  return 0;
+}
+
+typedef struct hybrid_rule_fill_state
+{
+  int device_id;
+  bool mask_left;
+
+  u64 words_cur;
+  u64 words_cnt;
+  u64 mask_cnt;
+  u64 word_cached;
+  u64 word_cursor;
+
+  bool word_valid;
+
+  pw_transform_t transform;
+
+  u8 word_buf[PW_MAX + 1];
+  int word_len;
+
+} hybrid_rule_fill_state_t;
+
+static int hybrid_rule_word (hashcat_ctx_t *hashcat_ctx, hybrid_rule_fill_state_t *hr, const u64 word_idx)
+{
+  if ((hr->word_valid == true) && (hr->word_cached == word_idx)) return 0;
+
+  if (hr->word_cursor != word_idx)
+  {
+    if (generic_thread_seek (hashcat_ctx, GENERIC_ROLE_BASE, hr->device_id, word_idx) != 0) return -1;
+
+    hr->word_cursor = word_idx;
+  }
+
+  const int line_len = generic_thread_next (hashcat_ctx, GENERIC_ROLE_BASE, hr->device_id, hr->word_buf, PW_MAX);
+
+  hr->word_cursor = word_idx + 1;
+  hr->word_cached = word_idx;
+  hr->word_valid  = false;
+
+  if ((line_len < 0) || (line_len > PW_MAX)) return 0;
+
+  hr->word_len = pw_transform_apply (&hr->transform, hr->word_buf, line_len, PW_MAX);
+
+  if (hr->word_len < 0) return 0;
+
+  hr->word_valid = true;
+
+  return 0;
+}
+
+static int fill_hybrid_rules (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, pw_batch_t *batch, void *state)
+{
+  const hashconfig_t *hashconfig = hashcat_ctx->hashconfig;
+  const mask_ctx_t   *mask_ctx   = hashcat_ctx->mask_ctx;
+  const status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  hybrid_rule_fill_state_t *hr = (hybrid_rule_fill_state_t *) state;
+
+  u64 words_extra = -1U;
+
+  while (words_extra)
+  {
+    const u64 work_cnt = get_work (hashcat_ctx, device_param, words_extra);
+
+    if (work_cnt == 0) break;
+
+    words_extra = 0;
+
+    const u64 words_off = device_param->words_off;
+
+    batch->words_off = words_off;
+
+    hr->words_cur = words_off;
+
+    u64 work_cur = 0;
+
+    for (work_cur = 0; work_cur < work_cnt; work_cur++, hr->words_cur++)
+    {
+      const u64 word_idx = (hr->mask_left == true) ? (hr->words_cur % hr->words_cnt) : (hr->words_cur / hr->mask_cnt);
+      const u64 mask_idx = (hr->mask_left == true) ? (hr->words_cur / hr->words_cnt) : (hr->words_cur % hr->mask_cnt);
+
+      if (hybrid_rule_word (hashcat_ctx, hr, word_idx) == -1) return -1;
+
+      const int combined_len = hr->word_len + (int) mask_ctx->css_cnt;
+
+      if ((hr->word_valid == false) || (combined_len < (int) hashconfig->pw_min) || (combined_len > (int) hashconfig->pw_max))
+      {
+        if (fill_reject (hashcat_ctx, false, batch, &words_extra, words_off + work_cur) == -1) return -1;
+
+        continue;
+      }
+
+      u8 mask_buf[PW_MAX + 1] = { 0 };
+      u8 combined_buf[PW_MAX + 1] = { 0 };
+
+      sp_exec (mask_idx, (char *) mask_buf, mask_ctx->root_css_buf, mask_ctx->markov_css_buf, 0, mask_ctx->css_cnt);
+
+      if (hr->mask_left == true)
+      {
+        memcpy (combined_buf, mask_buf, mask_ctx->css_cnt);
+        memcpy (combined_buf + mask_ctx->css_cnt, hr->word_buf, hr->word_len);
+      }
+      else
+      {
+        memcpy (combined_buf, hr->word_buf, hr->word_len);
+        memcpy (combined_buf + hr->word_len, mask_buf, mask_ctx->css_cnt);
       }
 
       pw_add (batch, device_param->kernel_power, combined_buf, combined_len);
@@ -1278,16 +1523,82 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
   }
   else
   {
-    // The two producers left. A base word is either generated from a mask, which the device does for
-    // itself, or read from a feed. -a 3 and -a 7 under the pure kernel are the mask, and they are the
-    // whole of what BASE_SOURCE_MASK means, so the test that used to spell that out by attack mode and
-    // kernel type is the one below.
+    // These producers build candidates outside of the generic feed path. A base word is either
+    // generated from a mask, which the device does for itself, or read from one or more wordlists.
+    // -a 3 and -a 7 under the pure kernel are the mask, and they are the whole of what
+    // BASE_SOURCE_MASK means, so the test that used to spell that out by attack mode and kernel type
+    // is the one below.
 
-    if ((attack_mode >= ATTACK_MODE_COMBI3) && (attack_mode <= ATTACK_MODE_COMBI6))
+    if ((user_options_extra->whole_candidate_rules == true) && (attack_mode == ATTACK_MODE_COMBI))
     {
       multi_fill_state_t mf;
 
-      if (multi_fill_init (hashcat_ctx, &mf, (int) attack_mode - 8) == -1)
+      const int dicts_cnt = combinator_ctx->dicts_cnt;
+
+      if (multi_fill_init (hashcat_ctx, &mf, dicts_cnt, BASE_LENGTH_BOTH, true) == -1)
+      {
+        multi_fill_destroy (&mf);
+
+        return -1;
+      }
+
+      pw_pipe_t pipe;
+
+      pw_pipe_start (&pipe, hashcat_ctx, device_param, fill_multi, &mf, false);
+
+      const int rc_final = pipe_run (hashcat_ctx, device_param, &pipe, false, straight_ctx->kernel_rules_cnt);
+
+      multi_fill_destroy (&mf);
+
+      if (rc_final == -1) return -1;
+    }
+    else if ((user_options_extra->whole_candidate_rules == true) && (attack_mode == ATTACK_MODE_BF))
+    {
+      mask_rule_fill_state_t mr;
+
+      memset (&mr, 0, sizeof (mr));
+
+      pw_pipe_t pipe;
+
+      pw_pipe_start (&pipe, hashcat_ctx, device_param, fill_mask_rules, &mr, false);
+
+      const int rc_final = pipe_run (hashcat_ctx, device_param, &pipe, false, straight_ctx->kernel_rules_cnt);
+
+      if (rc_final == -1) return -1;
+    }
+    else if ((user_options_extra->whole_candidate_rules == true)
+          && ((attack_mode == ATTACK_MODE_HYBRID1) || (attack_mode == ATTACK_MODE_HYBRID2)))
+    {
+      const generic_ctx_t *generic_ctx = &hashcat_ctx->generic_ctx[GENERIC_ROLE_BASE];
+
+      hybrid_rule_fill_state_t hr;
+
+      memset (&hr, 0, sizeof (hr));
+
+      hr.device_id   = device_param->device_id;
+      hr.mask_left   = (attack_mode == ATTACK_MODE_HYBRID2);
+      hr.words_cnt   = generic_ctx->keyspace;
+      hr.mask_cnt    = mask_ctx->bfs_cnt;
+      hr.word_cached = -1;
+      hr.word_cursor = -1;
+
+      if (pw_transform_init (&hr.transform, hashcat_ctx, GENERIC_ROLE_BASE, (int) user_options_extra->rule_len_base, user_options_extra->rule_buf_base) == -1) return -1;
+
+      pw_pipe_t pipe;
+
+      pw_pipe_start (&pipe, hashcat_ctx, device_param, fill_hybrid_rules, &hr, false);
+
+      const int rc_final = pipe_run (hashcat_ctx, device_param, &pipe, false, straight_ctx->kernel_rules_cnt);
+
+      pw_transform_term (&hr.transform);
+
+      if (rc_final == -1) return -1;
+    }
+    else if ((attack_mode == ATTACK_MODE_COMBI) && (combinator_ctx->dicts_cnt > 2))
+    {
+      multi_fill_state_t mf;
+
+      if (multi_fill_init (hashcat_ctx, &mf, combinator_ctx->dicts_cnt - 1, BASE_LENGTH_MAX, true) == -1)
       {
         multi_fill_destroy (&mf);
 

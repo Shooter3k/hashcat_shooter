@@ -74,6 +74,10 @@ Setting --brain-client-features on the command line overrules the decision in ei
 - Attack-Mode 9: Compares wordlist lines against unique salts, refusing files it once accepted
 - Attack-Mode 9: A hash file of username, separator and hash is now split by hashcat, with no wordlist
 - Attack-Mode 9: The username in front of the first separator becomes the candidate, and rules apply
+- Attack-Mode 1: Accepts two or more wordlists; modes 11-14 were removed in favor of this dynamic form
+- Attack-Modes 1, 3, 6, and 7: Rules can be applied after the complete candidate is assembled
+- Attack-Mode 8: Retains native rule support; attack-mode 9 retains native association-rule support
+- Terminal: Quit now reports GPU drain, worker, service, resource-release, and finalization progress
 - Mask attacks: --increment and mask files now form one keyspace, so --skip and --limit apply to all
 - Mask attacks: --keyspace now answers for the whole increment or mask file instead of being refused
 
