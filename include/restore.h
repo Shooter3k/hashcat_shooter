@@ -24,13 +24,17 @@
 // failure it would let through is silent.
 
 #define RESTORE_VERSION_MIN 720
-#define RESTORE_VERSION_CUR 720
+#define RESTORE_VERSION_CUR 721
+
+#define RESTORE_DATA_STDOUT_FILE (1U << 0)
 
 int cycle_restore (hashcat_ctx_t *hashcat_ctx);
 
 void unlink_restore (hashcat_ctx_t *hashcat_ctx);
 
 int restore_ctx_init (hashcat_ctx_t *hashcat_ctx, int argc, char **argv);
+
+int restore_stdout_output_init (hashcat_ctx_t *hashcat_ctx);
 
 void restore_ctx_destroy (hashcat_ctx_t *hashcat_ctx);
 

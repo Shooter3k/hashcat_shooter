@@ -5,13 +5,24 @@
 
 #include "common.h"
 #include "types.h"
+#include <stddef.h>
 #include "memory.h"
 #include "event.h"
+#include "locking.h"
+#include "thread.h"
 #include "user_options.h"
 #include "shared.h"
 #include "pidfile.h"
 #include "folder.h"
 #include "restore.h"
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
+#if defined (_WIN)
+#include <io.h>
+#endif
 
 static int init_restore (hashcat_ctx_t *hashcat_ctx)
 {
@@ -56,7 +67,42 @@ static int read_restore (hashcat_ctx_t *hashcat_ctx)
 
   restore_data_t *rd = restore_ctx->rd;
 
-  if (hc_fread (rd, sizeof (restore_data_t), 1, &fp) != 1)
+  int restore_version = 0;
+
+  if (hc_fread (&restore_version, sizeof (restore_version), 1, &fp) != 1)
+  {
+    event_log_error (hashcat_ctx, "Cannot read %s", eff_restore_file);
+
+    hc_fclose (&fp);
+
+    return -1;
+  }
+
+  if ((restore_version < RESTORE_VERSION_MIN) || (restore_version > RESTORE_VERSION_CUR))
+  {
+    event_log_error (hashcat_ctx, "Incompatible restore-file version.");
+
+    hc_fclose (&fp);
+
+    return -1;
+  }
+
+  if (hc_fseek (&fp, 0, SEEK_SET) == -1)
+  {
+    event_log_error (hashcat_ctx, "Cannot seek %s", eff_restore_file);
+
+    hc_fclose (&fp);
+
+    return -1;
+  }
+
+  memset (rd, 0, sizeof (restore_data_t));
+
+  const size_t restore_data_size = (restore_version >= 721)
+                                 ? sizeof (restore_data_t)
+                                 : offsetof (restore_data_t, stdout_output_size);
+
+  if (hc_fread (rd, restore_data_size, 1, &fp) != 1)
   {
     event_log_error (hashcat_ctx, "Cannot read %s", eff_restore_file);
 
@@ -198,7 +244,21 @@ static int write_restore (hashcat_ctx_t *hashcat_ctx)
 
   rd->masks_pos = mask_ctx->masks_pos;
   rd->dicts_pos = straight_ctx->dicts_pos;
-  rd->words_cur = status_ctx->words_cur;
+
+  if (hashcat_ctx->user_options->stdout_flag == true)
+  {
+    rd->words_cur          = restore_ctx->stdout_committed_words;
+    rd->stdout_output_size = restore_ctx->stdout_output_size;
+    rd->stdout_flags       = (restore_ctx->stdout_output_size_valid == true)
+                           ? RESTORE_DATA_STDOUT_FILE
+                           : 0;
+  }
+  else
+  {
+    rd->words_cur          = status_ctx->words_cur;
+    rd->stdout_output_size = 0;
+    rd->stdout_flags       = 0;
+  }
 
   char *new_restore_file = restore_ctx->new_restore_file;
 
@@ -238,6 +298,8 @@ static int write_restore (hashcat_ctx_t *hashcat_ctx)
   rd->masks_pos = 0;
   rd->dicts_pos = 0;
   rd->words_cur = 0;
+  rd->stdout_output_size = 0;
+  rd->stdout_flags = 0;
 
   return 0;
 }
@@ -251,20 +313,74 @@ int cycle_restore (hashcat_ctx_t *hashcat_ctx)
   const mask_ctx_t     *mask_ctx     = hashcat_ctx->mask_ctx;
   const status_ctx_t   *status_ctx   = hashcat_ctx->status_ctx;
   const straight_ctx_t *straight_ctx = hashcat_ctx->straight_ctx;
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  outfile_ctx_t *outfile_ctx = hashcat_ctx->outfile_ctx;
+
+  const bool stdout_session = user_options->stdout_flag;
+
+  if (stdout_session == true) hc_thread_mutex_lock (outfile_ctx->mux_outfile);
+
+  const u64 words_cur = (stdout_session == true)
+                      ? restore_ctx->stdout_committed_words
+                      : status_ctx->words_cur;
 
   // no updates, no need to write
   if ((restore_ctx->masks_pos_prev == mask_ctx->masks_pos)
    && (restore_ctx->dicts_pos_prev == straight_ctx->dicts_pos)
-   && (restore_ctx->words_cur_prev == status_ctx->words_cur)) return 0;
+   && (restore_ctx->words_cur_prev == words_cur))
+  {
+    if (stdout_session == true) hc_thread_mutex_unlock (outfile_ctx->mux_outfile);
+
+    return 0;
+  }
 
   restore_ctx->masks_pos_prev = mask_ctx->masks_pos;
   restore_ctx->dicts_pos_prev = straight_ctx->dicts_pos;
-  restore_ctx->words_cur_prev = status_ctx->words_cur;
+  restore_ctx->words_cur_prev = words_cur;
 
   const char *eff_restore_file = restore_ctx->eff_restore_file;
   const char *new_restore_file = restore_ctx->new_restore_file;
 
-  if (write_restore (hashcat_ctx) == -1) return -1;
+  if ((stdout_session == true)
+   && (restore_ctx->stdout_output_size_valid == true)
+   && (outfile_ctx->filename != NULL))
+  {
+    const int fd = open (outfile_ctx->filename, O_WRONLY | O_BINARY);
+
+    if (fd == -1)
+    {
+      event_log_error (hashcat_ctx, "Cannot synchronize --stdout outfile '%s': %s", outfile_ctx->filename, strerror (errno));
+
+      hc_thread_mutex_unlock (outfile_ctx->mux_outfile);
+
+      return -1;
+    }
+
+    #if defined (_WIN)
+    const int sync_rc = _commit (fd);
+    #else
+    const int sync_rc = fsync (fd);
+    #endif
+
+    close (fd);
+
+    if (sync_rc == -1)
+    {
+      event_log_error (hashcat_ctx, "Cannot synchronize --stdout outfile '%s': %s", outfile_ctx->filename, strerror (errno));
+
+      hc_thread_mutex_unlock (outfile_ctx->mux_outfile);
+
+      return -1;
+    }
+  }
+
+  if (write_restore (hashcat_ctx) == -1)
+  {
+    if (stdout_session == true) hc_thread_mutex_unlock (outfile_ctx->mux_outfile);
+
+    return -1;
+  }
 
   if (hc_path_exist (eff_restore_file) == true)
   {
@@ -278,6 +394,107 @@ int cycle_restore (hashcat_ctx_t *hashcat_ctx)
   {
     event_log_warning (hashcat_ctx, "Rename file '%s' to '%s': %s", new_restore_file, eff_restore_file, strerror (errno));
   }
+
+  if (stdout_session == true) hc_thread_mutex_unlock (outfile_ctx->mux_outfile);
+
+  return 0;
+}
+
+int restore_stdout_output_init (hashcat_ctx_t *hashcat_ctx)
+{
+  outfile_ctx_t  *outfile_ctx  = hashcat_ctx->outfile_ctx;
+  restore_ctx_t  *restore_ctx  = hashcat_ctx->restore_ctx;
+  user_options_t *user_options = hashcat_ctx->user_options;
+
+  if (user_options->stdout_flag == false) return 0;
+
+  restore_ctx->stdout_output_size       = 0;
+  restore_ctx->stdout_output_size_valid = false;
+
+  if ((outfile_ctx->filename == NULL) || (outfile_ctx->is_fifo == true))
+  {
+    if (restore_ctx->enabled == true)
+    {
+      event_log_warning (hashcat_ctx, "Resumable --stdout is enabled, but an exact output rollback requires a regular file supplied with -o/--outfile.");
+      event_log_warning (hashcat_ctx, "A restored pipe or console stream resumes the candidate position only; already-consumed downstream data cannot be retracted.");
+      event_log_warning (hashcat_ctx, NULL);
+    }
+
+    return 0;
+  }
+
+  u64 current_size = 0;
+
+  struct stat st;
+
+  if (stat (outfile_ctx->filename, &st) == 0)
+  {
+    current_size = (u64) st.st_size;
+  }
+  else if (errno != ENOENT)
+  {
+    event_log_error (hashcat_ctx, "Cannot inspect --stdout outfile '%s': %s", outfile_ctx->filename, strerror (errno));
+
+    return -1;
+  }
+
+  if (restore_ctx->restore_execute == true)
+  {
+    restore_data_t *rd = restore_ctx->rd;
+
+    if ((rd->stdout_flags & RESTORE_DATA_STDOUT_FILE) == 0)
+    {
+      event_log_error (hashcat_ctx, "The restore file does not contain an exact --stdout outfile boundary.");
+
+      return -1;
+    }
+
+    if (current_size < rd->stdout_output_size)
+    {
+      event_log_error (hashcat_ctx, "The --stdout outfile '%s' is smaller than its saved restore boundary (%" PRIu64 " < %" PRIu64 ").", outfile_ctx->filename, current_size, rd->stdout_output_size);
+
+      return -1;
+    }
+
+    if (current_size > rd->stdout_output_size)
+    {
+      const int fd = open (outfile_ctx->filename, O_WRONLY | O_BINARY);
+
+      if (fd == -1)
+      {
+        event_log_error (hashcat_ctx, "Cannot open --stdout outfile '%s' for restore: %s", outfile_ctx->filename, strerror (errno));
+
+        return -1;
+      }
+
+      const int rc_truncate = ftruncate (fd, (off_t) rd->stdout_output_size);
+
+      if (rc_truncate == 0)
+      {
+        #if defined (_WIN)
+        _commit (fd);
+        #else
+        fsync (fd);
+        #endif
+      }
+
+      close (fd);
+
+      if (rc_truncate == -1)
+      {
+        event_log_error (hashcat_ctx, "Cannot roll back --stdout outfile '%s' to byte %" PRIu64 ": %s", outfile_ctx->filename, rd->stdout_output_size, strerror (errno));
+
+        return -1;
+      }
+
+      event_log_info (hashcat_ctx, "Restored --stdout outfile '%s' to byte %" PRIu64 ".", outfile_ctx->filename, rd->stdout_output_size);
+    }
+
+    current_size = rd->stdout_output_size;
+  }
+
+  restore_ctx->stdout_output_size       = current_size;
+  restore_ctx->stdout_output_size_valid = true;
 
   return 0;
 }
@@ -318,7 +535,6 @@ int restore_ctx_init (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
   if (user_options->keyspace        == true)  return 0;
   if (user_options->left            == true)  return 0;
   if (user_options->show            == true)  return 0;
-  if (user_options->stdout_flag     == true)  return 0;
   if (user_options->speed_only      == true)  return 0;
   if (user_options->progress_only   == true)  return 0;
   if (user_options->version         == true)  return 0;

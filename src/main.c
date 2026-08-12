@@ -32,7 +32,9 @@ int _dowildcard = -1;
 
 static void main_log_clear_line (MAYBE_UNUSED const size_t prev_len, MAYBE_UNUSED FILE *fp)
 {
-  if (!is_stdout_terminal ()) return;
+  const bool is_terminal = (fp == stderr) ? is_stderr_terminal () : is_stdout_terminal ();
+
+  if (is_terminal == false) return;
 
   #if defined (_WIN)
 
@@ -73,7 +75,7 @@ static void main_log (hashcat_ctx_t *hashcat_ctx, FILE *fp, const int loglevel)
   }
 
   #if defined (_WIN)
-  HANDLE hConsole = GetStdHandle (STD_OUTPUT_HANDLE);
+  HANDLE hConsole = GetStdHandle ((fp == stderr) ? STD_ERROR_HANDLE : STD_OUTPUT_HANDLE);
 
   CONSOLE_SCREEN_BUFFER_INFO con_info;
 
@@ -83,7 +85,9 @@ static void main_log (hashcat_ctx_t *hashcat_ctx, FILE *fp, const int loglevel)
   #endif
 
   // color stuff pre
-  if (is_stdout_terminal ())
+  const bool is_terminal = (fp == stderr) ? is_stderr_terminal () : is_stdout_terminal ();
+
+  if (is_terminal == true)
   {
   #if defined (_WIN)
     switch (loglevel)
@@ -114,7 +118,7 @@ static void main_log (hashcat_ctx_t *hashcat_ctx, FILE *fp, const int loglevel)
   fwrite (msg_buf, msg_len, 1, fp);
 
   // color stuff post
-  if (is_stdout_terminal ())
+  if (is_terminal == true)
   {
   #if defined (_WIN)
     switch (loglevel)
@@ -158,17 +162,27 @@ static void main_log_advice (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUS
 
   if (user_options->advice == false) return;
 
-  main_log (hashcat_ctx, stdout, LOGLEVEL_ADVICE);
+  FILE *fp = ((user_options->stdout_flag == true) || (user_options->restore == true)) ? stderr : stdout;
+
+  main_log (hashcat_ctx, fp, LOGLEVEL_ADVICE);
 }
 
 static void main_log_info (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  main_log (hashcat_ctx, stdout, LOGLEVEL_INFO);
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  FILE *fp = ((user_options->stdout_flag == true) || (user_options->restore == true)) ? stderr : stdout;
+
+  main_log (hashcat_ctx, fp, LOGLEVEL_INFO);
 }
 
 static void main_log_warning (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
-  main_log (hashcat_ctx, stdout, LOGLEVEL_WARNING);
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  FILE *fp = ((user_options->stdout_flag == true) || (user_options->restore == true)) ? stderr : stdout;
+
+  main_log (hashcat_ctx, fp, LOGLEVEL_WARNING);
 }
 
 static void main_log_error (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
@@ -198,7 +212,6 @@ static void main_outerloop_starting (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MA
   if (user_options->hash_info     > 0)    return;
 
   if (user_options->keyspace     == true) return;
-  if (user_options->stdout_flag  == true) return;
   if (user_options->speed_only   == true) return;
   if (user_options->identify     == true) return;
 
@@ -243,7 +256,7 @@ static void main_clear_event_line (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYB
 {
   const user_options_t *user_options = hashcat_ctx->user_options;
 
-  if (user_options->quiet == true) return;
+  if ((user_options->quiet == true) && (user_options->stdout_flag == false)) return;
 
   event_log_info_nn (hashcat_ctx, NULL);
 }
@@ -253,13 +266,15 @@ static void main_cracker_starting (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYB
   const user_options_t       *user_options       = hashcat_ctx->user_options;
   const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
-  if (user_options->quiet == true) return;
+  const bool show_prompt = (user_options->quiet == false) || (user_options->stdout_flag == true);
+
+  if (show_prompt == false) return;
 
   // Tell the user we're about to start
 
   if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
   {
-    if ((user_options->quiet == false) && (user_options->speed_only == false))
+    if ((show_prompt == true) && (user_options->speed_only == false))
     {
       event_log_info_nn (hashcat_ctx, NULL);
 
@@ -285,7 +300,15 @@ static void main_cracker_finished (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYB
   if (user_options->hash_info     > 0)    return;
 
   if (user_options->keyspace     == true) return;
-  if (user_options->stdout_flag  == true) return;
+  if (user_options->stdout_flag == true)
+  {
+    if ((user_options_extra->wordlist_mode == WL_MODE_MASK) || (user_options_extra->wordlist_mode == WL_MODE_GENERIC))
+    {
+      if (user_options->speed_only == false) clear_prompt (hashcat_ctx);
+    }
+
+    return;
+  }
 
   // if we had a prompt, clear it
 

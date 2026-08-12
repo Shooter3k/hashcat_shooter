@@ -22,4 +22,7 @@
 
 int process_stdout (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, const u64 pws_cnt);
 
+void stdout_restore_reset (hashcat_ctx_t *hashcat_ctx, const u64 words_off);
+int  stdout_restore_skip  (hashcat_ctx_t *hashcat_ctx, const u64 words_off, const u64 words_fin);
+
 #endif // HC_STDOUT_H

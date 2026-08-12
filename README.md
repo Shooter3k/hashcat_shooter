@@ -6,7 +6,7 @@ and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
 The current published build is
-[`v7.1.2-shooter.20260812.7`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.7).
+[`v7.1.2-shooter.20260812.8`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.8).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -90,6 +90,30 @@ Skipped GPUs and devices that naturally finish at the end of the keyspace do
 not hold the barrier open. See
 [docs/checkpoint-control.md](docs/checkpoint-control.md).
 
+### Resumable `--stdout` sessions
+
+Mask- and file-driven `--stdout` candidate-generation sessions now use the
+same interactive menu as cracking sessions. `[p]ause`, `[r]esume`,
+`[c]heckpoint`, and `[q]uit` are available, and all menu/status text goes to
+stderr so the candidate stream remains clean.
+
+For exact continuation, direct candidates to a regular file with `-o` and use
+a named session. Each restore point stores the committed candidate position
+and the matching outfile byte boundary. On `--restore`, an uncommitted tail is
+truncated before generation resumes, including on multi-GPU runs:
+
+```powershell
+hashcat.exe --stdout -a 3 "?d?d?d?d?d?d?d?d" `
+  -o M:\candidates.txt --session=stdout-candidates
+
+hashcat.exe --session=stdout-candidates --restore
+```
+
+Direct stdout and pipes can restore the candidate position but cannot retract
+bytes already consumed downstream. Candidate input read from stdin also cannot
+share stdin with the interactive menu. Full behavior and limitations are in
+[docs/stdout-sessions.md](docs/stdout-sessions.md).
+
 ### Reliability and reporting
 
 | Change | What it does |
@@ -97,6 +121,7 @@ not hold the barrier open. See
 | CUDA context retry | If `cuCtxCreate` fails during startup, tears down the partial session and retries up to 10 times with a 2-second delay instead of immediately abandoning the run. |
 | Transient Windows outfile recovery | When `-o` is temporarily denied or locked, startup validation and result-time append opens retry every 250 ms for up to 5 seconds. After an exhausted window, a 30-second cooldown prevents repeated five-second stalls while later results still get an immediate open attempt. The successful path remains a single open with no retry delay. |
 | Buffered stdout outfile recovery | The same outfile-open helper is used for normal recovered results and buffered `--stdout` output directed through `-o`. |
+| Resumable stdout output | `--stdout -o` checkpoints bind the candidate position to an exact outfile byte boundary and roll back any partial tail before restore. Interactive controls and messages use stderr. |
 | Total elapsed time | The final summary now prints `Total Time` calculated from the displayed `Started` and `Stopped` timestamps. |
 | Dated build identity | Production builds report `v7.1.2-shooter.YYYYMMDD.REVISION`, making the binary's source/release generation visible in `hashcat.exe --version`. |
 

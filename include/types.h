@@ -1621,6 +1621,7 @@ typedef struct hc_device_param
   // not from wherever the producer happens to have got to.
 
   u64     words_off_launch;
+  u64     words_fin_launch;
 
   u64     words_done;
 
@@ -2494,6 +2495,13 @@ typedef struct restore_data
   u32  argc;
   char **argv;
 
+  // Version 721 adds an exact byte boundary for resumable --stdout -o
+  // sessions. Keep new on-disk fields after argv so version 720 restore
+  // files retain their original fixed-header size.
+
+  u64  stdout_output_size;
+  u32  stdout_flags;
+
 } restore_data_t;
 
 typedef struct pidfile_data
@@ -2520,6 +2528,15 @@ typedef struct restore_ctx
   u32  masks_pos_prev;
   u64  words_cur_prev;
 
+  // Protected by outfile_ctx->mux_outfile. Candidate batches may finish on
+  // different devices, but --stdout must commit them in keyspace order so a
+  // restore point and an outfile byte boundary describe the same prefix.
+
+  u64  stdout_next_words;
+  u64  stdout_committed_words;
+  u64  stdout_output_size;
+  bool stdout_output_size_valid;
+
 } restore_ctx_t;
 
 typedef struct pidfile_ctx
@@ -2539,6 +2556,8 @@ typedef struct out
 
   char   buf[HCBUFSIZ_SMALL];
   int    len;
+  bool   error;
+  bool   abort;
 
 } out_t;
 

@@ -2289,9 +2289,6 @@ void user_options_preprocess (hashcat_ctx_t *hashcat_ctx)
     user_options->spin_damp           = 0;
     user_options->outfile_check_timer = 0;
     user_options->potfile             = false;
-    user_options->restore_enable      = false;
-    user_options->restore             = false;
-    user_options->restore_timer       = 0;
     user_options->show                = false;
     user_options->status              = false;
     user_options->status_timer        = 0;

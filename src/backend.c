@@ -18909,6 +18909,7 @@ void backend_session_reset (hashcat_ctx_t *hashcat_ctx)
 
     device_param->words_off        = 0;
     device_param->words_off_launch = 0;
+    device_param->words_fin_launch = 0;
     device_param->words_done       = 0;
 
     #if defined (_WIN)

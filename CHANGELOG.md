@@ -1,5 +1,54 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260812.8
+
+Resumable `--stdout` candidate-generation sessions.
+
+### Added
+
+- Enabled normal `.restore` checkpoints for `--stdout` sessions instead of
+  forcibly disabling restore in stdout preprocessing.
+- Added the normal interactive `[p]ause`, `[r]esume`, `[c]heckpoint`, and
+  `[q]uit` menu to mask- and file-driven stdout sessions. Menu and event text
+  are written to stderr so stdout remains a candidate-only stream.
+- Added an exact outfile journal for `--stdout -o`: restore data now records
+  both the committed candidate position and the matching byte boundary.
+  `--restore` truncates any uncommitted tail before reopening the file in
+  append mode.
+- Ordered multi-GPU stdout batch commits by keyspace position. A restore file
+  therefore always describes a contiguous output prefix even when later GPU
+  batches finish first.
+- Added pause/quit checks at buffered output boundaries, making host-side
+  candidate generation responsive without adding a branch to every candidate.
+
+### Compatibility
+
+- Restore format version 721 reads existing version-720 cracking restore
+  files. Exact stdout outfile restoration requires a version-721 restore file.
+- Direct stdout and pipe sessions can resume their candidate position, but
+  downstream bytes cannot be rolled back. Exact no-tail continuation requires
+  a regular `-o/--outfile` file.
+- A session that reads its candidate source from stdin cannot also use stdin
+  for the interactive menu. File wordlists and masks use the menu normally.
+
+### Verified
+
+- Completed a clean Windows MSYS2/MinGW64 production build and confirmed
+  `hashcat.exe --version` reports `v7.1.2-shooter.20260812.8`.
+- Confirmed a 100-candidate mask run through `--stdout -o` wrote exactly 100
+  candidates, wrote no candidate data to process stdout, and removed its
+  restore file after successful exhaustion.
+- Confirmed direct stdout still contains candidates only while warnings and
+  the interactive menu are isolated on stderr.
+- On the target Windows GPU system, confirmed `[p]ause` stopped outfile growth,
+  a restore file was saved while paused, and `[r]esume` restarted generation.
+- Appended an 8-byte uncommitted tail to a checkpointed 11,000,000,000-byte
+  candidate file and confirmed `--restore` removed exactly those 8 bytes,
+  logged the saved boundary, wrote nothing to process stdout, and completed
+  without regenerating the exhausted keyspace.
+- Enabled `[c]heckpoint` during a live stdout session and confirmed it exited
+  at the coordinated multi-GPU boundary with an updated `.restore` file.
+
 ## v7.1.2-shooter.20260812.7
 
 Transient Windows outfile-access recovery.

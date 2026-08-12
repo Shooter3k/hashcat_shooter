@@ -44,6 +44,7 @@
 #include "restore.h"
 #include "selftest.h"
 #include "status.h"
+#include "stdout.h"
 #include "generic.h"
 #include "straight.h"
 #include "tuningdb.h"
@@ -396,6 +397,11 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
     {
       status_ctx->words_progress_restored[i] = progress_restored;
     }
+  }
+
+  if (user_options->stdout_flag == true)
+  {
+    stdout_restore_reset (hashcat_ctx, status_ctx->words_off);
   }
 
   #ifdef WITH_BRAIN
@@ -1242,7 +1248,7 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
     * Outfile remove
     */
 
-  if (user_options->keyspace == false && user_options->stdout_flag == false && user_options->speed_only == false)
+  if (user_options->keyspace == false && user_options->speed_only == false)
   {
     hc_thread_create (inner_threads[inner_threads_cnt], thread_monitor, hashcat_ctx);
 
@@ -1616,6 +1622,8 @@ int hashcat_session_init (hashcat_ctx_t *hashcat_ctx, const char *install_folder
    */
 
   if (user_options_check_files (hashcat_ctx) == -1) return -1;
+
+  if (restore_stdout_output_init (hashcat_ctx) == -1) return -1;
 
   /**
    * Load bridge a bit too early actually, but we need to know the unit count so we can automatically configure virtualization for the user

@@ -73,6 +73,9 @@ The RTX 4090 autotune-cache validation fix reports:
 The transient Windows outfile-access retry build reports:
     v7.1.2-shooter.20260812.7
 
+The resumable --stdout session build reports:
+    v7.1.2-shooter.20260812.8
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:
@@ -98,7 +101,11 @@ first, then build:
 
     $env:MSYSTEM='MINGW64'; & 'M:\msys64\usr\bin\bash.exe' -lc 'cd /m/github/hashcat_shooter && make clean && make PRODUCTION=1 -j 2>&1 | tail -20; echo RC=${PIPESTATUS[0]}'
 
-(make clean deletes the obj/ artifacts so everything recompiles.)
+WARNING: this repository's make clean target removes more than obj/ artifacts.
+It also removes the built executable and runtime files in the source root,
+including *.pid, *.log, *.induct directories, and *.outfiles directories.
+Move any runtime/session data you need to keep out of the source root before
+running it. Normal .restore files are not removed by make clean.
 
 ------------------------------------------------------------------------
  RUNNING WHAT YOU BUILT (quick sanity check)
@@ -130,6 +137,9 @@ limit, measurements, and environment-variable overrides are documented in:
 
 Multi-GPU checkpoint enable, cancel, and restore behavior is documented in:
     M:\github\hashcat_shooter\docs\checkpoint-control.md
+
+Resumable --stdout pause, checkpoint, and restore behavior is documented in:
+    M:\github\hashcat_shooter\docs\stdout-sessions.md
 
 The runtime cache is written beside hashcat.exe as:
     M:\github\hashcat_shooter\hashcat.autotune-cache

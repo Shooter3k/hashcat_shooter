@@ -21,6 +21,7 @@
 #include "generic.h"
 #include "convert.h"
 #include "user_options.h"
+#include "stdout.h"
 
 #ifdef WITH_BRAIN
 #include "brain.h"
@@ -986,6 +987,7 @@ static int pipe_run (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
     // for the one being launched here.
 
     device_param->words_off_launch = words_off;
+    device_param->words_fin_launch = words_fin;
 
     if (slow == true) device_param->pws_base_buf = batch->pws_base;
 
@@ -1031,6 +1033,15 @@ static int pipe_run (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
       #endif
 
       device_param->pws_cnt = 0;
+    }
+    else if (user_options->stdout_flag == true)
+    {
+      if (stdout_restore_skip (hashcat_ctx, words_off, words_fin) == -1)
+      {
+        rc_final = -1;
+
+        break;
+      }
     }
 
     // the launch is complete, so the slot may go back to the producer
@@ -1312,6 +1323,7 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
         // rather than left behind, because what reads it cannot tell the two paths apart.
 
         device_param->words_off_launch = words_off;
+        device_param->words_fin_launch = words_fin;
 
         if (run_copy    (hashcat_ctx, device_param, device_param->pws_cnt) == -1) return -1;
         if (run_cracker (hashcat_ctx, device_param, -1, device_param->pws_cnt) == -1) return -1;

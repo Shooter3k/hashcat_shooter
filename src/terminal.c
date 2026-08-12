@@ -193,36 +193,40 @@ void send_prompt (hashcat_ctx_t *hashcat_ctx)
   const status_ctx_t   *status_ctx   = hashcat_ctx->status_ctx;
   const user_options_t *user_options = hashcat_ctx->user_options;
 
+  FILE *prompt_fp = (user_options->stdout_flag == true) ? stderr : stdout;
+
   if (status_ctx->devices_status == STATUS_PAUSED)
   {
     if (user_options->runtime > 0)
     {
-      fprintf (stdout, "%s", RUNTIME_PROMPT_PAUSED);
+      fprintf (prompt_fp, "%s", RUNTIME_PROMPT_PAUSED);
     }
     else
     {
-      fprintf (stdout, "%s", PROMPT_PAUSED);
+      fprintf (prompt_fp, "%s", PROMPT_PAUSED);
     }
   }
   else
   {
     if (user_options->runtime > 0)
     {
-      fprintf (stdout, "%s", RUNTIME_PROMPT_ACTIVE);
+      fprintf (prompt_fp, "%s", RUNTIME_PROMPT_ACTIVE);
     }
     else
     {
-      fprintf (stdout, "%s", PROMPT_ACTIVE);
+      fprintf (prompt_fp, "%s", PROMPT_ACTIVE);
     }
   }
 
-  fflush (stdout);
+  fflush (prompt_fp);
 }
 
 void clear_prompt (hashcat_ctx_t *hashcat_ctx)
 {
   const status_ctx_t   *status_ctx   = hashcat_ctx->status_ctx;
   const user_options_t *user_options = hashcat_ctx->user_options;
+
+  FILE *prompt_fp = (user_options->stdout_flag == true) ? stderr : stdout;
 
   size_t prompt_sz = 0;
 
@@ -249,16 +253,16 @@ void clear_prompt (hashcat_ctx_t *hashcat_ctx)
     }
   }
 
-  fputc ('\r', stdout);
+  fputc ('\r', prompt_fp);
 
   for (size_t i = 0; i < prompt_sz; i++)
   {
-    fputc (' ', stdout);
+    fputc (' ', prompt_fp);
   }
 
-  fputc ('\r', stdout);
+  fputc ('\r', prompt_fp);
 
-  fflush (stdout);
+  fflush (prompt_fp);
 }
 
 static void keypress (hashcat_ctx_t *hashcat_ctx)
@@ -269,7 +273,7 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
   // this is required, because some of the variables down there are not initialized at that point
   while (status_ctx->devices_status == STATUS_INIT) usleep (100000);
 
-  const bool quiet = user_options->quiet;
+  const bool show_prompt = (user_options->quiet == false) || (user_options->stdout_flag == true);
 
   tty_break ();
 
@@ -302,7 +306,7 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
 
         event_log_info (hashcat_ctx, NULL);
 
-        if (quiet == false) send_prompt (hashcat_ctx);
+        if (show_prompt == true) send_prompt (hashcat_ctx);
 
         break;
 
@@ -316,7 +320,7 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
 
         event_log_info (hashcat_ctx, NULL);
 
-        if (quiet == false) send_prompt (hashcat_ctx);
+        if (show_prompt == true) send_prompt (hashcat_ctx);
 
         break;
 
@@ -349,7 +353,7 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
           event_log_info (hashcat_ctx, NULL);
         }
 
-        if (quiet == false) send_prompt (hashcat_ctx);
+        if (show_prompt == true) send_prompt (hashcat_ctx);
 
         break;
 
@@ -397,7 +401,7 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
           event_log_info (hashcat_ctx, NULL);
         }
 
-        if (quiet == false) send_prompt (hashcat_ctx);
+        if (show_prompt == true) send_prompt (hashcat_ctx);
 
         break;
 
@@ -418,7 +422,7 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
 
         event_log_info (hashcat_ctx, NULL);
 
-        if (quiet == false) send_prompt (hashcat_ctx);
+        if (show_prompt == true) send_prompt (hashcat_ctx);
 
         break;
 
@@ -439,7 +443,7 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
 
         event_log_info (hashcat_ctx, NULL);
 
-        if (quiet == false) send_prompt (hashcat_ctx);
+        if (show_prompt == true) send_prompt (hashcat_ctx);
 
         break;
 
@@ -478,7 +482,7 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
           event_log_info (hashcat_ctx, NULL);
         }
 
-        if (quiet == false) send_prompt (hashcat_ctx);
+        if (show_prompt == true) send_prompt (hashcat_ctx);
 
         break;
 
@@ -511,13 +515,13 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
           event_log_info (hashcat_ctx, NULL);
         }
 
-        if (quiet == false) send_prompt (hashcat_ctx);
+        if (show_prompt == true) send_prompt (hashcat_ctx);
 
         break;
 
       default:
 
-        if (quiet == false) send_prompt (hashcat_ctx);
+        if (show_prompt == true) send_prompt (hashcat_ctx);
 
         break;
     }
@@ -740,6 +744,15 @@ bool is_stdout_terminal (void)
   return _isatty(_fileno (stdout));
   #else
   return isatty (fileno (stdout));
+  #endif
+}
+
+bool is_stderr_terminal (void)
+{
+  #if defined (_WIN)
+  return _isatty(_fileno (stderr));
+  #else
+  return isatty (fileno (stderr));
   #endif
 }
 
