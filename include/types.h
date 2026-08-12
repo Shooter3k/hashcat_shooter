@@ -2149,7 +2149,7 @@ typedef struct backend_ctx
   bool                extra_size_warning;
   bool                mixed_warnings;
   bool                self_test_warnings;
-  bool                cuda_ctx_create_error;  // set when cuCtxCreate fails; triggers auto-retry
+  bool                cuda_startup_error;  // set when a CUDA context cannot be created/selected; triggers a clean-session retry
 
   // generic
 
@@ -2888,8 +2888,11 @@ typedef struct induct_ctx
 typedef struct outcheck_ctx
 {
   bool enabled;
+  bool keep_going;
 
   char *root_directory;
+
+  hc_thread_mutex_t mux_keep_going;
 
 } outcheck_ctx_t;
 

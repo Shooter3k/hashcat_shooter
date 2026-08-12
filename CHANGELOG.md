@@ -1,5 +1,69 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260812.10 (local source build)
+
+Atomic CUDA startup retry for multi-GPU jobs.
+
+### Changed
+
+- Extended the existing CUDA startup recovery to `cuStreamCreate()` and CUDA
+  event-creation failures. Stream and event creation retry in place on the
+  affected context, avoiding the cost and state churn of rebuilding the attack.
+- A failure on any selected CUDA device now rejects the complete startup
+  attempt. Hashcat no longer continues a twelve-GPU command using only the
+  subset whose contexts happened to initialize.
+- Partial resources from a failed context-startup attempt are released before
+  retrying, preventing the next clean attempt from inheriting memory pressure.
+- Increased the delay between attempts from two to five seconds. Context,
+  stream, and event creation each retain ten retries after the initial attempt.
+  Exhaustion prints an explicit message and exits instead of falling through to
+  a partial-GPU run.
+
+### Verified
+
+- Completed a forced full Windows MSYS2/MinGW64 production rebuild and
+  confirmed `hashcat.exe --version` reports
+  `v7.1.2-shooter.20260812.10`.
+- Completed a normal mode-1800 benchmark on all 12 RTX 4090 devices.
+- In a temporary test-only build, injected one context-creation-stage failure,
+  one stream-creation failure, and one event-creation failure. Each retry path
+  recovered, and the mode-1800 benchmark then completed on all 12 devices with
+  exit code 0. The fault-injection hooks were removed before the final build.
+
+## v7.1.2-shooter.20260812.9 (local source build)
+
+Interactive outfile-check keep-going control.
+
+### Added
+
+- Added `[k]eep-going` to the interactive menu whenever outfile-directory
+  checking is active.
+- Pressing `k` stops further `--outfile-check-dir` processing for the current
+  run without deleting, truncating, or modifying anything in that directory.
+- The checker and key handler synchronize at outfile-line boundaries. A line
+  already being processed may finish, but after `k` takes effect no later line
+  can mark another hash as cracked.
+
+### Compatibility
+
+- Hashes processed before `k` remain marked as cracked. The control applies to
+  the current process only; a new run or `--restore` starts with the configured
+  outfile checker enabled again.
+- The key is hidden when outfile checking is disabled, unavailable for the
+  selected mode, or already bypassed.
+
+### Verified
+
+- Completed a forced full Windows MSYS2/MinGW64 production rebuild and
+  confirmed `hashcat.exe --version` reports
+  `v7.1.2-shooter.20260812.9`.
+- On the target 12 x RTX 4090 system, pressed `k`, added a matching MD5 result
+  to the watched directory, waited through multiple one-second check periods,
+  and confirmed the attack remained `Running` with `Recovered: 0/1`.
+- Repeated the same test without pressing `k` and confirmed the unchanged
+  checker found the result after one second and completed as `Cracked` with
+  `Recovered: 1/1`.
+
 ## v7.1.2-shooter.20260812.8
 
 Resumable `--stdout` candidate-generation sessions.

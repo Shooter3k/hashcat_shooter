@@ -20,4 +20,7 @@ HC_API_CALL void *thread_outfile_remove (void *p);
 int  outcheck_ctx_init    (hashcat_ctx_t *hashcat_ctx);
 void outcheck_ctx_destroy (hashcat_ctx_t *hashcat_ctx);
 
+bool outfile_check_keep_going           (hashcat_ctx_t *hashcat_ctx);
+bool outfile_check_keep_going_available (hashcat_ctx_t *hashcat_ctx);
+
 #endif // HC_OUTFILE_CHECK_H

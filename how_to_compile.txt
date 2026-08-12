@@ -76,6 +76,12 @@ The transient Windows outfile-access retry build reports:
 The resumable --stdout session build reports:
     v7.1.2-shooter.20260812.8
 
+The interactive outfile-check keep-going build reports:
+    v7.1.2-shooter.20260812.9
+
+The atomic CUDA context retry and in-place stream/event retry build reports:
+    v7.1.2-shooter.20260812.10
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:

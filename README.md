@@ -118,7 +118,8 @@ share stdin with the interactive menu. Full behavior and limitations are in
 
 | Change | What it does |
 | --- | --- |
-| CUDA context retry | If `cuCtxCreate` fails during startup, tears down the partial session and retries up to 10 times with a 2-second delay instead of immediately abandoning the run. |
+| Interactive outfile-check bypass | When outfile-directory checking is active, the menu shows `[k]eep-going`. Pressing `k` stops checking `--outfile-check-dir` for the rest of the current run without changing anything in that directory. Hashes already processed remain marked; starting or restoring a process begins with checking enabled again. |
+| Atomic CUDA startup retry | If CUDA context creation fails on any selected device, releases the complete partial attempt, waits 5 seconds, and retries the clean session up to 10 times. CUDA stream and event creation retry in place on the affected device with the same interval and limit. A multi-GPU job no longer silently continues on only the devices that initialized successfully. |
 | Transient Windows outfile recovery | When `-o` is temporarily denied or locked, startup validation and result-time append opens retry every 250 ms for up to 5 seconds. After an exhausted window, a 30-second cooldown prevents repeated five-second stalls while later results still get an immediate open attempt. The successful path remains a single open with no retry delay. |
 | Buffered stdout outfile recovery | The same outfile-open helper is used for normal recovered results and buffered `--stdout` output directed through `-o`. |
 | Resumable stdout output | `--stdout -o` checkpoints bind the candidate position to an exact outfile byte boundary and roll back any partial tail before restore. Interactive controls and messages use stderr. |

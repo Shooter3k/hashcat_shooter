@@ -16,6 +16,7 @@
 #include "interface.h"
 #include "hashcat.h"
 #include "timer.h"
+#include "outfile_check.h"
 #include "terminal.h"
 
 static const size_t MAXIMUM_EXAMPLE_HASH_LENGTH = 200;
@@ -27,6 +28,33 @@ static const char *const PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoin
 
 static const char *const RUNTIME_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower => ";
 static const char *const RUNTIME_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower => ";
+
+static const char *const OUTCHECK_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [k]eep-going => ";
+static const char *const OUTCHECK_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [k]eep-going => ";
+
+static const char *const RUNTIME_OUTCHECK_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower [k]eep-going => ";
+static const char *const RUNTIME_OUTCHECK_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower [k]eep-going => ";
+
+static const char *terminal_prompt (hashcat_ctx_t *hashcat_ctx)
+{
+  const status_ctx_t   *status_ctx   = hashcat_ctx->status_ctx;
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  const bool paused = (status_ctx->devices_status == STATUS_PAUSED);
+  const bool runtime = (user_options->runtime > 0);
+  const bool outcheck = outfile_check_keep_going_available (hashcat_ctx);
+
+  if (runtime == true)
+  {
+    if (outcheck == true) return (paused == true) ? RUNTIME_OUTCHECK_PROMPT_PAUSED : RUNTIME_OUTCHECK_PROMPT_ACTIVE;
+
+    return (paused == true) ? RUNTIME_PROMPT_PAUSED : RUNTIME_PROMPT_ACTIVE;
+  }
+
+  if (outcheck == true) return (paused == true) ? OUTCHECK_PROMPT_PAUSED : OUTCHECK_PROMPT_ACTIVE;
+
+  return (paused == true) ? PROMPT_PAUSED : PROMPT_ACTIVE;
+}
 
 void welcome_screen (hashcat_ctx_t *hashcat_ctx, const char *version_tag)
 {
@@ -190,68 +218,22 @@ int setup_console (void)
 
 void send_prompt (hashcat_ctx_t *hashcat_ctx)
 {
-  const status_ctx_t   *status_ctx   = hashcat_ctx->status_ctx;
   const user_options_t *user_options = hashcat_ctx->user_options;
 
   FILE *prompt_fp = (user_options->stdout_flag == true) ? stderr : stdout;
 
-  if (status_ctx->devices_status == STATUS_PAUSED)
-  {
-    if (user_options->runtime > 0)
-    {
-      fprintf (prompt_fp, "%s", RUNTIME_PROMPT_PAUSED);
-    }
-    else
-    {
-      fprintf (prompt_fp, "%s", PROMPT_PAUSED);
-    }
-  }
-  else
-  {
-    if (user_options->runtime > 0)
-    {
-      fprintf (prompt_fp, "%s", RUNTIME_PROMPT_ACTIVE);
-    }
-    else
-    {
-      fprintf (prompt_fp, "%s", PROMPT_ACTIVE);
-    }
-  }
+  fprintf (prompt_fp, "%s", terminal_prompt (hashcat_ctx));
 
   fflush (prompt_fp);
 }
 
 void clear_prompt (hashcat_ctx_t *hashcat_ctx)
 {
-  const status_ctx_t   *status_ctx   = hashcat_ctx->status_ctx;
   const user_options_t *user_options = hashcat_ctx->user_options;
 
   FILE *prompt_fp = (user_options->stdout_flag == true) ? stderr : stdout;
 
-  size_t prompt_sz = 0;
-
-  if (status_ctx->devices_status == STATUS_PAUSED)
-  {
-    if (user_options->runtime > 0)
-    {
-      prompt_sz = strlen (RUNTIME_PROMPT_PAUSED);
-    }
-    else
-    {
-      prompt_sz = strlen (PROMPT_PAUSED);
-    }
-  }
-  else
-  {
-    if (user_options->runtime > 0)
-    {
-      prompt_sz = strlen (RUNTIME_PROMPT_ACTIVE);
-    }
-    else
-    {
-      prompt_sz = strlen (PROMPT_ACTIVE);
-    }
-  }
+  const size_t prompt_sz = strlen (terminal_prompt (hashcat_ctx));
 
   fputc ('\r', prompt_fp);
 
@@ -452,6 +434,25 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
         event_log_info (hashcat_ctx, NULL);
 
         myquit (hashcat_ctx);
+
+        break;
+
+      case 'k':
+
+        event_log_info (hashcat_ctx, NULL);
+
+        if (outfile_check_keep_going (hashcat_ctx) == true)
+        {
+          event_log_info (hashcat_ctx, "Keep-going enabled. Further --outfile-check-dir processing is disabled for this run.");
+        }
+        else
+        {
+          event_log_info (hashcat_ctx, "--outfile-check-dir processing is not active or was already disabled.");
+        }
+
+        event_log_info (hashcat_ctx, NULL);
+
+        if (show_prompt == true) send_prompt (hashcat_ctx);
 
         break;
 

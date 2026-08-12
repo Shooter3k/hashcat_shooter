@@ -1507,16 +1507,16 @@ int main (int argc, char **argv)
 
   int rc_final = -1;
 
-  #define CUDA_CTX_RETRY_MAX   10
-  #define CUDA_CTX_RETRY_DELAY 2000000  /* 2 seconds in microseconds */
+  #define CUDA_STARTUP_RETRY_MAX   10
+  #define CUDA_STARTUP_RETRY_DELAY 5000000  /* 5 seconds in microseconds */
 
-  for (int retry = 0; retry <= CUDA_CTX_RETRY_MAX; retry++)
+  for (int retry = 0; retry <= CUDA_STARTUP_RETRY_MAX; retry++)
   {
     if (retry > 0)
     {
-      fprintf (stderr, "\nNOTICE: cuCtxCreate failed on startup — retrying (%d/%d) ...\n\n", retry, CUDA_CTX_RETRY_MAX);
+      fprintf (stderr, "\nNOTICE: CUDA context startup failed. Partial resources were released; retrying in 5 seconds (%d/%d) ...\n\n", retry, CUDA_STARTUP_RETRY_MAX);
 
-      usleep (CUDA_CTX_RETRY_DELAY);
+      usleep (CUDA_STARTUP_RETRY_DELAY);
     }
 
     if (hashcat_session_init (hashcat_ctx, install_folder, shared_folder, argc, argv, COMPTIME) == 0)
@@ -1555,11 +1555,16 @@ int main (int argc, char **argv)
 
     // finish the hashcat session, this shuts down backend devices, hwmon, etc
 
-    const bool should_retry = ((backend_ctx_t *) hashcat_ctx->backend_ctx)->cuda_ctx_create_error;
+    const bool should_retry = ((backend_ctx_t *) hashcat_ctx->backend_ctx)->cuda_startup_error;
 
     hashcat_session_destroy (hashcat_ctx);
 
-    if (!should_retry || rc_final == 0) break;
+    if (should_retry == false) break;
+
+    if (retry == CUDA_STARTUP_RETRY_MAX)
+    {
+      fprintf (stderr, "\nNOTICE: CUDA startup still failed after %d retries; giving up with no partial-GPU run.\n\n", CUDA_STARTUP_RETRY_MAX);
+    }
   }
 
   // finished with hashcat, clean up

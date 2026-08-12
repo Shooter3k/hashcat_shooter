@@ -19,6 +19,47 @@ static int sort_by_salt_buf (const void *v1, const void *v2, MAYBE_UNUSED void *
   return sort_by_salt (v1, v2);
 }
 
+static bool outfile_check_keep_going_requested (hashcat_ctx_t *hashcat_ctx)
+{
+  outcheck_ctx_t *outcheck_ctx = hashcat_ctx->outcheck_ctx;
+
+  hc_thread_mutex_lock (outcheck_ctx->mux_keep_going);
+
+  const bool keep_going = outcheck_ctx->keep_going;
+
+  hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+
+  return keep_going;
+}
+
+bool outfile_check_keep_going_available (hashcat_ctx_t *hashcat_ctx)
+{
+  outcheck_ctx_t *outcheck_ctx = hashcat_ctx->outcheck_ctx;
+
+  hc_thread_mutex_lock (outcheck_ctx->mux_keep_going);
+
+  const bool available = (outcheck_ctx->enabled == true) && (outcheck_ctx->keep_going == false);
+
+  hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+
+  return available;
+}
+
+bool outfile_check_keep_going (hashcat_ctx_t *hashcat_ctx)
+{
+  outcheck_ctx_t *outcheck_ctx = hashcat_ctx->outcheck_ctx;
+
+  hc_thread_mutex_lock (outcheck_ctx->mux_keep_going);
+
+  const bool changed = (outcheck_ctx->enabled == true) && (outcheck_ctx->keep_going == false);
+
+  if (changed == true) outcheck_ctx->keep_going = true;
+
+  hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+
+  return changed;
+}
+
 static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
 {
   // some hash-dependent constants
@@ -82,6 +123,8 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
   while (status_ctx->shutdown_inner == false)
   {
     sleep (1);
+
+    if (outfile_check_keep_going_requested (hashcat_ctx) == true) break;
 
     if (status_ctx->devices_status != STATUS_RUNNING) continue;
 
@@ -155,6 +198,8 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
 
     for (int j = 0; j < out_cnt; j++)
     {
+      if (outfile_check_keep_going_requested (hashcat_ctx) == true) break;
+
       HCFILE fp;
 
       if (hc_fopen (&fp, out_info[j].file_name, "rb") == false) continue;
@@ -187,7 +232,25 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
       {
         size_t line_len = fgetl (&fp, line_buf, HCBUFSIZ_LARGE);
 
-        if (line_len == 0) continue;
+        // Synchronize a complete parsed line with the interactive keep-going request. The request
+        // may wait for the line already in progress, but after it returns no later line can mark a
+        // hash as cracked. File I/O stays outside the lock so a slow read cannot delay the key.
+
+        hc_thread_mutex_lock (outcheck_ctx->mux_keep_going);
+
+        if (outcheck_ctx->keep_going == true)
+        {
+          hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+
+          break;
+        }
+
+        if (line_len == 0)
+        {
+          hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+
+          continue;
+        }
 
         // this fake separator is used to enable loading outfiles without password
 
@@ -288,6 +351,8 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
 
           if (status_ctx->shutdown_inner == true) break;
         }
+
+        hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
       }
 
       hcfree (line_buf);
@@ -299,6 +364,7 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
       hc_fclose (&fp);
 
       if (status_ctx->shutdown_inner == true) break;
+      if (outfile_check_keep_going_requested (hashcat_ctx) == true) break;
     }
   }
 
@@ -344,6 +410,8 @@ int outcheck_ctx_init (hashcat_ctx_t *hashcat_ctx)
   const user_options_t  *user_options  = hashcat_ctx->user_options;
 
   outcheck_ctx->enabled = false;
+  outcheck_ctx->keep_going = false;
+  outcheck_ctx->root_directory = NULL;
 
   if (user_options->backend_info   > 0)    return 0;
   if (user_options->hash_info      > 0)    return 0;
@@ -412,5 +480,7 @@ void outcheck_ctx_destroy (hashcat_ctx_t *hashcat_ctx)
     hcfree (outcheck_ctx->root_directory);
   }
 
-  memset (outcheck_ctx, 0, sizeof (outcheck_ctx_t));
+  outcheck_ctx->enabled = false;
+  outcheck_ctx->keep_going = false;
+  outcheck_ctx->root_directory = NULL;
 }

@@ -6630,7 +6630,7 @@ static void backend_ctx_devices_init_cuda (hashcat_ctx_t *hashcat_ctx, int *virt
 
       if (cc_threads_param[cuda_devices_idx].create_failed == true)
       {
-        backend_ctx->cuda_ctx_create_error = true;
+        backend_ctx->cuda_startup_error = true;
       }
 
       if (device_param->skipped == false)
@@ -9172,6 +9172,18 @@ int backend_ctx_devices_init (hashcat_ctx_t *hashcat_ctx, const int comptime)
 
   backend_ctx->backend_devices_cnt    = backend_ctx->cuda_devices_cnt    + backend_ctx->hip_devices_cnt    + backend_ctx->metal_devices_cnt    + backend_ctx->opencl_devices_cnt;
   backend_ctx->backend_devices_active = backend_ctx->cuda_devices_active + backend_ctx->hip_devices_active + backend_ctx->metal_devices_active + backend_ctx->opencl_devices_active;
+
+  // A selected CUDA device failing context creation is a failed startup attempt, not an invitation
+  // to run the job on whichever GPUs happened to win the race. In particular, a twelve-card job
+  // must not silently become a six-card job. The combined counts are established first so the normal
+  // session teardown below can destroy every context that the partial attempt did create.
+
+  if (backend_ctx->cuda_startup_error == true)
+  {
+    event_log_warning (hashcat_ctx, "CUDA startup did not initialize every selected device. Discarding the partial attempt before retry.");
+
+    return -1;
+  }
 
   #if defined (__APPLE__)
   // disable Metal devices if at least one OpenCL device is enabled
@@ -14646,6 +14658,45 @@ HC_API_CALL void *thread_backend_host_staging_init (void *p)
   return 0;
 }
 
+#define CUDA_RESOURCE_RETRY_MAX   10
+#define CUDA_RESOURCE_RETRY_DELAY 5000000
+
+static int cuda_stream_create_with_retry (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
+{
+  for (int retry = 0; retry <= CUDA_RESOURCE_RETRY_MAX; retry++)
+  {
+    if (hc_cuStreamCreate (hashcat_ctx, &device_param->cuda_stream, CU_STREAM_DEFAULT) == 0) return 0;
+
+    if (retry == CUDA_RESOURCE_RETRY_MAX) break;
+
+    event_log_warning (hashcat_ctx, "Device #%u: CUDA stream creation failed; retrying in 5 seconds (%d/%d).", device_param->device_id + 1, retry + 1, CUDA_RESOURCE_RETRY_MAX);
+
+    usleep (CUDA_RESOURCE_RETRY_DELAY);
+  }
+
+  event_log_error (hashcat_ctx, "Device #%u: CUDA stream creation still failed after %d retries.", device_param->device_id + 1, CUDA_RESOURCE_RETRY_MAX);
+
+  return -1;
+}
+
+static int cuda_event_create_with_retry (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, CUevent *cuda_event, const unsigned int flags, const int event_number)
+{
+  for (int retry = 0; retry <= CUDA_RESOURCE_RETRY_MAX; retry++)
+  {
+    if (hc_cuEventCreate (hashcat_ctx, cuda_event, flags) == 0) return 0;
+
+    if (retry == CUDA_RESOURCE_RETRY_MAX) break;
+
+    event_log_warning (hashcat_ctx, "Device #%u: CUDA event %d creation failed; retrying in 5 seconds (%d/%d).", device_param->device_id + 1, event_number, retry + 1, CUDA_RESOURCE_RETRY_MAX);
+
+    usleep (CUDA_RESOURCE_RETRY_DELAY);
+  }
+
+  event_log_error (hashcat_ctx, "Device #%u: CUDA event %d creation still failed after %d retries.", device_param->device_id + 1, event_number, CUDA_RESOURCE_RETRY_MAX);
+
+  return -1;
+}
+
 int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
 {
   const bitmap_ctx_t         *bitmap_ctx          = hashcat_ctx->bitmap_ctx;
@@ -15405,16 +15456,16 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
     {
       if (hc_cuCtxPushCurrent (hashcat_ctx, device_param->cuda_context) == -1)
       {
-        device_param->skipped = true;
+        backend_ctx->cuda_startup_error = true;
 
-        continue;
+        return -1;
       }
 
-      if (hc_cuStreamCreate (hashcat_ctx, &device_param->cuda_stream, CU_STREAM_DEFAULT) == -1)
+      if (cuda_stream_create_with_retry (hashcat_ctx, device_param) == -1)
       {
-        device_param->skipped = true;
+        hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context);
 
-        continue;
+        return -1;
       }
     }
 
@@ -15445,25 +15496,25 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
 
     if (device_param->is_cuda == true)
     {
-      if (hc_cuEventCreate (hashcat_ctx, &device_param->cuda_event1, CU_EVENT_BLOCKING_SYNC) == -1)
+      if (cuda_event_create_with_retry (hashcat_ctx, device_param, &device_param->cuda_event1, CU_EVENT_BLOCKING_SYNC, 1) == -1)
       {
-        device_param->skipped = true;
+        hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context);
 
-        continue;
+        return -1;
       }
 
-      if (hc_cuEventCreate (hashcat_ctx, &device_param->cuda_event2, CU_EVENT_BLOCKING_SYNC) == -1)
+      if (cuda_event_create_with_retry (hashcat_ctx, device_param, &device_param->cuda_event2, CU_EVENT_BLOCKING_SYNC, 2) == -1)
       {
-        device_param->skipped = true;
+        hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context);
 
-        continue;
+        return -1;
       }
 
-      if (hc_cuEventCreate (hashcat_ctx, &device_param->cuda_event3, CU_EVENT_DISABLE_TIMING) == -1)
+      if (cuda_event_create_with_retry (hashcat_ctx, device_param, &device_param->cuda_event3, CU_EVENT_DISABLE_TIMING, 3) == -1)
       {
-        device_param->skipped = true;
+        hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context);
 
-        continue;
+        return -1;
       }
     }
 

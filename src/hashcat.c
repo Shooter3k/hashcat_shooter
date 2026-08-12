@@ -1134,32 +1134,32 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
 
   if (backend_session_begin (hashcat_ctx) == -1)
   {
+    // backend_session_begin() can fail after allocating host buffers and CUDA resources. Always
+    // release the partial session here; otherwise a CUDA startup retry inherits the memory pressure
+    // that made the previous attempt fail.
+
+    backend_session_destroy (hashcat_ctx);
+
+    #ifdef WITH_BRAIN
+    brain_ctx_destroy       (hashcat_ctx);
+    #endif
+
+    bridges_salt_destroy    (hashcat_ctx);
+    bridges_destroy         (hashcat_ctx);
+    bitmap_ctx_destroy      (hashcat_ctx);
+    combinator_ctx_destroy  (hashcat_ctx);
+    cpt_ctx_destroy         (hashcat_ctx);
+    hashconfig_destroy      (hashcat_ctx);
+    hashes_destroy          (hashcat_ctx);
+    mask_ctx_destroy        (hashcat_ctx);
+    status_progress_destroy (hashcat_ctx);
+    generic_ctx_destroy     (hashcat_ctx);
+    straight_ctx_destroy    (hashcat_ctx);
+
     if (user_options->benchmark == true)
     {
       if (user_options->hash_mode_chgd == false)
       {
-        // finalize backend session
-
-        backend_session_destroy (hashcat_ctx);
-
-        // clean up
-
-        #ifdef WITH_BRAIN
-        brain_ctx_destroy       (hashcat_ctx);
-        #endif
-
-        bridges_salt_destroy    (hashcat_ctx);
-        bridges_destroy         (hashcat_ctx);
-        bitmap_ctx_destroy      (hashcat_ctx);
-        combinator_ctx_destroy  (hashcat_ctx);
-        cpt_ctx_destroy         (hashcat_ctx);
-        hashconfig_destroy      (hashcat_ctx);
-        hashes_destroy          (hashcat_ctx);
-        mask_ctx_destroy        (hashcat_ctx);
-        status_progress_destroy (hashcat_ctx);
-        generic_ctx_destroy     (hashcat_ctx);
-        straight_ctx_destroy    (hashcat_ctx);
-
         return 0;
       }
     }
@@ -1409,6 +1409,9 @@ int hashcat_init (hashcat_ctx_t *hashcat_ctx, void (*event) (const u32, struct h
   hashcat_ctx->module_ctx         = (module_ctx_t *)          hcmalloc (sizeof (module_ctx_t));
   hashcat_ctx->backend_ctx        = (backend_ctx_t *)         hcmalloc (sizeof (backend_ctx_t));
   hashcat_ctx->outcheck_ctx       = (outcheck_ctx_t *)        hcmalloc (sizeof (outcheck_ctx_t));
+
+  hc_thread_mutex_init (hashcat_ctx->outcheck_ctx->mux_keep_going);
+
   hashcat_ctx->outfile_ctx        = (outfile_ctx_t *)         hcmalloc (sizeof (outfile_ctx_t));
   hashcat_ctx->pidfile_ctx        = (pidfile_ctx_t *)         hcmalloc (sizeof (pidfile_ctx_t));
   hashcat_ctx->pubkey_ctx         = (pubkey_ctx_t *)          hcmalloc (sizeof (pubkey_ctx_t));
@@ -1446,6 +1449,9 @@ void hashcat_destroy (hashcat_ctx_t *hashcat_ctx)
   hcfree (hashcat_ctx->mask_ctx);
   hcfree (hashcat_ctx->module_ctx);
   hcfree (hashcat_ctx->backend_ctx);
+
+  hc_thread_mutex_delete (hashcat_ctx->outcheck_ctx->mux_keep_going);
+
   hcfree (hashcat_ctx->outcheck_ctx);
   hcfree (hashcat_ctx->outfile_ctx);
   hcfree (hashcat_ctx->pidfile_ctx);
