@@ -551,6 +551,115 @@ static double try_run_times (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *devi
   return exec_msec_best;
 }
 
+// Prepare exactly the same synthetic candidate and rule workload for a cached-profile validation
+// as for a full autotune. Validating before this setup made rule attacks time an empty/uninitialized
+// rule buffer, so a profile stored at about 31 ms was consistently measured at about 15 ms on the
+// next run and rejected as stale.
+
+static int autotune_prepare_workload (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, const u32 kernel_accel_max, const u32 kernel_loops_max, const u32 kernel_threads_max)
+{
+  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
+  const straight_ctx_t *straight_ctx = hashcat_ctx->straight_ctx;
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  const u32 hardware_power_max = bridge_active (hashcat_ctx, device_param->bridge_link_device) ? 1
+                               : ((hashconfig->opts_type & OPTS_TYPE_MP_MULTI_DISABLE)     ? 1 : device_param->device_processors)
+                               * ((hashconfig->opts_type & OPTS_TYPE_THREAD_MULTI_DISABLE) ? 1 : kernel_threads_max);
+
+  u32 kernel_power_max = hardware_power_max * kernel_accel_max;
+
+  if (user_options->attack_mode == ATTACK_MODE_ASSOCIATION)
+  {
+    const hashes_t *hashes = hashcat_ctx->hashes;
+
+    const u32 salts_cnt = hashes->salts_cnt;
+
+    if (kernel_power_max > salts_cnt)
+    {
+      kernel_power_max = salts_cnt;
+    }
+  }
+
+  device_param->at_rc = -2;
+
+  if (device_param->is_cuda == true)
+  {
+    if (run_cuda_kernel_atinit (hashcat_ctx, device_param, device_param->cuda_d_pws_buf, kernel_power_max) == -1) return -1;
+  }
+
+  if (device_param->is_hip == true)
+  {
+    if (run_hip_kernel_atinit (hashcat_ctx, device_param, device_param->hip_d_pws_buf, kernel_power_max) == -1) return -1;
+  }
+
+  #if defined (__APPLE__)
+  if (device_param->is_metal == true)
+  {
+    if (run_metal_kernel_atinit (hashcat_ctx, device_param, device_param->metal_d_pws_buf, kernel_power_max) == -1) return -1;
+  }
+  #endif
+
+  if (device_param->is_opencl == true)
+  {
+    if (run_opencl_kernel_atinit (hashcat_ctx, device_param, device_param->opencl_d_pws_buf, kernel_power_max) == -1) return -1;
+  }
+
+  if (user_options->slow_candidates == false)
+  {
+    if (hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL)
+    {
+      if (straight_ctx->kernel_rules_cnt > 1)
+      {
+        device_param->at_rc = -3;
+
+        if (device_param->is_cuda == true)
+        {
+          if (hc_cuMemcpyDtoD (hashcat_ctx, device_param->cuda_d_rules_c, device_param->cuda_d_rules, MIN (kernel_loops_max, KERNEL_RULES) * sizeof (kernel_rule_t)) == -1) return -1;
+        }
+
+        if (device_param->is_hip == true)
+        {
+          if (hc_hipMemcpyDtoD (hashcat_ctx, device_param->hip_d_rules_c, device_param->hip_d_rules, MIN (kernel_loops_max, KERNEL_RULES) * sizeof (kernel_rule_t)) == -1) return -1;
+        }
+
+        #if defined (__APPLE__)
+        if (device_param->is_metal == true)
+        {
+          if (hc_mtlMemcpyDtoD (hashcat_ctx, device_param->metal_command_queue, device_param->metal_d_rules_c, 0, device_param->metal_d_rules, 0, MIN (kernel_loops_max, KERNEL_RULES) * sizeof (kernel_rule_t)) == -1) return -1;
+        }
+        #endif
+
+        if (device_param->is_opencl == true)
+        {
+          if (hc_clEnqueueCopyBuffer (hashcat_ctx, device_param->opencl_command_queue, device_param->opencl_d_rules, device_param->opencl_d_rules_c, 0, 0, MIN (kernel_loops_max, KERNEL_RULES) * sizeof (kernel_rule_t), 0, NULL, NULL) == -1) return -1;
+        }
+      }
+    }
+  }
+
+  // Outside-kernel hashes need their initialization kernels prepared before either timing path.
+
+  if (hashconfig->attack_exec == ATTACK_EXEC_OUTSIDE_KERNEL)
+  {
+    const u32 kernel_threads_sav = device_param->kernel_threads;
+
+    device_param->kernel_threads = MIN (device_param->kernel_wgs1, kernel_threads_max);
+
+    run_kernel (hashcat_ctx, device_param, KERN_RUN_1, 0, kernel_power_max, false, 0, true);
+
+    if (hashconfig->opts_type & OPTS_TYPE_LOOP_PREPARE)
+    {
+      device_param->kernel_threads = MIN (device_param->kernel_wgs2p, kernel_threads_max);
+
+      run_kernel (hashcat_ctx, device_param, KERN_RUN_2P, 0, kernel_power_max, false, 0, true);
+    }
+
+    device_param->kernel_threads = kernel_threads_sav;
+  }
+
+  return 0;
+}
+
 // A wide bridge unit does not need its launch size searched for. Throughput is monotonic in waves per
 // launch, and the cost of a launch has a known shape: one fill and drain of the whole array, plus the
 // waves themselves. Two measurements pin that line down and the size follows from it.
@@ -623,7 +732,6 @@ static int autotune (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
   const hashes_t       *hashes       = hashcat_ctx->hashes;
   const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
   const backend_ctx_t  *backend_ctx  = hashcat_ctx->backend_ctx;
-  const straight_ctx_t *straight_ctx = hashcat_ctx->straight_ctx;
   const user_options_t *user_options = hashcat_ctx->user_options;
 
   // see BRIDGE_TARGET_MSEC_SCALE above
@@ -685,29 +793,33 @@ static int autotune (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
   device_param->autotune_cache_hit = false;
   device_param->autotune_cache_msec = 0;
 
+  bool workload_prepared = false;
+
   bool cache_hit = autotune_cache_lookup (hashcat_ctx, device_param, &kernel_accel, &kernel_loops, &kernel_threads);
 
   if (cache_hit == true)
   {
-    // Two short launches both warm the runtime and make sure a material clock,
-    // power, or thermal change does not leave a stale profile in service.
+    // Cache validation has to time the same initialized candidates and rules as full autotune.
+
+    if (autotune_prepare_workload (hashcat_ctx, device_param, kernel_accel_max, kernel_loops_max, kernel_threads_max) == -1) return -1;
+
+    workload_prepared = true;
+
+    // Two short launches warm the runtime and make sure the cached launch still
+    // completes inside a safe time budget. Do not require identical timings:
+    // CUDA event measurements from 12 concurrently autotuning GPUs vary widely
+    // with scheduling, clocks, power and thermals even when the cached settings
+    // are valid. A faster result is always safe. A slower result is accepted up
+    // to both four times its recorded duration and the selected workload target.
 
     const double cached_msec = device_param->autotune_cache_msec;
     const double measured_msec = try_run_times (hashcat_ctx, device_param, kernel_accel, kernel_loops, kernel_threads, 2);
 
-    // Very small keyspaces can produce launches below 0.02 ms. At that scale,
-    // normal CUDA event jitter is larger than a relative-only 35 percent band.
-    // Keep the relative guard for real workloads, but give tiny validation
-    // launches a small absolute tolerance so they do not retune forever.
-
-    const double measured_delta = (measured_msec > cached_msec)
-                                ? measured_msec - cached_msec
-                                : cached_msec - measured_msec;
-    const double allowed_delta = MAX (cached_msec * 0.35, 0.250);
+    const double allowed_msec = MIN (2000.0, MAX (cached_msec * 4.0, target_msec));
 
     if ((measured_msec <= 0)
      || (measured_msec > 2000)
-     || (measured_delta > allowed_delta))
+     || (measured_msec > allowed_msec))
     {
       if (user_options->quiet == false)
       {
@@ -801,106 +913,11 @@ static int autotune (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
     // from here it's clear we are allowed to autotune
     // so let's init some fake words
 
-    const u32 hardware_power_max = bridge_active (hashcat_ctx, device_param->bridge_link_device) ? 1
-                                 : ((hashconfig->opts_type & OPTS_TYPE_MP_MULTI_DISABLE)     ? 1 : device_param->device_processors)
-                                 * ((hashconfig->opts_type & OPTS_TYPE_THREAD_MULTI_DISABLE) ? 1 : kernel_threads_max);
-
-    u32 kernel_power_max = hardware_power_max * kernel_accel_max;
-
-    if (user_options->attack_mode == ATTACK_MODE_ASSOCIATION)
+    if (workload_prepared == false)
     {
-      hashes_t *hashes = hashcat_ctx->hashes;
+      if (autotune_prepare_workload (hashcat_ctx, device_param, kernel_accel_max, kernel_loops_max, kernel_threads_max) == -1) return -1;
 
-      const u32 salts_cnt = hashes->salts_cnt;
-
-      if (kernel_power_max > salts_cnt)
-      {
-        kernel_power_max = salts_cnt;
-      }
-    }
-
-    device_param->at_rc = -2;
-
-    if (device_param->is_cuda == true)
-    {
-      if (run_cuda_kernel_atinit (hashcat_ctx, device_param, device_param->cuda_d_pws_buf, kernel_power_max) == -1) return -1;
-    }
-
-    if (device_param->is_hip == true)
-    {
-      if (run_hip_kernel_atinit (hashcat_ctx, device_param, device_param->hip_d_pws_buf, kernel_power_max) == -1) return -1;
-    }
-
-    #if defined (__APPLE__)
-    if (device_param->is_metal == true)
-    {
-      if (run_metal_kernel_atinit (hashcat_ctx, device_param, device_param->metal_d_pws_buf, kernel_power_max) == -1) return -1;
-    }
-    #endif
-
-    if (device_param->is_opencl == true)
-    {
-      if (run_opencl_kernel_atinit (hashcat_ctx, device_param, device_param->opencl_d_pws_buf, kernel_power_max) == -1) return -1;
-    }
-
-    if (user_options->slow_candidates == true)
-    {
-    }
-    else
-    {
-      if (hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL)
-      {
-        if (straight_ctx->kernel_rules_cnt > 1)
-        {
-          device_param->at_rc = -3;
-
-          if (device_param->is_cuda == true)
-          {
-            if (hc_cuMemcpyDtoD (hashcat_ctx, device_param->cuda_d_rules_c, device_param->cuda_d_rules, MIN (kernel_loops_max, KERNEL_RULES) * sizeof (kernel_rule_t)) == -1) return -1;
-          }
-
-          if (device_param->is_hip == true)
-          {
-            if (hc_hipMemcpyDtoD (hashcat_ctx, device_param->hip_d_rules_c, device_param->hip_d_rules, MIN (kernel_loops_max, KERNEL_RULES) * sizeof (kernel_rule_t)) == -1) return -1;
-          }
-
-          #if defined (__APPLE__)
-          if (device_param->is_metal == true)
-          {
-            if (hc_mtlMemcpyDtoD (hashcat_ctx, device_param->metal_command_queue, device_param->metal_d_rules_c, 0, device_param->metal_d_rules, 0, MIN (kernel_loops_max, KERNEL_RULES) * sizeof (kernel_rule_t)) == -1) return -1;
-          }
-          #endif
-
-          if (device_param->is_opencl == true)
-          {
-            if (hc_clEnqueueCopyBuffer (hashcat_ctx, device_param->opencl_command_queue, device_param->opencl_d_rules, device_param->opencl_d_rules_c, 0, 0, MIN (kernel_loops_max, KERNEL_RULES) * sizeof (kernel_rule_t), 0, NULL, NULL) == -1) return -1;
-          }
-        }
-      }
-    }
-
-    // we also need to initialize some values using kernels
-
-    if (hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL)
-    {
-      // nothing to do
-    }
-    else
-    {
-      const u32 kernel_threads_sav = device_param->kernel_threads;
-
-      device_param->kernel_threads = MIN (device_param->kernel_wgs1, kernel_threads_max);
-
-      run_kernel (hashcat_ctx, device_param, KERN_RUN_1, 0, kernel_power_max, false, 0, true);
-
-      if (hashconfig->opts_type & OPTS_TYPE_LOOP_PREPARE)
-      {
-        device_param->kernel_threads = MIN (device_param->kernel_wgs2p, kernel_threads_max);
-
-        run_kernel (hashcat_ctx, device_param, KERN_RUN_2P, 0, kernel_power_max, false, 0, true);
-      }
-
-      device_param->kernel_threads = kernel_threads_sav;
+      workload_prepared = true;
     }
 
     // Do a pre-autotune test run to find out if kernel runtime is above some TDR limit

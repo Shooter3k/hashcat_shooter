@@ -22,11 +22,16 @@ A profile is reused only when all of these still match:
 - current minimum and maximum accel, loops, and threads
 
 The cached values must also remain within the current runtime limits. Hashcat
-measures the cached profile before accepting it. If performance differs from
-the stored measurement by more than 35 percent, it falls back to a complete
-autotune and records the new result. Validation launches below 0.02 ms use a
-0.25 ms absolute tolerance because normal CUDA event jitter is larger than a
-relative-only band at that scale.
+initializes the same synthetic candidates, rule buffer, and outside-kernel
+preparation used by full autotune before measuring the cached profile. Two
+timed launches must complete successfully and remain within a safe upper
+bound: the larger of the selected workload target or four times the stored
+runtime, capped at 2 seconds. Faster measurements are accepted. This tolerates
+CUDA scheduling, clock, power, and thermal variance while 12 GPUs validate
+concurrently, but still rejects a launch that has become materially too slow.
+
+Per-device validation runs concurrently. Cache messages are serialized with a
+dedicated log mutex so all device numbers remain correct on multi-GPU systems.
 
 The cache never overrides explicit `-n`, `-u`, or `-T` values or `--force`.
 It covers every GPU cracking attack mode, including modes 11 through 14 and

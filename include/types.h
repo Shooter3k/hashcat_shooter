@@ -3399,6 +3399,7 @@ typedef struct event_ctx
   size_t prev_len;
 
   hc_thread_mutex_t mux_event;
+  hc_thread_mutex_t mux_log;
 
 } event_ctx_t;
 

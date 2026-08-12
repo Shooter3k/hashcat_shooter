@@ -67,6 +67,9 @@ The current local checkpoint/startup/elapsed-time build reports (build date is
 generated when make starts):
     v7.1.2-shooter.20260812.5
 
+The RTX 4090 autotune-cache validation fix reports:
+    v7.1.2-shooter.20260812.6
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:

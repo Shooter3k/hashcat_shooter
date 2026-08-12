@@ -1384,6 +1384,12 @@ int hashcat_init (hashcat_ctx_t *hashcat_ctx, void (*event) (const u32, struct h
   hashcat_ctx->cpt_ctx            = (cpt_ctx_t *)             hcmalloc (sizeof (cpt_ctx_t));
   hashcat_ctx->debugfile_ctx      = (debugfile_ctx_t *)       hcmalloc (sizeof (debugfile_ctx_t));
   hashcat_ctx->event_ctx          = (event_ctx_t *)           hcmalloc (sizeof (event_ctx_t));
+
+  // Logging is used by the welcome screen before a session starts and by the goodbye screen after
+  // the session mutexes are destroyed, so its mutex belongs to the full hashcat context lifetime.
+
+  hc_thread_mutex_init (hashcat_ctx->event_ctx->mux_log);
+
   hashcat_ctx->folder_config      = (folder_config_t *)       hcmalloc (sizeof (folder_config_t));
   hashcat_ctx->generic_ctx        = (generic_ctx_t *)         hccalloc (GENERIC_ROLE_CNT, sizeof (generic_ctx_t));
   hashcat_ctx->hashcat_user       = (hashcat_user_t *)        hcmalloc (sizeof (hashcat_user_t));
@@ -1419,6 +1425,8 @@ void hashcat_destroy (hashcat_ctx_t *hashcat_ctx)
   hcfree (hashcat_ctx->combinator_ctx);
   hcfree (hashcat_ctx->cpt_ctx);
   hcfree (hashcat_ctx->debugfile_ctx);
+  hc_thread_mutex_delete (hashcat_ctx->event_ctx->mux_log);
+
   hcfree (hashcat_ctx->event_ctx);
   hcfree (hashcat_ctx->folder_config);
   hcfree (hashcat_ctx->generic_ctx);

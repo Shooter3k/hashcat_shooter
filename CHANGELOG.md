@@ -1,5 +1,35 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260812.6
+
+RTX 4090 persisted-autotune cache validation correctness.
+
+### Fixed
+
+- Initialized the same synthetic candidates and rule buffer before cached
+  profile validation that full autotune uses. Rule attacks no longer compare
+  an uninitialized approximately 15 ms validation launch with the properly
+  initialized approximately 31 ms stored launch and retune every run.
+- Made cache validation tolerate expected timing variance while 12 GPUs tune
+  concurrently. Faster launches are accepted, while slower launches are
+  rejected only after exceeding both four times the stored duration and the
+  selected workload target, subject to the existing 2-second safety ceiling.
+- Serialized concurrent log formatting and display with a dedicated mutex, so
+  simultaneous per-GPU cache messages retain their correct device numbers and
+  no longer appear duplicated or interleaved.
+- Advanced the local build revision to `v7.1.2-shooter.20260812.6`.
+
+### Verified
+
+- Completed a clean Windows production build and confirmed
+  `hashcat.exe --version` reports `v7.1.2-shooter.20260812.6`.
+- Ran the reported NTLM (`-m 1000`), straight/rules (`-a 0`), `-w 4`
+  command from an empty cache on all 12 RTX 4090s: status `Cracked`,
+  `479.8 GH/s`, 14 seconds, and exactly one profile saved.
+- Repeated the identical command twice: both runs reused the one profile on
+  all 12 devices, produced zero rejection and save messages, kept exactly one
+  cache record, cracked the target, and measured `479.2` and `479.1 GH/s`.
+
 ## v7.1.2-shooter.20260812.5
 
 Multi-GPU checkpoint cancellation reliability, elapsed-time reporting, and
