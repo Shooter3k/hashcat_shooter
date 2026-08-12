@@ -27,6 +27,20 @@ static HC_API_CALL void *pw_pipe_thread (void *p)
 
     if (pipe->stop == true) break;
 
+    // A checkpoint request parks the consumer at a completed launch. Park its producer too, without
+    // posting a terminal batch or discarding a prefetched batch. Cancellation can then continue from
+    // the exact same pipeline state; a completed checkpoint changes the hard-stop flags and wakes us.
+
+    while ((status_ctx->checkpoint_shutdown == true)
+        && ((status_ctx->devices_status == STATUS_RUNNING) || (status_ctx->devices_status == STATUS_PAUSED))
+        && (status_ctx->run_thread_level1 == true)
+        && (pipe->stop == false))
+    {
+      usleep (10000);
+    }
+
+    if (pipe->stop == true) break;
+
     pw_batch_t *batch = &pipe->device_param->pws_slot[pipe->head];
 
     pw_batch_reset (batch);

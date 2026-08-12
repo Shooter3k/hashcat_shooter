@@ -416,20 +416,39 @@ int stop_at_checkpoint (hashcat_ctx_t *hashcat_ctx)
     return -1;
   }
 
-  // Enable or Disable
+  // Enable or Disable. A checkpoint request is deliberately separate from a hard worker stop.
+  // Workers park at their next completed launch and remain alive until either every worker has
+  // arrived (a real checkpoint exit) or the request is cancelled. This distinction is what lets
+  // GPUs that reached the checkpoint first resume along with the slower GPUs.
+
+  hc_thread_mutex_lock (status_ctx->mux_dispatcher);
 
   if (status_ctx->checkpoint_shutdown == false)
   {
+    if ((status_ctx->devices_status != STATUS_RUNNING) && (status_ctx->devices_status != STATUS_PAUSED))
+    {
+      hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+
+      return -1;
+    }
+
     status_ctx->checkpoint_shutdown = true;
 
     status_ctx->run_main_level1   = false;
     status_ctx->run_main_level2   = false;
     status_ctx->run_main_level3   = false;
-    status_ctx->run_thread_level1 = false;
+    status_ctx->run_thread_level1 = true;
     status_ctx->run_thread_level2 = true;
   }
   else
   {
+    if ((status_ctx->devices_status != STATUS_RUNNING) && (status_ctx->devices_status != STATUS_PAUSED))
+    {
+      hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+
+      return -1;
+    }
+
     status_ctx->checkpoint_shutdown = false;
 
     status_ctx->run_main_level1   = true;
@@ -438,6 +457,8 @@ int stop_at_checkpoint (hashcat_ctx_t *hashcat_ctx)
     status_ctx->run_thread_level1 = true;
     status_ctx->run_thread_level2 = true;
   }
+
+  hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
 
   return 0;
 }

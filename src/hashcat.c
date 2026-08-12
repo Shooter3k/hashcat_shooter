@@ -515,6 +515,29 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
 
   status_ctx->accessible = true;
 
+  // The checkpoint barrier counts live cracking workers, not configured backend slots. Skipped
+  // devices never enter thread_calc's work path and therefore must not hold the barrier open.
+
+  hc_thread_mutex_lock (status_ctx->mux_dispatcher);
+
+  status_ctx->checkpoint_threads_active  = 0;
+  status_ctx->checkpoint_threads_waiting = 0;
+
+  if (backend_ctx->enabled == true)
+  {
+    for (int backend_devices_idx = 0; backend_devices_idx < backend_ctx->backend_devices_cnt; backend_devices_idx++)
+    {
+      hc_device_param_t *device_param = backend_ctx->devices_param + backend_devices_idx;
+
+      if (device_param->skipped == true) continue;
+      if (device_param->skipped_warning == true) continue;
+
+      status_ctx->checkpoint_threads_active++;
+    }
+  }
+
+  hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+
   for (int backend_devices_idx = 0; backend_devices_idx < backend_ctx->backend_devices_cnt; backend_devices_idx++)
   {
     thread_param_t *thread_param = threads_param + backend_devices_idx;

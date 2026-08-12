@@ -1,5 +1,54 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260812.5
+
+Multi-GPU checkpoint cancellation reliability, elapsed-time reporting, and
+12 x RTX 4090 short-session startup improvements.
+
+### Added
+
+- Added `Total Time` to the final status summary, calculated from the displayed
+  `Started` and `Stopped` timestamps.
+- Added `HASHCAT_SHOOTER_HOST_STAGING_MB` for changing the automatic per-GPU
+  host candidate-staging limit. Set it to `0` to restore the generic limit.
+
+### Changed
+
+- Changed checkpoint requests into a coordinated device barrier. GPUs that
+  reach a restore boundary first now remain parked with their worker threads
+  alive instead of exiting while slower GPUs finish their current work.
+- Cancelling a pending checkpoint now releases every parked GPU, so all
+  devices that participated in the attack resume—not only the GPUs that were
+  still executing when cancellation was requested.
+- Paused candidate producers together with their GPU consumers so prefetched
+  work remains intact across checkpoint cancellation.
+- Counted only live, non-skipped GPU workers in the barrier and accounted for
+  devices that naturally finish near the end of the keyspace.
+- Carried forward the missing parallel CUDA context initialization and
+  per-device teardown work from `M:\hashcat_shooter`.
+- Initialized host candidate-staging buffers concurrently and avoided
+  zero-filling data that candidate construction overwrites before use.
+- Replaced full candidate-buffer resets with the required metadata reset.
+- Limited the two-slot host candidate staging to 3072 MiB per GPU on the exact
+  Windows 12 x RTX 4090 configuration. This reduced the tested mode-0 host
+  allocation from approximately 97.7 GB to 36.7 GB.
+
+### Verification
+
+- Clean Windows MSYS2/MinGW64 production build passed.
+- Rapid checkpoint enable/disable on a 12 x RTX 4090 bcrypt/rule attack kept
+  the session running and restored fresh nonzero speeds on all 12 GPUs.
+- Leaving the checkpoint enabled produced a clean `Aborted (Checkpoint)` and
+  a saved restore point.
+- Starting with `--restore` resumed from that checkpoint with all 12 GPUs and
+  reused the persisted RTX 4090 autotune settings on all devices.
+- The short mode-0 known-answer run improved from approximately 18-23 seconds
+  to 15.8-16.9 seconds cold and 7.6-10.1 seconds warm on the 12-card system.
+- Normal dictionary candidate processing and attack modes 11, 12, 13, and 14
+  completed known-answer tests successfully after the staging changes.
+- A sustained mode-0 comparison measured 686.3 GH/s at the lower-memory
+  geometry and 693.1 GH/s at acceleration 96 (approximately 1% difference).
+
 ## v7.1.2-shooter.20260811.4
 
 Windows startup optimization for the intended 12 x RTX 4090 system.

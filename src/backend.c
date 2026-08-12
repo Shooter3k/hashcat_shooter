@@ -6105,6 +6105,73 @@ void backend_ctx_destroy (hashcat_ctx_t *hashcat_ctx)
   memset (backend_ctx, 0, sizeof (backend_ctx_t));
 }
 
+typedef struct cuda_ctx_init_thread_param
+{
+  hashcat_ctx_t *hashcat_ctx;
+
+  int  tid;
+  bool create_failed;
+
+} cuda_ctx_init_thread_param_t;
+
+#if defined (_WIN)
+HC_API_CALL DWORD thread_cuda_ctx_init (void *p)
+#else
+HC_API_CALL void *thread_cuda_ctx_init (void *p)
+#endif
+{
+  cuda_ctx_init_thread_param_t *thread_param = (cuda_ctx_init_thread_param_t *) p;
+
+  hashcat_ctx_t  *hashcat_ctx  = thread_param->hashcat_ctx;
+  backend_ctx_t  *backend_ctx  = hashcat_ctx->backend_ctx;
+  user_options_t *user_options = hashcat_ctx->user_options;
+
+  hc_device_param_t *device_param = &backend_ctx->devices_param[thread_param->tid];
+
+  if (device_param->skipped == true) return 0;
+  if (device_param->is_cuda  == false) return 0;
+
+  // cuCtxCreate is the dominant WDDM startup cost on large Windows CUDA rigs.
+  // Each worker owns one device/context, so all physical devices can initialize concurrently.
+
+  if (hc_cuCtxCreate (hashcat_ctx, &device_param->cuda_context, CU_CTX_SCHED_BLOCKING_SYNC, device_param->cuda_device) == -1)
+  {
+    thread_param->create_failed = true;
+
+    device_param->skipped = true;
+
+    return 0;
+  }
+
+  if (hc_cuCtxPushCurrent (hashcat_ctx, device_param->cuda_context) == -1)
+  {
+    device_param->skipped = true;
+
+    return 0;
+  }
+
+  size_t free  = 0;
+  size_t total = 0;
+
+  if (hc_cuMemGetInfo (hashcat_ctx, &free, &total) == -1)
+  {
+    device_param->skipped = true;
+
+    return 0;
+  }
+
+  device_param->device_available_mem = ((u64) free * (100 - user_options->backend_devices_keepfree)) / 100;
+
+  if (hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context) == -1)
+  {
+    device_param->skipped = true;
+
+    return 0;
+  }
+
+  return 0;
+}
+
 static void backend_ctx_devices_init_cuda (hashcat_ctx_t *hashcat_ctx, int *virthost, int *virthost_finder, int *backend_devices_idx, int *bridge_link_device)
 {
   const bridge_ctx_t   *bridge_ctx    = hashcat_ctx->bridge_ctx;
@@ -6148,6 +6215,8 @@ static void backend_ctx_devices_init_cuda (hashcat_ctx_t *hashcat_ctx, int *virt
     backend_ctx->cuda_devices_cnt = cuda_devices_cnt;
 
     // device specific
+
+    const int cuda_base = *backend_devices_idx;
 
     for (int cuda_devices_idx = 0; cuda_devices_idx < cuda_devices_cnt; cuda_devices_idx++, (*backend_devices_idx)++)
     {
@@ -6538,48 +6607,31 @@ static void backend_ctx_devices_init_cuda (hashcat_ctx_t *hashcat_ctx, int *virt
       device_param->has_prmt  = (sm >= 20) ? true : false;
       device_param->has_shfw  = (sm >= 70) ? true : true; // still faster
 
-      // one-time init cuda context
+      // Context creation and the available-memory query are deferred until all device metadata is
+      // known, then run concurrently below. The original per-device loop serialized this cost.
+    }
 
-      if (hc_cuCtxCreate (hashcat_ctx, &device_param->cuda_context, CU_CTX_SCHED_BLOCKING_SYNC, device_param->cuda_device) == -1)
+    cuda_ctx_init_thread_param_t *cc_threads_param = (cuda_ctx_init_thread_param_t *) hccalloc (cuda_devices_cnt, sizeof (cuda_ctx_init_thread_param_t));
+    hc_thread_t                  *cc_threads       = (hc_thread_t *)                  hccalloc (cuda_devices_cnt, sizeof (hc_thread_t));
+
+    for (int cuda_devices_idx = 0; cuda_devices_idx < cuda_devices_cnt; cuda_devices_idx++)
+    {
+      cc_threads_param[cuda_devices_idx].hashcat_ctx = hashcat_ctx;
+      cc_threads_param[cuda_devices_idx].tid         = cuda_base + cuda_devices_idx;
+
+      hc_thread_create (cc_threads[cuda_devices_idx], thread_cuda_ctx_init, &cc_threads_param[cuda_devices_idx]);
+    }
+
+    hc_thread_wait (cuda_devices_cnt, cc_threads);
+
+    for (int cuda_devices_idx = 0; cuda_devices_idx < cuda_devices_cnt; cuda_devices_idx++)
+    {
+      hc_device_param_t *device_param = &devices_param[cuda_base + cuda_devices_idx];
+
+      if (cc_threads_param[cuda_devices_idx].create_failed == true)
       {
         backend_ctx->cuda_ctx_create_error = true;
-
-        device_param->skipped = true;
-
-        continue;
       }
-
-      if (hc_cuCtxPushCurrent (hashcat_ctx, device_param->cuda_context) == -1)
-      {
-        device_param->skipped = true;
-
-        continue;
-      }
-
-      // device_available_mem
-
-      size_t free  = 0;
-      size_t total = 0;
-
-      if (hc_cuMemGetInfo (hashcat_ctx, &free, &total) == -1)
-      {
-        device_param->skipped = true;
-
-        continue;
-      }
-
-      device_param->device_available_mem = ((u64) free * (100 - user_options->backend_devices_keepfree)) / 100;
-
-      if (hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context) == -1)
-      {
-        device_param->skipped = true;
-
-        continue;
-      }
-
-      /**
-       * activate device
-       */
 
       if (device_param->skipped == false)
       {
@@ -6588,6 +6640,9 @@ static void backend_ctx_devices_init_cuda (hashcat_ctx_t *hashcat_ctx, int *virt
         cuda_devices_active++;
       }
     }
+
+    hcfree (cc_threads_param);
+    hcfree (cc_threads);
   }
 
   backend_ctx->cuda_devices_cnt     = cuda_devices_cnt;
@@ -9772,26 +9827,20 @@ int backend_ctx_devices_init (hashcat_ctx_t *hashcat_ctx, const int comptime)
   return 0;
 }
 
-void backend_ctx_devices_destroy (hashcat_ctx_t *hashcat_ctx)
+#if defined (_WIN)
+HC_API_CALL DWORD thread_backend_ctx_device_destroy (void *p)
+#else
+HC_API_CALL void *thread_backend_ctx_device_destroy (void *p)
+#endif
 {
+  thread_param_t *thread_param = (thread_param_t *) p;
+
+  hashcat_ctx_t *hashcat_ctx = thread_param->hashcat_ctx;
   backend_ctx_t *backend_ctx = hashcat_ctx->backend_ctx;
 
-  if (backend_ctx->enabled == false) return;
+  hc_device_param_t *device_param = &backend_ctx->devices_param[thread_param->tid];
 
-  for (u32 opencl_platforms_idx = 0; opencl_platforms_idx < backend_ctx->opencl_platforms_cnt; opencl_platforms_idx++)
   {
-    hcfree (backend_ctx->opencl_platforms_devices[opencl_platforms_idx]);
-    hcfree (backend_ctx->opencl_platforms_name[opencl_platforms_idx]);
-    hcfree (backend_ctx->opencl_platforms_vendor[opencl_platforms_idx]);
-    hcfree (backend_ctx->opencl_platforms_version[opencl_platforms_idx]);
-  }
-
-  // one-time release context/command-queue from all runtimes
-
-  for (int backend_devices_idx = 0; backend_devices_idx < backend_ctx->backend_devices_cnt; backend_devices_idx++)
-  {
-    hc_device_param_t *device_param = &backend_ctx->devices_param[backend_devices_idx];
-
     hcfree (device_param->device_name);
 
     if (device_param->is_cuda == true)
@@ -9843,6 +9892,42 @@ void backend_ctx_devices_destroy (hashcat_ctx_t *hashcat_ctx)
       }
     }
   }
+
+  return 0;
+}
+
+void backend_ctx_devices_destroy (hashcat_ctx_t *hashcat_ctx)
+{
+  backend_ctx_t *backend_ctx = hashcat_ctx->backend_ctx;
+
+  if (backend_ctx->enabled == false) return;
+
+  for (u32 opencl_platforms_idx = 0; opencl_platforms_idx < backend_ctx->opencl_platforms_cnt; opencl_platforms_idx++)
+  {
+    hcfree (backend_ctx->opencl_platforms_devices[opencl_platforms_idx]);
+    hcfree (backend_ctx->opencl_platforms_name[opencl_platforms_idx]);
+    hcfree (backend_ctx->opencl_platforms_vendor[opencl_platforms_idx]);
+    hcfree (backend_ctx->opencl_platforms_version[opencl_platforms_idx]);
+  }
+
+  // Context and command-queue destruction is independent per device. Overlap the WDDM driver
+  // latency instead of waiting for twelve serial cuCtxDestroy calls.
+
+  thread_param_t *dd_threads_param = (thread_param_t *) hccalloc (backend_ctx->backend_devices_cnt, sizeof (thread_param_t));
+  hc_thread_t    *dd_threads       = (hc_thread_t *)    hccalloc (backend_ctx->backend_devices_cnt, sizeof (hc_thread_t));
+
+  for (int backend_devices_idx = 0; backend_devices_idx < backend_ctx->backend_devices_cnt; backend_devices_idx++)
+  {
+    dd_threads_param[backend_devices_idx].hashcat_ctx = hashcat_ctx;
+    dd_threads_param[backend_devices_idx].tid         = backend_devices_idx;
+
+    hc_thread_create (dd_threads[backend_devices_idx], thread_backend_ctx_device_destroy, &dd_threads_param[backend_devices_idx]);
+  }
+
+  hc_thread_wait (backend_ctx->backend_devices_cnt, dd_threads);
+
+  hcfree (dd_threads_param);
+  hcfree (dd_threads);
 
   backend_ctx->backend_devices_cnt    = 0;
   backend_ctx->backend_devices_active = 0;
@@ -14474,6 +14559,93 @@ static u32 backend_device_sharers (const backend_ctx_t *backend_ctx, const hc_de
   return result;
 }
 
+static u64 shooter_host_staging_cap (MAYBE_UNUSED const hashcat_ctx_t *hashcat_ctx)
+{
+  #if defined (_WIN)
+  const backend_ctx_t *backend_ctx = hashcat_ctx->backend_ctx;
+
+  if (backend_ctx->cuda_devices_active != 12) return 0;
+
+  int active_4090s = 0;
+
+  for (int backend_devices_idx = 0; backend_devices_idx < backend_ctx->backend_devices_cnt; backend_devices_idx++)
+  {
+    const hc_device_param_t *device_param = &backend_ctx->devices_param[backend_devices_idx];
+
+    if (device_param->skipped == true) continue;
+
+    if (device_param->is_cuda == false) return 0;
+    if (device_param->device_name == NULL) return 0;
+    if (strcmp (device_param->device_name, "NVIDIA GeForce RTX 4090") != 0) return 0;
+
+    active_4090s++;
+  }
+
+  if (active_4090s != 12) return 0;
+
+  // Two 1.5 GiB candidate batches per GPU retain the producer/device overlap from the newer
+  // pipeline while matching the old build's effective batch geometry. The prior generic 8 GiB
+  // ceiling committed about 97 GiB on this rig for fast hashes and made short jobs spend more time
+  // preparing memory than cracking. Set the environment variable to 0 to restore that generic cap.
+
+  u64 cap_mib = 3072;
+
+  const char *cap_env = getenv ("HASHCAT_SHOOTER_HOST_STAGING_MB");
+
+  if (cap_env != NULL) cap_mib = strtoull (cap_env, NULL, 10);
+
+  if (cap_mib == 0) return 0;
+
+  return cap_mib * 1024 * 1024;
+  #else
+  return 0;
+  #endif
+}
+
+#if defined (_WIN)
+HC_API_CALL DWORD thread_backend_host_staging_init (void *p)
+#else
+HC_API_CALL void *thread_backend_host_staging_init (void *p)
+#endif
+{
+  thread_param_t *thread_param = (thread_param_t *) p;
+
+  hashcat_ctx_t *hashcat_ctx = thread_param->hashcat_ctx;
+  backend_ctx_t *backend_ctx = hashcat_ctx->backend_ctx;
+
+  hc_device_param_t *device_param = &backend_ctx->devices_param[thread_param->tid];
+
+  if (device_param->skipped == true) return 0;
+
+  for (int slot_pos = 0; slot_pos < PW_PIPE_SLOTS; slot_pos++)
+  {
+    pw_batch_t *slot = &device_param->pws_slot[slot_pos];
+
+    // These buffers are fully written before their used prefix is uploaded. Unlike hcmalloc(), raw
+    // malloc does not ask the Windows CRT to zero tens of gigabytes that candidate construction will
+    // overwrite. pw_batch_reset() below initializes the only sentinel read before the first write.
+
+    slot->pws_comp = (u32 *)      malloc (device_param->size_pws_comp);
+    slot->pws_idx  = (pw_idx_t *) malloc (device_param->size_pws_idx);
+    slot->pws_base = (pw_pre_t *) malloc (device_param->size_pws_base);
+
+    if ((slot->pws_comp == NULL) || (slot->pws_idx == NULL) || (slot->pws_base == NULL))
+    {
+      fprintf (stderr, "%s\n", MSG_ENOMEM);
+
+      return 0;
+    }
+
+    pw_batch_reset (slot);
+  }
+
+  device_param->pws_comp     = device_param->pws_slot[0].pws_comp;
+  device_param->pws_idx      = device_param->pws_slot[0].pws_idx;
+  device_param->pws_base_buf = device_param->pws_slot[0].pws_base;
+
+  return 0;
+}
+
 int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
 {
   const bitmap_ctx_t         *bitmap_ctx          = hashcat_ctx->bitmap_ctx;
@@ -14509,6 +14681,13 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
   backend_ctx->kernel_accel_warnings = false;
   backend_ctx->extra_size_warning    = false;
   backend_ctx->mixed_warnings        = false;
+
+  const u64 host_staging_cap = shooter_host_staging_cap (hashcat_ctx);
+
+  if ((host_staging_cap > 0) && (user_options->quiet == false))
+  {
+    event_log_info (hashcat_ctx, "Shooter fast-start: host candidate staging limited to %" PRIu64 " MB per RTX 4090 (set HASHCAT_SHOOTER_HOST_STAGING_MB=0 to disable).", host_staging_cap / (1024 * 1024));
+  }
 
   for (int backend_devices_idx = 0; backend_devices_idx < backend_ctx->backend_devices_cnt; backend_devices_idx++)
   {
@@ -17474,6 +17653,8 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
       accel_limit_host = MIN (accel_limit_host, GiB8);
     }
 
+    if (host_staging_cap > 0) accel_limit_host = MIN (accel_limit_host, host_staging_cap);
+
     // device_available_mem belongs to the physical device, so every clone sharing it has to budget
     // against its own share rather than against the whole. accel_limit_host above already divides for
     // the same reason. Without this a bridge with ten units passes ten independent checks and then the
@@ -17955,21 +18136,9 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
       device_param->h_tmps = h_tmps;
     }
 
-    // One set of staging buffers per pipeline slot. The slots are what the buffers belong to, and
-    // device_param->pws_comp / pws_idx are only a view of whichever slot is being launched.
-
-    for (int slot_pos = 0; slot_pos < PW_PIPE_SLOTS; slot_pos++)
-    {
-      pw_batch_t *slot = &device_param->pws_slot[slot_pos];
-
-      slot->pws_comp = (u32 *)      hcmalloc (size_pws_comp);
-      slot->pws_idx  = (pw_idx_t *) hcmalloc (size_pws_idx);
-      slot->pws_base = (pw_pre_t *) hcmalloc (size_pws_base);
-    }
-
-    device_param->pws_comp     = device_param->pws_slot[0].pws_comp;
-    device_param->pws_idx      = device_param->pws_slot[0].pws_idx;
-    device_param->pws_base_buf = device_param->pws_slot[0].pws_base;
+    // Host staging buffers are allocated in a parallel pass after every device has been sized. They
+    // are independent and very large on multi-GPU rigs, so serial allocation needlessly serializes
+    // Windows' page-commit/zeroing work.
 
     pw_t *combs_buf = (pw_t *) hccalloc (KERNEL_COMBS, sizeof (pw_t));
 
@@ -18231,6 +18400,22 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
     EVENT_DATA (EVENT_BACKEND_DEVICE_INIT_POST, &backend_devices_idx, sizeof (int));
   }
 
+  thread_param_t *host_threads_param = (thread_param_t *) hccalloc (backend_ctx->backend_devices_cnt, sizeof (thread_param_t));
+  hc_thread_t    *host_threads       = (hc_thread_t *)    hccalloc (backend_ctx->backend_devices_cnt, sizeof (hc_thread_t));
+
+  for (int backend_devices_idx = 0; backend_devices_idx < backend_ctx->backend_devices_cnt; backend_devices_idx++)
+  {
+    host_threads_param[backend_devices_idx].hashcat_ctx = hashcat_ctx;
+    host_threads_param[backend_devices_idx].tid         = backend_devices_idx;
+
+    hc_thread_create (host_threads[backend_devices_idx], thread_backend_host_staging_init, &host_threads_param[backend_devices_idx]);
+  }
+
+  hc_thread_wait (backend_ctx->backend_devices_cnt, host_threads);
+
+  hcfree (host_threads_param);
+  hcfree (host_threads);
+
   int rc = 0;
 
   backend_ctx->memory_hit_warning    = (backend_memory_hit_warnings    == backend_ctx->backend_devices_active);
@@ -18271,18 +18456,22 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
   return rc;
 }
 
-void backend_session_destroy (hashcat_ctx_t *hashcat_ctx)
+#if defined (_WIN)
+HC_API_CALL DWORD thread_backend_session_destroy (void *p)
+#else
+HC_API_CALL void *thread_backend_session_destroy (void *p)
+#endif
 {
+  thread_param_t *thread_param = (thread_param_t *) p;
+
+  hashcat_ctx_t *hashcat_ctx = thread_param->hashcat_ctx;
   backend_ctx_t *backend_ctx = hashcat_ctx->backend_ctx;
 
-  if (backend_ctx->enabled == false) return;
+  hc_device_param_t *device_param = &backend_ctx->devices_param[thread_param->tid];
 
-  for (int backend_devices_idx = 0; backend_devices_idx < backend_ctx->backend_devices_cnt; backend_devices_idx++)
+  if (device_param->skipped == true) return 0;
+
   {
-    hc_device_param_t *device_param = &backend_ctx->devices_param[backend_devices_idx];
-
-    if (device_param->skipped == true) continue;
-
     hcfree_bridge_aligned (device_param->h_tmps);
 
     for (int slot_pos = 0; slot_pos < PW_PIPE_SLOTS; slot_pos++)
@@ -18648,6 +18837,34 @@ void backend_session_destroy (hashcat_ctx_t *hashcat_ctx)
     device_param->brain_link_out_buf  = NULL;
     #endif
   }
+
+  return 0;
+}
+
+void backend_session_destroy (hashcat_ctx_t *hashcat_ctx)
+{
+  backend_ctx_t *backend_ctx = hashcat_ctx->backend_ctx;
+
+  if (backend_ctx->enabled == false) return;
+
+  // Buffer/module teardown is per-context and independent. Running it concurrently avoids paying
+  // the Windows driver release latency twelve times in series at the end of short jobs.
+
+  thread_param_t *threads_param = (thread_param_t *) hccalloc (backend_ctx->backend_devices_cnt, sizeof (thread_param_t));
+  hc_thread_t    *c_threads     = (hc_thread_t *)    hccalloc (backend_ctx->backend_devices_cnt, sizeof (hc_thread_t));
+
+  for (int backend_devices_idx = 0; backend_devices_idx < backend_ctx->backend_devices_cnt; backend_devices_idx++)
+  {
+    threads_param[backend_devices_idx].hashcat_ctx = hashcat_ctx;
+    threads_param[backend_devices_idx].tid         = backend_devices_idx;
+
+    hc_thread_create (c_threads[backend_devices_idx], thread_backend_session_destroy, &threads_param[backend_devices_idx]);
+  }
+
+  hc_thread_wait (backend_ctx->backend_devices_cnt, c_threads);
+
+  hcfree (threads_param);
+  hcfree (c_threads);
 }
 
 void backend_session_reset (hashcat_ctx_t *hashcat_ctx)
@@ -18679,10 +18896,14 @@ void backend_session_reset (hashcat_ctx_t *hashcat_ctx)
     device_param->innerloop_pos  = 0;
     device_param->innerloop_left = 0;
 
-    // some more resets:
+    // Reset only the batch metadata that candidate construction reads. pw_add() overwrites every
+    // compressed-password byte that is uploaded and only uploads that written prefix, so clearing
+    // the full staging area here merely faults tens of gigabytes of zero pages into RAM on this rig.
 
-    if (device_param->pws_comp) memset (device_param->pws_comp, 0, device_param->size_pws_comp);
-    if (device_param->pws_idx)  memset (device_param->pws_idx,  0, device_param->size_pws_idx);
+    for (int slot_pos = 0; slot_pos < PW_PIPE_SLOTS; slot_pos++)
+    {
+      pw_batch_reset (&device_param->pws_slot[slot_pos]);
+    }
 
     device_param->pws_cnt = 0;
 
@@ -18770,8 +18991,12 @@ int backend_session_update_mp (hashcat_ctx_t *hashcat_ctx)
 
     if (device_param->is_cuda == true)
     {
+      if (hc_cuCtxPushCurrent (hashcat_ctx, device_param->cuda_context) == -1) return -1;
+
       if (hc_cuMemcpyHtoD (hashcat_ctx, device_param->cuda_d_root_css_buf,   mask_ctx->root_css_buf,   device_param->size_root_css)   == -1) return -1;
       if (hc_cuMemcpyHtoD (hashcat_ctx, device_param->cuda_d_markov_css_buf, mask_ctx->markov_css_buf, device_param->size_markov_css) == -1) return -1;
+
+      if (hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context) == -1) return -1;
     }
 
     if (device_param->is_hip == true)
@@ -18826,8 +19051,12 @@ int backend_session_update_mp_rl (hashcat_ctx_t *hashcat_ctx, const u32 css_cnt_
 
     if (device_param->is_cuda == true)
     {
+      if (hc_cuCtxPushCurrent (hashcat_ctx, device_param->cuda_context) == -1) return -1;
+
       if (hc_cuMemcpyHtoD (hashcat_ctx, device_param->cuda_d_root_css_buf,   mask_ctx->root_css_buf,   device_param->size_root_css)   == -1) return -1;
       if (hc_cuMemcpyHtoD (hashcat_ctx, device_param->cuda_d_markov_css_buf, mask_ctx->markov_css_buf, device_param->size_markov_css) == -1) return -1;
+
+      if (hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context) == -1) return -1;
     }
 
     if (device_param->is_hip == true)

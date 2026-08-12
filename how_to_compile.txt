@@ -63,11 +63,15 @@ The legacy yescrypt mode 67000 compatibility build reports:
 The 12 x RTX 4090 Windows fast-start build reports:
     v7.1.2-shooter.20260811.4
 
+The current local checkpoint/startup/elapsed-time build reports (build date is
+generated when make starts):
+    v7.1.2-shooter.20260812.5
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:
 
-    make SHOOTER_BUILD_REVISION=4 -j
+    make SHOOTER_BUILD_REVISION=5 -j
 
 ------------------------------------------------------------------------
  BUILD (alternative - from inside an MSYS2 MinGW64 shell directly)
@@ -114,9 +118,12 @@ RTX 4090 persisted-autotune behavior, invalidation, and cache reset are
 documented in:
     M:\github\hashcat_shooter\RTX_4090_AUTOTUNE_CACHE.md
 
-The automatic 12 x RTX 4090 CUDA-only startup optimization and its override
-are documented in:
+The automatic 12 x RTX 4090 startup optimizations, candidate-staging memory
+limit, measurements, and environment-variable overrides are documented in:
     M:\github\hashcat_shooter\docs\startup-optimization.md
+
+Multi-GPU checkpoint enable, cancel, and restore behavior is documented in:
+    M:\github\hashcat_shooter\docs\checkpoint-control.md
 
 The runtime cache is written beside hashcat.exe as:
     M:\github\hashcat_shooter\hashcat.autotune-cache

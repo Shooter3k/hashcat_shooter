@@ -2890,6 +2890,9 @@ int status_ctx_init (hashcat_ctx_t *hashcat_ctx)
   status_ctx->checkpoint_shutdown = false;
   status_ctx->finish_shutdown     = false;
 
+  status_ctx->checkpoint_threads_active  = 0;
+  status_ctx->checkpoint_threads_waiting = 0;
+
   status_ctx->hashcat_status_final = (hashcat_status_t *) hcmalloc (sizeof (hashcat_status_t));
 
   hc_thread_mutex_init (status_ctx->mux_dispatcher);

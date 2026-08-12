@@ -3255,6 +3255,9 @@ typedef struct status_ctx
   bool checkpoint_shutdown;
   bool finish_shutdown;
 
+  u32 checkpoint_threads_active;
+  u32 checkpoint_threads_waiting;
+
   hc_thread_mutex_t mux_dispatcher;
   hc_thread_mutex_t mux_counter;
   hc_thread_mutex_t mux_hwmon;

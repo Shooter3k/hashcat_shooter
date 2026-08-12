@@ -849,6 +849,95 @@ static int fill_multi (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_par
 // booked against the salts. A producer that books its own passes 0: fill_slow does, because only it
 // knows how many words it had to skip to fill the batch.
 
+// A checkpoint is a barrier between completed kernel launches. Workers wait here without returning
+// from calc(), which preserves their CUDA/HIP context, autotuning values and any prefetched batches.
+// Cancelling the request releases every waiter. The final live worker to arrive converts the request
+// into the normal checkpoint abort and releases the waiters to tear down normally.
+
+static bool checkpoint_wait_worker (hashcat_ctx_t *hashcat_ctx)
+{
+  status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  hc_thread_mutex_lock (status_ctx->mux_dispatcher);
+
+  if (status_ctx->checkpoint_shutdown == false)
+  {
+    const bool keep_running = status_ctx->run_thread_level1;
+
+    hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+
+    return keep_running;
+  }
+
+  if ((status_ctx->devices_status != STATUS_RUNNING) && (status_ctx->devices_status != STATUS_PAUSED))
+  {
+    hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+
+    return false;
+  }
+
+  status_ctx->checkpoint_threads_waiting++;
+
+  if (status_ctx->checkpoint_threads_waiting >= status_ctx->checkpoint_threads_active)
+  {
+    myabort_checkpoint (hashcat_ctx);
+
+    hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+
+    return false;
+  }
+
+  hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+
+  while (true)
+  {
+    usleep (10000);
+
+    hc_thread_mutex_lock (status_ctx->mux_dispatcher);
+
+    if (status_ctx->checkpoint_shutdown == false)
+    {
+      if (status_ctx->checkpoint_threads_waiting > 0) status_ctx->checkpoint_threads_waiting--;
+
+      const bool keep_running = status_ctx->run_thread_level1;
+
+      hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+
+      return keep_running;
+    }
+
+    if ((status_ctx->devices_status != STATUS_RUNNING) && (status_ctx->devices_status != STATUS_PAUSED))
+    {
+      hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+
+      return false;
+    }
+
+    hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+  }
+}
+
+static void checkpoint_retire_worker (hashcat_ctx_t *hashcat_ctx)
+{
+  status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  hc_thread_mutex_lock (status_ctx->mux_dispatcher);
+
+  if (status_ctx->checkpoint_threads_active > 0) status_ctx->checkpoint_threads_active--;
+
+  // A worker can finish naturally at the edge of the keyspace while another worker is already at
+  // the checkpoint barrier. Retiring it can therefore complete the barrier just like arriving does.
+
+  if ((status_ctx->checkpoint_shutdown == true)
+   && ((status_ctx->devices_status == STATUS_RUNNING) || (status_ctx->devices_status == STATUS_PAUSED))
+   && (status_ctx->checkpoint_threads_waiting >= status_ctx->checkpoint_threads_active))
+  {
+    myabort_checkpoint (hashcat_ctx);
+  }
+
+  hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+}
+
 static int pipe_run (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, pw_pipe_t *pipe, const bool slow, const u64 reject_amplifier)
 {
   hashes_t     *hashes     = hashcat_ctx->hashes;
@@ -860,8 +949,10 @@ static int pipe_run (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
 
   int rc_final = 0;
 
-  while (status_ctx->run_thread_level1 == true)
+  while (true)
   {
+    if (checkpoint_wait_worker (hashcat_ctx) == false) break;
+
     pw_batch_t *batch = pw_pipe_take (pipe);
 
     if (batch == NULL) break;
@@ -955,7 +1046,7 @@ static int pipe_run (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
       status_ctx->words_cur = (slow == true) ? get_highest_words_done (hashcat_ctx) : get_lowest_words_done (hashcat_ctx);
     }
 
-    if (status_ctx->run_thread_level1 == false) break;
+    if (checkpoint_wait_worker (hashcat_ctx) == false) break;
   }
 
   pw_pipe_stop (pipe);
@@ -1204,8 +1295,10 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
     }
     else if (base_source == BASE_SOURCE_MASK)
     {
-      while (status_ctx->run_thread_level1 == true)
+      while (true)
       {
+        if (checkpoint_wait_worker (hashcat_ctx) == false) break;
+
         const u64 work = get_work (hashcat_ctx, device_param, -1);
 
         if (work == 0) break;
@@ -1309,18 +1402,33 @@ HC_API_CALL void *thread_calc (void *p)
   {
     if (bridge_ctx->thread_init != BRIDGE_DEFAULT)
     {
-      if (bridge_ctx->thread_init (hashcat_ctx, bridge_ctx->platform_context, device_param, hashconfig, hashes) == false) return 0;
+      if (bridge_ctx->thread_init (hashcat_ctx, bridge_ctx->platform_context, device_param, hashconfig, hashes) == false)
+      {
+        checkpoint_retire_worker (hashcat_ctx);
+
+        return 0;
+      }
     }
   }
 
   if (device_param->is_cuda == true)
   {
-    if (hc_cuCtxPushCurrent (hashcat_ctx, device_param->cuda_context) == -1) return 0;
+    if (hc_cuCtxPushCurrent (hashcat_ctx, device_param->cuda_context) == -1)
+    {
+      checkpoint_retire_worker (hashcat_ctx);
+
+      return 0;
+    }
   }
 
   if (device_param->is_hip == true)
   {
-    if (hc_hipSetDevice (hashcat_ctx, device_param->hip_device) == -1) return 0;
+    if (hc_hipSetDevice (hashcat_ctx, device_param->hip_device) == -1)
+    {
+      checkpoint_retire_worker (hashcat_ctx);
+
+      return 0;
+    }
   }
 
   if (calc (hashcat_ctx, device_param) == -1)
@@ -1332,7 +1440,12 @@ HC_API_CALL void *thread_calc (void *p)
 
   if (device_param->is_cuda == true)
   {
-    if (hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context) == -1) return 0;
+    if (hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context) == -1)
+    {
+      checkpoint_retire_worker (hashcat_ctx);
+
+      return 0;
+    }
   }
 
   if (bridge_ctx->enabled == true)
@@ -1342,6 +1455,8 @@ HC_API_CALL void *thread_calc (void *p)
       bridge_ctx->thread_term (hashcat_ctx, bridge_ctx->platform_context, device_param, hashconfig, hashes);
     }
   }
+
+  checkpoint_retire_worker (hashcat_ctx);
 
   return 0;
 }
