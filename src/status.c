@@ -607,13 +607,9 @@ char *status_get_guess_base (const hashcat_ctx_t *hashcat_ctx)
   const user_options_t       *user_options       = hashcat_ctx->user_options;
   const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
-  // -a 7 puts the mask on the left of the candidate and the word on the right, and Guess.Base names the
-  // left hand side. So it keeps answering with the mask whatever the base words are read through.
-
-  if ((user_options_extra->base_source == BASE_SOURCE_FEED) && (user_options->attack_mode != ATTACK_MODE_HYBRID2))
-  {
-    return status_get_guess_feed (hashcat_ctx);
-  }
+  // Combinator mode owns its input names. In whole-candidate-rule runs its words are delivered through
+  // the generic feed machinery, but that helper has no standalone feed name and would return NULL here.
+  // Resolve the actual combinator dictionaries before considering the generic feed display instead.
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {
@@ -626,6 +622,14 @@ char *status_get_guess_base (const hashcat_ctx_t *hashcat_ctx)
       return strdup (combinator_ctx->dict1);
     }
     return strdup (combinator_ctx->dict2);
+  }
+
+  // -a 7 puts the mask on the left of the candidate and the word on the right, and Guess.Base names the
+  // left hand side. So it keeps answering with the mask whatever the base words are read through.
+
+  if ((user_options_extra->base_source == BASE_SOURCE_FEED) && (user_options->attack_mode != ATTACK_MODE_HYBRID2))
+  {
+    return status_get_guess_feed (hashcat_ctx);
   }
 
   if (user_options->attack_mode == ATTACK_MODE_BF)

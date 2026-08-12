@@ -1,5 +1,28 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260812.15
+
+Mode-1 whole-candidate-rule status correction.
+
+### Fixed
+
+- A two-wordlist `-a 1` attack using `-r` or `-g` now reports the actual
+  left-side wordlist in `Guess.Base` instead of `File ((null))`.
+- The error was limited to status presentation: the combinator candidate
+  pipeline already retained and processed both wordlists. Combinator status
+  now resolves its dictionary names before consulting the generic feed label.
+
+### Verification
+
+- Rebuilt the Windows production executable and confirmed
+  `hashcat.exe --version` reports `v7.1.2-shooter.20260812.15`.
+- Reproduced the reported two-wordlist `-a 1 -r` layout with the same input
+  wordlists and rule file. Interactive status reported the correct left and
+  right paths with no `(null)` value.
+- Verified deterministic `--stdout` candidates for the two-file final-rule,
+  three-file final-rule, and unchanged two-file no-rule paths as
+  `ShooterStatus!`, `ShooterStatusCheck!`, and `ShooterStatus` respectively.
+
 ## v7.1.2-shooter.20260812.14 (local source build)
 
 Dynamic multi-file combination through attack mode 1.

@@ -88,6 +88,9 @@ The whole-candidate-rules and visible-quit-progress build reports:
 The dynamic multi-file mode-1 build reports:
     v7.1.2-shooter.20260812.14
 
+The mode-1 whole-candidate-rule status-name fix reports:
+    v7.1.2-shooter.20260812.15
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:

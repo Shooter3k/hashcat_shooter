@@ -5,9 +5,8 @@
 and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
-The current source build is `v7.1.2-shooter.20260812.14`; the current
-published build is
-[`v7.1.2-shooter.20260812.14`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.14).
+The current source and published build is
+[`v7.1.2-shooter.20260812.15`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.15).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -66,7 +65,7 @@ and examples are in
 [docs/multi-file-combination.md](docs/multi-file-combination.md).
 
 Ordinary `-r` rule files and `-g` generated rules can now be applied to the
-complete candidate produced by modes 1, 3, 6, 7, and 8. For example,
+complete candidate produced by modes 1, 3, 6, and 7. For example,
 mode 1 applies the rule to `left + right`, mode 6 applies it to `word + mask`,
 and multi-file mode 1 applies it after all words have been concatenated. Mode 8
 retains its upstream native rule implementation; mode 9 keeps its native
@@ -74,6 +73,11 @@ association-rule support. Without `-r` or `-g`, the original optimized attack
 path is unchanged. See
 [docs/whole-candidate-rules.md](docs/whole-candidate-rules.md) for ordering,
 examples, accounting, restore behavior, and compatibility limits.
+
+For two-wordlist mode-1 attacks with whole-candidate rules, status names the
+actual left and right files in `Guess.Base` and `Guess.Mod`. The `.15` fix
+prevents the left filename from appearing as `File ((null))`; it does not alter
+candidate generation or the native no-rule combinator path.
 
 ### Interactive runtime controls
 
@@ -135,6 +139,7 @@ share stdin with the interactive menu. Full behavior and limitations are in
 | Buffered stdout outfile recovery | The same outfile-open helper is used for normal recovered results and buffered `--stdout` output directed through `-o`. |
 | Resumable stdout output | `--stdout -o` checkpoints bind the candidate position to an exact outfile byte boundary and roll back any partial tail before restore. Interactive controls and messages use stderr. |
 | Visible quit progress | Pressing `q` or `Q` reports candidate-dispatch and GPU-kernel drain, GPU-worker completion, session-service shutdown, GPU-resource release, and final restore/session-file finalization instead of leaving the console apparently idle. |
+| Accurate combinator status | Two-wordlist `-a 1` runs with whole-candidate `-r`/`-g` rules report the actual left and right wordlist paths instead of a `(null)` feed label. |
 | Total elapsed time | The final summary now prints `Total Time` calculated from the displayed `Started` and `Stopped` timestamps. |
 | Dated build identity | Production builds report `v7.1.2-shooter.YYYYMMDD.REVISION`, making the binary's source/release generation visible in `hashcat.exe --version`. |
 
@@ -204,6 +209,9 @@ includes:
   outfile tests for the Windows retry path.
 - GPU known-answer tests for both legacy yescrypt mode 67000 and current mode
   36100.
+- Exact two-wordlist `-a 1 -r` status reproduction using the reported input
+  files, plus deterministic candidate-output checks for ruled two- and
+  three-wordlist attacks and the unchanged native two-wordlist path.
 
 These numbers describe the recorded hardware, driver state, and workloads;
 they are not universal performance guarantees. The test-by-test evidence is
