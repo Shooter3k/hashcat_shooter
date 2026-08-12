@@ -3327,12 +3327,15 @@ typedef struct status_ctx
   u32  stdin_read_timeout_cnt;
 
   /**
-   * runtime limit pause / [e]xtend feature (appended to preserve struct layout)
+   * runtime limit [e]xtend / [l]ower features (appended to preserve struct layout)
    */
 
   u32         runtime_status;
   hc_timer_t  timer_runtime_paused;
   double      msec_runtime_paused;
+  bool        runtime_lower_enabled;
+  hc_timer_t  timer_runtime_lowered;
+  double      msec_runtime_lowered;
 
 } status_ctx_t;
 

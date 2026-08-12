@@ -20,7 +20,10 @@ static const u32   DGST_POS3      = 3;
 static const u32   DGST_SIZE      = DGST_SIZE_4_8;
 static const u32   HASH_CATEGORY  = HASH_CATEGORY_GENERIC_KDF;
 static const char *HASH_NAME      = "yescrypt";
-static const u64   KERN_TYPE      = 36100;
+#ifndef YESCRYPT_KERN_TYPE
+#define YESCRYPT_KERN_TYPE 36100
+#endif
+static const u64   KERN_TYPE      = YESCRYPT_KERN_TYPE;
 static const u32   OPTI_TYPE      = OPTI_TYPE_ZERO_BYTE;
 static const u64   OPTS_TYPE      = OPTS_TYPE_STOCK_MODULE
                                   | OPTS_TYPE_PT_GENERATE_LE

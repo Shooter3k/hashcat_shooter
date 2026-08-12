@@ -47,6 +47,24 @@ Notes:
 Output binary:
     M:\github\hashcat_shooter\hashcat.exe
 
+Version format:
+    v7.1.2-shooter.YYYYMMDD.REVISION
+
+For example, the first build revision produced on August 11, 2026 reports:
+    v7.1.2-shooter.20260811.1
+
+The runtime lower-control build from the same date reports:
+    v7.1.2-shooter.20260811.2
+
+The legacy yescrypt mode 67000 compatibility build reports:
+    v7.1.2-shooter.20260811.3
+
+The date is generated automatically when make starts. Increment
+SHOOTER_BUILD_REVISION in src\Makefile when producing another published
+revision on the same date. For a one-off build, it can also be overridden:
+
+    make SHOOTER_BUILD_REVISION=4 -j
+
 ------------------------------------------------------------------------
  BUILD (alternative - from inside an MSYS2 MinGW64 shell directly)
 ------------------------------------------------------------------------
@@ -81,6 +99,12 @@ exe launches, then let it find CUDA via the NVIDIA driver:
 
 Quick tests for the extended modes are documented in:
     M:\github\hashcat_shooter\docs\multi-way-combination.md
+
+Interactive runtime extend/lower controls are documented in:
+    M:\github\hashcat_shooter\docs\runtime-controls.md
+
+Legacy yescrypt mode 67000 compatibility is documented in:
+    M:\github\hashcat_shooter\docs\mode-67000.md
 
 RTX 4090 persisted-autotune behavior, invalidation, and cache reset are
 documented in:

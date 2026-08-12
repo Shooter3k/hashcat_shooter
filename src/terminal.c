@@ -25,8 +25,8 @@ static const size_t TERMINAL_LINE_LENGTH = 79;
 static const char *const PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit => ";
 static const char *const PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit => ";
 
-static const char *const RUNTIME_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend => ";
-static const char *const RUNTIME_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend => ";
+static const char *const RUNTIME_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower => ";
+static const char *const RUNTIME_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower => ";
 
 void welcome_screen (hashcat_ctx_t *hashcat_ctx, const char *version_tag)
 {
@@ -448,6 +448,11 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
 
           if (status_ctx->runtime_status == STATUS_RUNNING)
           {
+            if (status_ctx->runtime_lower_enabled == true)
+            {
+              StopLowerRuntime (hashcat_ctx);
+            }
+
             event_log_info (hashcat_ctx, "Extend enabled. Runtime limit is paused.");
 
             SuspendRuntime (hashcat_ctx);
@@ -457,6 +462,39 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
             event_log_info (hashcat_ctx, "Extend disabled. Runtime limit is running.");
 
             ResumeRuntime (hashcat_ctx);
+          }
+
+          event_log_info (hashcat_ctx, NULL);
+        }
+
+        if (quiet == false) send_prompt (hashcat_ctx);
+
+        break;
+
+      case 'l':
+
+        if (user_options->runtime > 0)
+        {
+          event_log_info (hashcat_ctx, NULL);
+
+          if (status_ctx->runtime_status == STATUS_PAUSED)
+          {
+            ResumeRuntime (hashcat_ctx);
+            StartLowerRuntime (hashcat_ctx);
+
+            event_log_info (hashcat_ctx, "Extend disabled. Lower enabled. Runtime countdown is running at 2x speed.");
+          }
+          else if (status_ctx->runtime_lower_enabled == false)
+          {
+            StartLowerRuntime (hashcat_ctx);
+
+            event_log_info (hashcat_ctx, "Lower enabled. Runtime countdown is running at 2x speed.");
+          }
+          else
+          {
+            StopLowerRuntime (hashcat_ctx);
+
+            event_log_info (hashcat_ctx, "Lower disabled. Runtime countdown is running normally.");
           }
 
           event_log_info (hashcat_ctx, NULL);

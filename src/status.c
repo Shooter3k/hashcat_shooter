@@ -2876,6 +2876,7 @@ int status_ctx_init (hashcat_ctx_t *hashcat_ctx)
 
   status_ctx->devices_status = STATUS_INIT;
   status_ctx->runtime_status = STATUS_RUNNING;
+  status_ctx->runtime_lower_enabled = false;
 
   status_ctx->run_main_level1     = true;
   status_ctx->run_main_level2     = true;

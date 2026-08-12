@@ -377,6 +377,30 @@ int ResumeRuntime (hashcat_ctx_t *hashcat_ctx)
   return 0;
 }
 
+int StartLowerRuntime (hashcat_ctx_t *hashcat_ctx)
+{
+  status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  hc_timer_set (&status_ctx->timer_runtime_lowered);
+
+  status_ctx->runtime_lower_enabled = true;
+
+  return 0;
+}
+
+int StopLowerRuntime (hashcat_ctx_t *hashcat_ctx)
+{
+  status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  const double msec_runtime_lowered = hc_timer_get (status_ctx->timer_runtime_lowered);
+
+  status_ctx->msec_runtime_lowered += msec_runtime_lowered;
+
+  status_ctx->runtime_lower_enabled = false;
+
+  return 0;
+}
+
 int stop_at_checkpoint (hashcat_ctx_t *hashcat_ctx)
 {
   status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
