@@ -5272,6 +5272,67 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
   return rc_final;
 }
 
+#if defined (_WIN)
+static bool shooter_fast_start_cuda_only (hashcat_ctx_t *hashcat_ctx, const int rc_cuda_init, const int rc_nvrtc_init, bool *cuda_api_initialized)
+{
+  const backend_ctx_t  *backend_ctx  = hashcat_ctx->backend_ctx;
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  if (rc_cuda_init  != 0) return false;
+  if (rc_nvrtc_init != 0) return false;
+
+  if (backend_ctx->cuda == NULL) return false;
+
+  // Keep backend-information output complete. This optimization is for real cracking sessions, not
+  // diagnostics where the user explicitly asked to see every installed runtime and device.
+
+  if (user_options->backend_info > 0) return false;
+
+  // The matching 12-card Windows rig defaults to the one runtime it actually uses. Setting the
+  // variable to zero restores upstream's full HIP/OpenCL probing for diagnostics or mixed hardware.
+
+  const char *fast_start_env = getenv ("HASHCAT_SHOOTER_FAST_START");
+
+  if ((fast_start_env != NULL) && (atoi (fast_start_env) == 0)) return false;
+
+  // CUDA has to be initialized before it can identify the installed devices. Remember that this
+  // happened so the normal initialization point later in backend_ctx_init does not call it twice.
+
+  if (hc_cuInit (hashcat_ctx, 0) == -1)
+  {
+    cuda_close (hashcat_ctx);
+
+    return false;
+  }
+
+  *cuda_api_initialized = true;
+
+  int cuda_devices_cnt = 0;
+
+  if (hc_cuDeviceGetCount (hashcat_ctx, &cuda_devices_cnt) == -1) return false;
+
+  if (cuda_devices_cnt != 12) return false;
+
+  for (int cuda_devices_idx = 0; cuda_devices_idx < cuda_devices_cnt; cuda_devices_idx++)
+  {
+    CUdevice cuda_device;
+
+    if (hc_cuDeviceGet (hashcat_ctx, &cuda_device, cuda_devices_idx) == -1) return false;
+
+    char device_name[HCBUFSIZ_TINY] = { 0 };
+
+    if (hc_cuDeviceGetName (hashcat_ctx, device_name, HCBUFSIZ_TINY, cuda_device) == -1) return false;
+
+    hc_string_trim_leading  (device_name);
+    hc_string_trim_trailing (device_name);
+
+    if (strcmp (device_name, "NVIDIA GeForce RTX 4090") != 0) return false;
+  }
+
+  return true;
+}
+#endif
+
 int backend_ctx_init (hashcat_ctx_t *hashcat_ctx)
 {
   backend_ctx_t  *backend_ctx  = hashcat_ctx->backend_ctx;
@@ -5314,7 +5375,8 @@ int backend_ctx_init (hashcat_ctx_t *hashcat_ctx)
    * Load and map CUDA library calls, then init CUDA
    */
 
-  int rc_cuda_init = -1;
+  int rc_cuda_init  = -1;
+  int rc_nvrtc_init = -1;
 
   if (user_options->backend_ignore_cuda == false)
   {
@@ -5339,7 +5401,7 @@ int backend_ctx_init (hashcat_ctx_t *hashcat_ctx)
 
     backend_ctx->nvrtc = nvrtc;
 
-    int rc_nvrtc_init = nvrtc_init (hashcat_ctx);
+    rc_nvrtc_init = nvrtc_init (hashcat_ctx);
 
     if (rc_nvrtc_init == -1)
     {
@@ -5403,13 +5465,25 @@ int backend_ctx_init (hashcat_ctx_t *hashcat_ctx)
     }
   }
 
+  bool shooter_cuda_only = false;
+  bool cuda_api_initialized = false;
+
+  #if defined (_WIN)
+  shooter_cuda_only = shooter_fast_start_cuda_only (hashcat_ctx, rc_cuda_init, rc_nvrtc_init, &cuda_api_initialized);
+
+  if ((shooter_cuda_only == true) && (user_options->quiet == false))
+  {
+    event_log_info (hashcat_ctx, "Shooter fast-start: using CUDA only for 12 RTX 4090 devices (set HASHCAT_SHOOTER_FAST_START=0 to probe every backend).");
+  }
+  #endif
+
   /**
    * Load and map HIP library calls, then init HIP
    */
 
   int rc_hip_init = -1;
 
-  if (user_options->backend_ignore_hip == false)
+  if ((user_options->backend_ignore_hip == false) && (shooter_cuda_only == false))
   {
     HIP_PTR *hip = (HIP_PTR *) hcmalloc (sizeof (HIP_PTR));
 
@@ -5590,7 +5664,7 @@ int backend_ctx_init (hashcat_ctx_t *hashcat_ctx)
 
   int rc_ocl_init = -1;
 
-  if (user_options->backend_ignore_opencl == false)
+  if ((user_options->backend_ignore_opencl == false) && (shooter_cuda_only == false))
   {
     OCL_PTR *ocl = (OCL_PTR *) hcmalloc (sizeof (OCL_PTR));
 
@@ -5666,7 +5740,7 @@ int backend_ctx_init (hashcat_ctx_t *hashcat_ctx)
    * CUDA API: init
    */
 
-  if (backend_ctx->cuda)
+  if ((backend_ctx->cuda) && (cuda_api_initialized == false))
   {
     if (hc_cuInit (hashcat_ctx, 0) == -1)
     {

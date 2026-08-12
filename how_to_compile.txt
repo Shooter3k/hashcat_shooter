@@ -31,12 +31,13 @@ MinGW64 toolchain. The steps below reproduce how hashcat.exe is built.
 This is the exact command used to build. It launches an MSYS2 MinGW64
 login shell, changes into the source dir, and runs a parallel make:
 
-    $env:MSYSTEM='MINGW64'; & 'M:\msys64\usr\bin\bash.exe' -lc 'cd /m/github/hashcat_shooter && make -j 2>&1 | tail -20; echo RC=${PIPESTATUS[0]}'
+    $env:MSYSTEM='MINGW64'; & 'M:\msys64\usr\bin\bash.exe' -lc 'cd /m/github/hashcat_shooter && make PRODUCTION=1 -j 2>&1 | tail -20; echo RC=${PIPESTATUS[0]}'
 
 Notes:
 - $env:MSYSTEM='MINGW64'  selects the MinGW64 environment (so gcc =
   the mingw64 compiler that produces native Windows .exe files).
-- make -j          builds using all CPU cores (parallel).
+- make PRODUCTION=1 -j builds using all CPU cores and embeds the dated shooter
+  version instead of a dirty-tree Git description.
 - RC=0 printed at the end means the build succeeded. Any other value
   means it failed - scroll up in the output for the first error.
 - IMPORTANT: after editing include/types.h, use the CLEAN REBUILD below.
@@ -59,6 +60,9 @@ The runtime lower-control build from the same date reports:
 The legacy yescrypt mode 67000 compatibility build reports:
     v7.1.2-shooter.20260811.3
 
+The 12 x RTX 4090 Windows fast-start build reports:
+    v7.1.2-shooter.20260811.4
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:
@@ -74,7 +78,7 @@ revision on the same date. For a one-off build, it can also be overridden:
 2. Then run:
 
     cd /m/github/hashcat_shooter
-    make -j
+    make PRODUCTION=1 -j
 
 ------------------------------------------------------------------------
  CLEAN REBUILD (from scratch)
@@ -82,7 +86,7 @@ revision on the same date. For a one-off build, it can also be overridden:
 If a build behaves oddly or you want a guaranteed-fresh binary, clean
 first, then build:
 
-    $env:MSYSTEM='MINGW64'; & 'M:\msys64\usr\bin\bash.exe' -lc 'cd /m/github/hashcat_shooter && make clean && make -j 2>&1 | tail -20; echo RC=${PIPESTATUS[0]}'
+    $env:MSYSTEM='MINGW64'; & 'M:\msys64\usr\bin\bash.exe' -lc 'cd /m/github/hashcat_shooter && make clean && make PRODUCTION=1 -j 2>&1 | tail -20; echo RC=${PIPESTATUS[0]}'
 
 (make clean deletes the obj/ artifacts so everything recompiles.)
 
@@ -109,6 +113,10 @@ Legacy yescrypt mode 67000 compatibility is documented in:
 RTX 4090 persisted-autotune behavior, invalidation, and cache reset are
 documented in:
     M:\github\hashcat_shooter\RTX_4090_AUTOTUNE_CACHE.md
+
+The automatic 12 x RTX 4090 CUDA-only startup optimization and its override
+are documented in:
+    M:\github\hashcat_shooter\docs\startup-optimization.md
 
 The runtime cache is written beside hashcat.exe as:
     M:\github\hashcat_shooter\hashcat.autotune-cache
