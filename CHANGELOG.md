@@ -1,5 +1,57 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260813.23
+
+Complete functional verification for the mdxfind named-module layer.
+
+### Fixed
+
+- Replaced the incomplete compatibility-expression path with Hashpipe's
+  tested in-process verifier implementations, retaining mdxfind's expression
+  VM as a fallback. The bridge remains self-contained and launches no helper
+  process.
+- Routed 38 `eN` wrappers away from similarly named numeric hashcat modes
+  whose parser or exact computation differs from mdxfind. Existing numeric
+  hashcat modules remain unchanged.
+- Added mdxfind `$HEX[...]` binary-salt decoding, the two capitalization steps
+  required by `e355`, and compatibility with the documented 16-byte `e539`
+  MYSQL5MD5 prefix.
+- Expanded bridge results to preserve complete long-form targets such as
+  `e943` WPA-EAPOL records. A new comparison-kernel ID prevents stale CUDA
+  cache entries from using the previous temporary-buffer layout.
+- Updated `e942` to the current hashcat mode 22000 WPA parser instead of the
+  deprecated mode 16800 path.
+- Made the vendored mhash integer-size configuration portable across Windows
+  LLP64 and Unix LP64 builds and included the upstream license notices.
+
+### Coverage
+
+- The generated inventory now uses 264 isolated wrappers around exactly
+  compatible numeric hashcat modes and 737 mdxfind compatibility-bridge
+  modules.
+- `e426` (`PARALLEL`) is an mdxfind scheduler pseudo-entry rather than a hash
+  algorithm. `e535` (`SHA1-CUSTOMUSERSALT`) depends on mdxfind's external
+  custom-user/salt state and has no published standalone test vector. Both
+  names remain present without being redirected to an incorrect algorithm.
+
+### Verified
+
+- Forced a complete Windows production rebuild, including all 1,001 `eN`
+  module DLLs, the bridge, its static dependency archives, and the new CUDA
+  comparison kernel. The executable reports
+  `v7.1.2-shooter.20260813.23`.
+- Ran every one of the 988 test hashes in Hashpipe's `HASH_TYPES.md` as an
+  independent CUDA straight-attack known-answer test. All 988 recovered the
+  documented password with no initialization failures, parse errors,
+  exhaustions, or timeouts.
+- Re-ran the six edge vectors that exposed defects (`e283`, `e348`, `e349`,
+  `e355`, `e539`, and `e943`) after rebuilding; all six passed on CUDA.
+- Added direct CUDA known-answer runs for the four standalone pre-995 entries
+  omitted from `HASH_TYPES.md` (`e429`, `e432`, `e433`, and `e676`) and for
+  every post-document mode `e995` through `e1001`; all eleven passed. Together
+  with the 988 documented vectors, this exercises all 999 standalone hash
+  modes in the 1,001-entry registry.
+
 ## v7.1.2-shooter.20260813.22
 
 Magento input compatibility for mdxfind `e987` Argon2.

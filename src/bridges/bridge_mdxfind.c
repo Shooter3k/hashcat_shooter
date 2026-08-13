@@ -1,9 +1,10 @@
 /**
  * Native CPU bridge for mdxfind eN expression modules.
  *
- * mdxfind's checked-in bytecode table is evaluated directly; no mdxfind
- * process is launched and candidates never leave hashcat's address space.
- * OpenSSL is linked statically so release builds need no additional runtime.
+ * Hashpipe's tested implementations are used when available.  The checked-in
+ * mdxfind expression VM remains as a fallback for registry entries that do
+ * not have a Hashpipe handler.  No external process is launched and
+ * candidates never leave hashcat's address space.
  */
 
 #include "common.h"
@@ -16,6 +17,7 @@
 
 #include "mdxfind/hx_vm.h"
 #include "mdxfind/codegen/hx_spec_entry.h"
+#include "mdxfind/hashpipe/hashpipe_engine.h"
 
 #define MDXFIND_TEXT_MAX 1024
 #define MDXFIND_FIELD_MAX 256
@@ -27,7 +29,7 @@ typedef struct mdxfind_tmp
   u32 pw_buf[64];
   u32 pw_len;
 
-  u32 out_buf[32][64];
+  u32 out_buf[32][256];
   u32 out_len[32];
   u32 out_cnt;
 
@@ -51,6 +53,7 @@ typedef struct mdxfind_unit
   char unit_info[128];
 
   hx_vm vm;
+  void *hashpipe_workspace;
 
 } mdxfind_unit_t;
 
@@ -58,10 +61,15 @@ typedef struct bridge_mdxfind
 {
   hx_program program;
 
+  int mdxfind_id;
+  bool use_hashpipe;
+
   mdxfind_unit_t *units;
   int units_cnt;
 
 } bridge_mdxfind_t;
+
+void platform_term (hashcat_ctx_t *hashcat_ctx, void *platform_context);
 
 static bool mdxfind_program_init (hashcat_ctx_t *hashcat_ctx, bridge_mdxfind_t *bridge)
 {
@@ -118,7 +126,13 @@ void *platform_init (hashcat_ctx_t *hashcat_ctx)
 {
   bridge_mdxfind_t *bridge = (bridge_mdxfind_t *) hccalloc (1, sizeof (*bridge));
 
-  if (mdxfind_program_init (hashcat_ctx, bridge) == false)
+  bridge->mdxfind_id = MDXFIND_HASH_MODE_TO_ID (hashcat_ctx->user_options->hash_mode);
+
+  hp_engine_init ();
+
+  bridge->use_hashpipe = hp_engine_has_handler (bridge->mdxfind_id) != 0;
+
+  if ((bridge->use_hashpipe == false) && (mdxfind_program_init (hashcat_ctx, bridge) == false))
   {
     hcfree (bridge->program.code);
     hcfree (bridge);
@@ -133,15 +147,31 @@ void *platform_init (hashcat_ctx_t *hashcat_ctx)
   bridge->units = (mdxfind_unit_t *) hccalloc (units_cnt, sizeof (mdxfind_unit_t));
   bridge->units_cnt = units_cnt;
 
-  const int mdxfind_id = MDXFIND_HASH_MODE_TO_ID (hashcat_ctx->user_options->hash_mode);
-
   for (int unit_idx = 0; unit_idx < units_cnt; unit_idx++)
   {
     mdxfind_unit_t *unit = &bridge->units[unit_idx];
 
-    snprintf (unit->unit_info, sizeof (unit->unit_info), "mdxfind e%d expression VM (CPU)", mdxfind_id);
+    if (bridge->use_hashpipe == true)
+    {
+      snprintf (unit->unit_info, sizeof (unit->unit_info), "mdxfind e%d Hashpipe verifier (CPU)", bridge->mdxfind_id);
 
-    hx_vm_init (&unit->vm, &bridge->program);
+      unit->hashpipe_workspace = hp_engine_workspace_create ();
+
+      if (unit->hashpipe_workspace == NULL)
+      {
+        event_log_error (hashcat_ctx, "mdxfind e%d could not allocate a Hashpipe workspace.", bridge->mdxfind_id);
+
+        platform_term (hashcat_ctx, bridge);
+
+        return NULL;
+      }
+    }
+    else
+    {
+      snprintf (unit->unit_info, sizeof (unit->unit_info), "mdxfind e%d expression VM fallback (CPU)", bridge->mdxfind_id);
+
+      hx_vm_init (&unit->vm, &bridge->program);
+    }
   }
 
   return bridge;
@@ -155,7 +185,10 @@ void platform_term (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, void *platform_cont
 
   for (int unit_idx = 0; unit_idx < bridge->units_cnt; unit_idx++)
   {
-    hx_vm_free (&bridge->units[unit_idx].vm);
+    if (bridge->use_hashpipe == true)
+      hp_engine_workspace_destroy (bridge->units[unit_idx].hashpipe_workspace);
+    else
+      hx_vm_free (&bridge->units[unit_idx].vm);
   }
 
   hcfree (bridge->units);
@@ -214,14 +247,34 @@ bool launch_loop (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, void *platform_contex
   {
     mdxfind_tmp_t *tmp = &tmps[idx];
 
+    tmp->out_cnt = 0;
+
+    if (bridge->use_hashpipe == true)
+    {
+      const int matched = hp_engine_verify (unit->hashpipe_workspace,
+                                            bridge->mdxfind_id,
+                                            (const char *) esalt->target_buf,
+                                            (int) esalt->target_len,
+                                            (const u8 *) tmp->pw_buf,
+                                            (int) tmp->pw_len);
+
+      if (matched == 0) continue;
+      if (esalt->target_len > sizeof (tmp->out_buf[0])) continue;
+
+      memcpy (tmp->out_buf[0], esalt->target_buf, esalt->target_len);
+
+      tmp->out_len[0] = esalt->target_len;
+      tmp->out_cnt = 1;
+
+      continue;
+    }
+
     hx_val result = hx_vm_run (&unit->vm,
                                (const char *) tmp->pw_buf, (int) tmp->pw_len,
                                salt, salt_len,
                                salt2, salt2_len,
                                pepper, pepper_len,
                                user, user_len);
-
-    tmp->out_cnt = 0;
 
     if ((result.data == NULL) || (result.len <= 0)) continue;
 
@@ -239,6 +292,9 @@ bool launch_loop (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, void *platform_contex
   return true;
 }
 
+#if defined (_WIN32)
+__declspec (dllexport)
+#endif
 void bridge_init (bridge_ctx_t *bridge_ctx)
 {
   bridge_ctx->bridge_context_size       = BRIDGE_CONTEXT_SIZE_CURRENT;

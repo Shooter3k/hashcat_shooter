@@ -33,6 +33,7 @@ feeds/*.so
 obj/*/*/*.o
 obj/*.o
 obj/*.a
+obj/hashpipe.*/
 include/CL
 tools/luks_tests
 tools/luks2_tests

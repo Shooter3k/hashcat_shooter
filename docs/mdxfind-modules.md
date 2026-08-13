@@ -21,19 +21,23 @@ use the original `module_00000` filename convention.
 
 The generated modules never edit or replace an existing hashcat module.
 
-- 302 mdxfind modes use an isolated wrapper around a compatible existing
+- 264 mdxfind modes use an isolated wrapper around a compatible existing
   hashcat module. These keep that module's parser, self-test, optimized kernel,
   and input format.
-- 699 modes use the bundled mdxfind expression bridge. Candidate expressions
-  are evaluated on native CPU bridge units, and hashcat's comparison kernel
-  performs normal multi-hash lookup on the results.
+- 737 modes use the bundled mdxfind compatibility bridge. Its native CPU
+  units use the Hashpipe verifier implementations exercised by mdxfind's
+  published test vectors, with mdxfind's checked-in expression VM as a
+  fallback. Hashcat's comparison kernel performs normal multi-hash lookup on
+  verified results.
 
-mdxfind's checked-in expression table does not contain executable bytecode for
-every registry entry. Some entries are explicitly classified as outliers, and
-some expression programs require legacy primitives not linked into this
-bridge. Their named modules still exist so the registry and CLI are complete,
-but they stop at bridge initialization with a specific diagnostic. They never
-fall back to a different hash algorithm.
+The documented algorithm set is verified against all 988 vectors in
+Hashpipe's `HASH_TYPES.md`; direct known-answer tests cover the eleven
+standalone modes omitted from that document. `e426` (`PARALLEL`) is a
+scheduler pseudo-entry, not a hash algorithm, and `e535`
+(`SHA1-CUSTOMUSERSALT`) is an mdxfind outlier that depends on its external
+custom-user/salt state and has no published standalone vector. Their named
+entries remain present so the registry and CLI stay complete; neither is
+silently redirected to a different algorithm.
 
 The complete generated inventory is in
 [`mdxfind-modules.json`](mdxfind-modules.json). An `implementation` value that
@@ -84,6 +88,8 @@ python tools/generate_mdxfind_modules.py `
 ```
 
 The generator reads `Types[]` and `Maphashcat[]` from `mdxfind.c`, validates
-that the expected 1,001 algorithms are present, writes every `module_eN.c`
+that the expected 1,001 entries are present, writes every `module_eN.c`
 wrapper, and refreshes the JSON inventory. The bridge VM sources are vendored
-from mdxfind under `src/bridges/mdxfind` with their MIT license.
+from mdxfind under `src/bridges/mdxfind`. The Hashpipe verifier and the source
+dependencies it needs are under `src/bridges/mdxfind/hashpipe`, together with
+their license notices.

@@ -32,7 +32,7 @@ static const u32   DGST_POS3      = 3;
 static const u32   DGST_SIZE      = DGST_SIZE_4_4;
 static const u32   HASH_CATEGORY  = HASH_CATEGORY_UNDEFINED;
 static const char *HASH_NAME      = "mdxfind e" MDXFIND_STRINGIFY (MDXFIND_MODE_ID) " " MDXFIND_MODE_NAME;
-static const u64   KERN_TYPE      = 799999;
+static const u64   KERN_TYPE      = 799998;
 static const u32   OPTI_TYPE      = OPTI_TYPE_ZERO_BYTE;
 static const u64   OPTS_TYPE      = OPTS_TYPE_STOCK_MODULE
                                   | OPTS_TYPE_PT_GENERATE_LE
@@ -70,7 +70,7 @@ typedef struct mdxfind_tmp
   u32 pw_buf[64];
   u32 pw_len;
 
-  u32 out_buf[32][64];
+  u32 out_buf[32][256];
   u32 out_len[32];
   u32 out_cnt;
 

@@ -12,7 +12,7 @@
 #include "mdxfind_modes.h"
 
 #define module_init mdxfind_base_module_init
-#include "module_16800.c"
+#include "module_22000.c"
 #undef module_init
 
 static const char *MDXFIND_HASH_NAME = "mdxfind e942 WPA-PMKID";

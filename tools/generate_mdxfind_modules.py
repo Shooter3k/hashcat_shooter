@@ -15,6 +15,7 @@ from pathlib import Path
 
 
 MANUAL_HASHCAT_MODES = {
+    942: 22000,  # WPA-PMKID; 16800 is deprecated and rejects current input
     536: 26200,  # Progress OpenEdge Encode
     997: 12400,  # BSDiCrypt
     998: 36200,  # Shooter gost-yescrypt mode (mdxfind calls it 46100)
@@ -28,6 +29,16 @@ MDXFIND_HASH_MODE_COUNT = 1001
 
 SPECIALIZED_ALIAS_HEADERS = {
     987: "mdxfind_argon2_module.h",
+}
+
+# These mdxfind formats differ from the similarly named native Hashcat mode's
+# parser or exact computation.  Keep the native modules untouched and route
+# only their eN compatibility wrappers through the tested Hashpipe verifier.
+FORCE_BRIDGE_IDS = {
+    2, 118, 303, 379, 521, 530, 533, 577, 579, 829,
+    841, 842, 843, 844, 845, 846, 847, 848, 849, 855,
+    872, 873, 874, 875, 879, 881, 884, 885, 914, 919,
+    922, 923, 925, 927, 940, 941, 968, 992,
 }
 
 
@@ -184,7 +195,11 @@ def main() -> int:
         if mdxfind_id in MANUAL_HASHCAT_MODES:
             candidates.insert(0, MANUAL_HASHCAT_MODES[mdxfind_id])
 
-        hashcat_mode = next((mode for mode in candidates if mode in available), None)
+        hashcat_mode = (
+            None
+            if mdxfind_id in FORCE_BRIDGE_IDS
+            else next((mode for mode in candidates if mode in available), None)
+        )
         output = module_dir / f"module_e{mdxfind_id}.c"
 
         if hashcat_mode is None:

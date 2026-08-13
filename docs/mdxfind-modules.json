@@ -14,7 +14,7 @@
     "mode": "e2",
     "id": 2,
     "name": "MD5UC",
-    "implementation": "hashcat-4300",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       4300
     ]
@@ -872,7 +872,7 @@
     "mode": "e118",
     "id": 118,
     "name": "RIPEMD",
-    "implementation": "hashcat-6000",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       6000
     ]
@@ -2195,7 +2195,7 @@
     "mode": "e303",
     "id": 303,
     "name": "MD5-2xMD5",
-    "implementation": "hashcat-3500",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       3500
     ]
@@ -2741,7 +2741,7 @@
     "mode": "e379",
     "id": 379,
     "name": "LM",
-    "implementation": "hashcat-3000",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       3000
     ]
@@ -3815,7 +3815,7 @@
     "mode": "e521",
     "id": 521,
     "name": "SHA1SALTCX",
-    "implementation": "hashcat-14400",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       14400
     ]
@@ -3886,7 +3886,7 @@
     "mode": "e530",
     "id": 530,
     "name": "PBKDF2-SHA256",
-    "implementation": "hashcat-10000",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       10000,
       10900,
@@ -3917,7 +3917,7 @@
     "mode": "e533",
     "id": 533,
     "name": "PBKDF2-SHA512",
-    "implementation": "hashcat-7100",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       7100,
       7200,
@@ -4236,7 +4236,7 @@
     "mode": "e577",
     "id": 577,
     "name": "BCRYPT256",
-    "implementation": "hashcat-30600",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       30600
     ]
@@ -4252,7 +4252,7 @@
     "mode": "e579",
     "id": 579,
     "name": "SHA1SHA1PASSSALT",
-    "implementation": "hashcat-4521",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       4521,
       4522
@@ -6083,7 +6083,7 @@
     "mode": "e829",
     "id": 829,
     "name": "MURMUR64A",
-    "implementation": "hashcat-34200",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       34200
     ]
@@ -6191,7 +6191,7 @@
     "mode": "e841",
     "id": 841,
     "name": "BLAKE2B512",
-    "implementation": "hashcat-600",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       600
     ]
@@ -6200,7 +6200,7 @@
     "mode": "e842",
     "id": 842,
     "name": "BLAKE2B512PASSSALT",
-    "implementation": "hashcat-610",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       610
     ]
@@ -6209,7 +6209,7 @@
     "mode": "e843",
     "id": 843,
     "name": "BLAKE2B512SALTPASS",
-    "implementation": "hashcat-620",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       620
     ]
@@ -6218,7 +6218,7 @@
     "mode": "e844",
     "id": 844,
     "name": "BLAKE2S256",
-    "implementation": "hashcat-31000",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       31000
     ]
@@ -6227,7 +6227,7 @@
     "mode": "e845",
     "id": 845,
     "name": "BLAKE2B256",
-    "implementation": "hashcat-34800",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       34800
     ]
@@ -6236,7 +6236,7 @@
     "mode": "e846",
     "id": 846,
     "name": "BLAKE2B256PASSSALT",
-    "implementation": "hashcat-34810",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       34810
     ]
@@ -6245,7 +6245,7 @@
     "mode": "e847",
     "id": 847,
     "name": "BLAKE2B256SALTPASS",
-    "implementation": "hashcat-34820",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       34820
     ]
@@ -6254,7 +6254,7 @@
     "mode": "e848",
     "id": 848,
     "name": "DESENCRYPT",
-    "implementation": "hashcat-14000",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       14000
     ]
@@ -6263,7 +6263,7 @@
     "mode": "e849",
     "id": 849,
     "name": "DES3ENCRYPT",
-    "implementation": "hashcat-14100",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       14100
     ]
@@ -6317,7 +6317,7 @@
     "mode": "e855",
     "id": 855,
     "name": "POSTGRESQL",
-    "implementation": "hashcat-12",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       12
     ]
@@ -6471,7 +6471,7 @@
     "mode": "e872",
     "id": 872,
     "name": "IPMI2-SHA1",
-    "implementation": "hashcat-7300",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       7300
     ]
@@ -6480,7 +6480,7 @@
     "mode": "e873",
     "id": 873,
     "name": "IPMI2-MD5",
-    "implementation": "hashcat-7350",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       7350
     ]
@@ -6489,7 +6489,7 @@
     "mode": "e874",
     "id": 874,
     "name": "KRB5PA23",
-    "implementation": "hashcat-7500",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       7500
     ]
@@ -6498,7 +6498,7 @@
     "mode": "e875",
     "id": 875,
     "name": "MYSQL-SHA256CRYPT",
-    "implementation": "hashcat-7401",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       7401
     ]
@@ -6534,7 +6534,7 @@
     "mode": "e879",
     "id": 879,
     "name": "NSEC3",
-    "implementation": "hashcat-8300",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       8300
     ]
@@ -6552,7 +6552,7 @@
     "mode": "e881",
     "id": 881,
     "name": "RACF",
-    "implementation": "hashcat-8500",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       8500
     ]
@@ -6579,7 +6579,7 @@
     "mode": "e884",
     "id": 884,
     "name": "SCRYPT",
-    "implementation": "hashcat-8900",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       8900
     ]
@@ -6588,7 +6588,7 @@
     "mode": "e885",
     "id": 885,
     "name": "JUNIPERIVE",
-    "implementation": "hashcat-501",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       501
     ]
@@ -6849,7 +6849,7 @@
     "mode": "e914",
     "id": 914,
     "name": "KRB5TGS23",
-    "implementation": "hashcat-13100",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       13100
     ]
@@ -6894,7 +6894,7 @@
     "mode": "e919",
     "id": 919,
     "name": "PWSAFE3",
-    "implementation": "hashcat-5200",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       5200
     ]
@@ -6921,7 +6921,7 @@
     "mode": "e922",
     "id": 922,
     "name": "SAP-BCODE",
-    "implementation": "hashcat-7700",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       7700
     ]
@@ -6930,7 +6930,7 @@
     "mode": "e923",
     "id": 923,
     "name": "SAP-BCODE4",
-    "implementation": "hashcat-7701",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       7701
     ]
@@ -6948,7 +6948,7 @@
     "mode": "e925",
     "id": 925,
     "name": "SAP-PASSCODE5",
-    "implementation": "hashcat-7801",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       7801
     ]
@@ -6966,7 +6966,7 @@
     "mode": "e927",
     "id": 927,
     "name": "PS-TOKEN",
-    "implementation": "hashcat-13500",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       13500
     ]
@@ -7084,7 +7084,7 @@
     "mode": "e940",
     "id": 940,
     "name": "KRB5PA-17",
-    "implementation": "hashcat-19800",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       19800
     ]
@@ -7093,7 +7093,7 @@
     "mode": "e941",
     "id": 941,
     "name": "KRB5PA-18",
-    "implementation": "hashcat-19900",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       19900
     ]
@@ -7102,8 +7102,9 @@
     "mode": "e942",
     "id": 942,
     "name": "WPA-PMKID",
-    "implementation": "hashcat-16800",
+    "implementation": "hashcat-22000",
     "hashcat_candidates": [
+      22000,
       16800,
       22000
     ]
@@ -7335,7 +7336,7 @@
     "mode": "e968",
     "id": 968,
     "name": "POSTGRESSCRAM256",
-    "implementation": "hashcat-28600",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       28600
     ]
@@ -7553,7 +7554,7 @@
     "mode": "e992",
     "id": 992,
     "name": "SYMFONY256",
-    "implementation": "hashcat-35800",
+    "implementation": "mdxfind-bridge",
     "hashcat_candidates": [
       35800
     ]
