@@ -1,6 +1,6 @@
 # hashcat_shooter release notes
 
-## v7.1.2-shooter.20260812.18 (local source build)
+## v7.1.2-shooter.20260812.18
 
 Official hashcat synchronization through August 12, 2026.
 
@@ -38,6 +38,9 @@ Official hashcat synchronization through August 12, 2026.
 - Kept compatibility mode `67000` on the maintained yescrypt kernel used by
   mode `36100`, matching its documented alias behavior after the upstream
   yescrypt host/kernel layout change.
+- Updated the README and `hashcat.exe -h` attack-mode table to identify rule
+  support for modes `0`, `1`, `3`, `6`, `7`, `8`, and `9`, with the native
+  versus whole-candidate rule behavior documented explicitly.
 
 ### Verified
 

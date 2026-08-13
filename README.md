@@ -5,9 +5,8 @@
 and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
-The current local source build is `v7.1.2-shooter.20260812.18`. The latest
-published build remains
-[`v7.1.2-shooter.20260812.17`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.17).
+The current release is
+[`v7.1.2-shooter.20260812.18`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.18).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -70,6 +69,27 @@ syntax and behavior. See
 the complete upstream syntax and restrictions.
 
 ### Multi-file mode 1 and whole-candidate rules
+
+Rule support in this build is summarized below. Generic mode 8 also supports
+rules, so it is marked accordingly rather than left unlabeled:
+
+```text
+  # | Mode
+ ===+======
+  0 | Straight + rules
+  1 | Combination + rules
+  3 | Brute-force + rules
+  6 | Hybrid Wordlist + Mask + rules
+  7 | Hybrid Mask + Wordlist + rules
+  8 | Generic + rules
+  9 | Association + rules
+ 12 | Hybrid, mask says where the word goes
+```
+
+Modes 0, 8, and 9 use their native rule processing. Shooter modes 1, 3, 6,
+and 7 apply `-r` rule files or `-g` generated rules to the complete candidate.
+Official mode 12 is not labeled with rules because its current path does not
+provide the same rule option.
 
 Attack mode 1 accepts two or more wordlists. Each candidate is one entry from
 every wordlist concatenated in command-line order:
