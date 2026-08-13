@@ -1,5 +1,22 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260813.24
+
+Documentation and release packaging for the completed mdxfind module
+verification.
+
+### Updated
+
+- Added the aggregate validation result to the README: all 988 published
+  Hashpipe examples and all 11 additional standalone known-answer vectors
+  cracked successfully on CUDA, covering 999/999 self-contained hash modes.
+- Clarified that `e426` is an mdxfind scheduler pseudo-entry rather than a
+  hash, while `e535` requires external mdxfind custom-user/salt state and has
+  no published standalone test vector.
+- Advanced the production build identity to
+  `v7.1.2-shooter.20260813.24` and repackaged the verified implementation with
+  the updated README and changelog.
+
 ## v7.1.2-shooter.20260813.23
 
 Complete functional verification for the mdxfind named-module layer.

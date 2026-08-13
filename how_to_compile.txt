@@ -116,6 +116,9 @@ The e987 Magento Argon2 compatibility build reports:
 The fully verified mdxfind compatibility-module build reports:
     v7.1.2-shooter.20260813.23
 
+The documented mdxfind verification release reports:
+    v7.1.2-shooter.20260813.24
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:

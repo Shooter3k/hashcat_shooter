@@ -6,7 +6,7 @@ and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
 The current release is
-[`v7.1.2-shooter.20260813.23`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260813.23).
+[`v7.1.2-shooter.20260813.24`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260813.24).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -211,6 +211,15 @@ coverage, regeneration, and the complete machine-readable registry.
 
 `e987` accepts both standard Argon2 PHC strings and mdxfind's Magento
 `hex_digest:salt:2` / `hex_digest:salt:3_...` input forms.
+
+The complete validation run exercised every self-contained hash algorithm in
+the registry on CUDA. All 988 example hashes published in Hashpipe's
+`HASH_TYPES.md` cracked with their documented passwords, and 11 direct
+known-answer tests covered the standalone modes omitted from that document.
+The result is 999/999 passing standalone hash modes. The other two registry
+names are special cases: `e426` (`PARALLEL`) is a scheduler pseudo-entry, not
+a hash algorithm, and `e535` (`SHA1-CUSTOMUSERSALT`) requires mdxfind's
+external custom-user/salt state and has no published standalone vector.
 
 | Hash mode | Addition |
 | --- | --- |
