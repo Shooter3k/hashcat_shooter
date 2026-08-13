@@ -6,7 +6,7 @@ and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
 The current source and published build is
-[`v7.1.2-shooter.20260812.15`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.15).
+[`v7.1.2-shooter.20260812.17`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.17).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -147,6 +147,8 @@ share stdin with the interactive menu. Full behavior and limitations are in
 
 | Hash mode | Addition |
 | --- | --- |
+| `29950` | phpBB3 legacy rehashes in their original `$H\2*$...` form: `bcrypt(phpass($pass))`. The parser extracts both embedded settings and the GPU runs the phpass and bcrypt stages without preprocessing the hash file. |
+| `29951` | Explicit rare-case companion for `bcrypt(phpass(md5($pass)))`; it uses the same original and extracted input formats but never guesses which inner pipeline a hash uses. |
 | `29960` | CMIYC 2026 SHA-512 GPU implementation with fixed-block optimizations and a PowerShell sharded launcher for small candidate sets on many GPUs. |
 | `29970` | CMIYC 2026 memory-hard SHA-512 GPU implementation retained as a known-good implementation. |
 | `29980` | GPU implementation of libxcrypt-style gost-yescrypt `$gy$j9T$` hashes for the supported default profile. |
@@ -154,7 +156,8 @@ share stdin with the interactive menu. Full behavior and limitations are in
 | `67000` | Compatibility alias for legacy yescrypt jobs. It accepts the same `$y$` hashes as current mode `36100` and shares the maintained mode 36100 implementation to avoid algorithm drift. |
 
 Mode `36100` remains the preferred yescrypt number for new jobs. Technical
-notes for the custom modes are in [CMIYC_GPU.md](CMIYC_GPU.md),
+notes for the custom modes are in [docs/mode-29950.md](docs/mode-29950.md),
+[CMIYC_GPU.md](CMIYC_GPU.md),
 [CMIYC_GPU_OPTIMIZED.md](CMIYC_GPU_OPTIMIZED.md),
 [GOST_YESCRYPT_GPU.md](GOST_YESCRYPT_GPU.md), and
 [docs/mode-67000.md](docs/mode-67000.md).
@@ -209,6 +212,9 @@ includes:
   outfile tests for the Windows retry path.
 - GPU known-answer tests for both legacy yescrypt mode 67000 and current mode
   36100.
+- GPU known-answer tests for phpBB3 rehash modes 29950 and 29951, including
+  original and extracted inputs, different inner counts and bcrypt costs,
+  long candidates, rules, masks, and all twelve CUDA devices.
 - Exact two-wordlist `-a 1 -r` status reproduction using the reported input
   files, plus deterministic candidate-output checks for ruled two- and
   three-wordlist attacks and the unchanged native two-wordlist path.

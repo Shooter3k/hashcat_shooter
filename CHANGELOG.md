@@ -1,5 +1,86 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260812.17
+
+Responsive RTX 4090 tuning for phpBB3 bcrypt-over-phpass modes.
+
+### Fixed
+
+- Modes `29950` and `29951` now cap automatic tuning at `Accel:8` and
+  `Loops:8`. The generic staged autotuner measures their inexpensive first
+  phpass-MD5 loop, so it previously selected as much as `Accel:488` and
+  `Loops:1024` for the much slower bcrypt loop2 stage.
+- The oversized selection created roughly 1.5 million bcrypt candidates in a
+  single GPU batch on an RTX 4090. Status, `--runtime`, interactive quit, and
+  checkpoints could then wait minutes for a launch boundary even though CUDA
+  compute was active.
+- The tuning-range change is part of the persisted-autotune cache key, so old
+  mode-29950/29951 entries are ignored automatically; users do not need to
+  delete cache files.
+
+### Measured
+
+- On one RTX 4090 against a real cost-10 record with phpass count character
+  `9`, completed-candidate throughput measured 6,485 H/s at `Accel:1`,
+  6,799 H/s at `Accel:2`, 6,967 H/s at `Accel:4`, 7,090 H/s at `Accel:8`, and
+  7,078 H/s at `Accel:16`. `Accel:8` retained the best measured throughput.
+- A twelve-GPU reproduction of the reported command showed 100% CUDA/SM
+  utilization on all twelve RTX 4090s. The memory-controller metric remained
+  near zero, which is expected for this compute/shared-memory-heavy Blowfish
+  workload and is not an idle-GPU measurement.
+- The supplied hash file contains 1,853 valid 73-character records and five
+  malformed records (four length 70 and one length 71); malformed records
+  remain rejected rather than being guessed or silently repaired.
+
+## v7.1.2-shooter.20260812.16 (local source build)
+
+Native GPU support for phpBB3 bcrypt-over-phpass legacy rehashes.
+
+### Added
+
+- Added mode `29950` for `bcrypt(phpass($pass))` hashes stored by phpBB3 in
+  their original `$H\2*$...` legacy-rehash form.
+- Added mode `29951` for the explicitly selected rare
+  `bcrypt(phpass(md5($pass)))` pipeline. The two pipelines are separate modes
+  so a candidate is never silently transformed with the wrong construction.
+- Both modes accept the original 73-character phpBB form directly and the
+  extracted `$2*$...:<count><phpass-salt>` representation. Recovered hashes
+  are rendered in the original phpBB form.
+- The parser carries the per-hash phpass count character, eight-character
+  phpass salt, bcrypt variant, bcrypt cost, 22-character bcrypt salt, and
+  31-character bcrypt digest into the normal hashcat salt/digest paths.
+
+### Implementation
+
+- The GPU pipeline uses hashcat's staged slow-hash scheduler: phpass MD5 runs
+  in `init/loop`, its 16-byte result is encoded to the 22-character portable
+  phpass checksum, and that checksum becomes the bcrypt password for
+  `init2/loop2/comp`.
+- Only the 22-character phpass checksum is passed to bcrypt; the `$H$`
+  signature, count character, and phpass salt are not part of the outer
+  bcrypt password.
+- The normal and MD5-prehash modes use distinct kernel types and self-tests.
+  Both retain standard attack modes, rules, restore, status, outfile, and
+  multi-GPU scheduling behavior. `-O` safely falls back to the pure kernel.
+
+### Verified
+
+- Independently recomputed the supplied example: phpass count character `7`
+  selects `2^9 = 512` iterations, salt `RsqOrLNk`, and plaintext `123456`
+  produce checksum `cmD0qyV8sv/3sGcLRo8D31`.
+- Cracked the supplied original hash as `123456` with mode 29950 on CUDA and
+  repeated the crack from its extracted representation.
+- Independently generated and cracked a mode-29951 test vector for
+  `123456`; its inner MD5 text is
+  `e10adc3949ba59abbe56e057f20f883e`, its phpass checksum is
+  `B5k0g0vxFC8hKXhGxEITa0`, and both CUDA self-tests pass.
+- Verified a nondefault phpass count (`8`, or 1024 iterations), bcrypt `$2b$`
+  cost 04, mixed hashes with different salts/costs, same-salt hashes with
+  different bcrypt costs, a 100-character plaintext, an ordinary rule attack,
+  the `-O` fallback, and initialization across all twelve RTX 4090s.
+- Confirmed invalid phpass counts and bcrypt costs are rejected before GPU
+  work starts.
+
 ## v7.1.2-shooter.20260812.15
 
 Mode-1 whole-candidate-rule status correction.

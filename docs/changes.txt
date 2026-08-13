@@ -45,6 +45,8 @@ Setting --brain-client-features on the command line overrules the decision in ei
 ## New Algorithms
 ##
 
+- Added hash-mode: phpBB3 legacy rehash [bcrypt(phpass($pass))]
+- Added hash-mode: phpBB3 legacy rehash [bcrypt(phpass(md5($pass)))]
 - Added hash-mode: GPG (AES-OCB-128 (SHA-1($pass)))
 - Added hash-mode: KeePass AESKDF (KDBX v4)
 - Added hash-mode: Kerberos 5, etype 23, TGS-REP (NT)
