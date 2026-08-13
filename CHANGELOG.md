@@ -1,5 +1,32 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260812.19
+
+Faster preprocessing for very large unsalted hash lists.
+
+### Added
+
+- Lists with at least 4,194,304 unsalted hashes now use a stable, parallel
+  least-significant-digit radix sort with up to 64 CPU workers. The byte-pass
+  order exactly matches hashcat's existing digest comparator.
+- Smaller lists and all salted lists retain the upstream comparison sorter.
+  If scratch allocation is unavailable, the optimized path safely falls back
+  to that sorter. Set `HASHCAT_HASH_SORT_RADIX_DISABLE=1` to force the legacy
+  path for comparison or troubleshooting.
+- If Windows cannot create one of the requested worker threads, that worker's
+  range is processed synchronously so no hashes can be omitted.
+
+### Measured and verified
+
+- On the intended 64-core/128-thread Threadripper PRO 5995WX system, the
+  supplied 1.33 GB mode-0 list contains about 40.3 million hashes. An identical
+  `--left` preprocessing pass took 48.85 seconds with the parallel sorter and
+  80.50 seconds with it disabled: 31.65 seconds saved, 39.3% less total time,
+  or 1.65x faster overall.
+- Parallel and legacy output was byte-for-byte identical on 300,000- and
+  2,000,000-hash validation sets. The optimized full 40.3-million-hash pass
+  also completed parsing, sorting, duplicate removal, and output successfully.
+
 ## v7.1.2-shooter.20260812.18
 
 Official hashcat synchronization through August 12, 2026.

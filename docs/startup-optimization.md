@@ -20,6 +20,32 @@ The current build also carries forward the startup work from
 - Session reset initializes only the staging metadata that is read before the
   first candidate write, rather than touching every page of every buffer.
 
+## Large hash-list sorting
+
+Unsalted lists with at least 4,194,304 hashes use a stable parallel byte-radix
+sort with up to 64 CPU workers. The pass order matches hashcat's digest-word
+comparator exactly, so duplicate detection and every later lookup see the same
+ordering as the original implementation. Smaller lists and salted hashes keep
+the original comparison sorter because the parallel setup is not beneficial
+there.
+
+The optimized sorter allocates one temporary `hash_t` entry per input hash. On
+the current 64-bit Windows build, the supplied 40.3-million-hash list uses
+roughly 3 GiB of temporary scratch space during sorting. If that allocation is
+unavailable, hashcat falls back to the original sorter. To force the original
+sorter for an A/B test:
+
+```powershell
+$env:HASHCAT_HASH_SORT_RADIX_DISABLE = '1'
+M:\github\hashcat_shooter\hashcat.exe ...
+Remove-Item Env:HASHCAT_HASH_SORT_RADIX_DISABLE
+```
+
+On the 64-core/128-thread Threadripper PRO 5995WX system, an identical full
+preprocessing pass over the supplied 1.33 GB mode-0 list took 48.85 seconds
+with the optimized sorter and 80.50 seconds with it disabled. That is 31.65
+seconds saved and 39.3% less total preprocessing time.
+
 The newer two-slot candidate pipeline can otherwise reserve about 97.7 GB of
 host staging memory on this system for fast hashes. On the exact 12-card RTX
 4090 configuration, the default is therefore limited to 3072 MiB per GPU

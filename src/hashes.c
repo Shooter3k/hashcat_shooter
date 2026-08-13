@@ -118,6 +118,225 @@ int sort_by_hash_no_salt (const void *v1, const void *v2, void *v3)
   return sort_by_digest_p0p1 (d1, d2, v3);
 }
 
+#define HASH_SORT_RADIX_BUCKETS 256
+#define HASH_SORT_RADIX_MINIMUM (1U << 22)
+#define HASH_SORT_RADIX_ITEMS_PER_THREAD (1U << 18)
+#define HASH_SORT_RADIX_THREADS_MAX 64
+
+typedef struct hash_sort_radix_thread_param
+{
+  const hash_t *src;
+  hash_t       *dst;
+
+  size_t from;
+  size_t to;
+
+  size_t *buckets;
+
+  u32 digest_pos;
+  u32 shift;
+
+  bool scatter;
+
+} hash_sort_radix_thread_param_t;
+
+#if defined (_WIN)
+static HC_API_CALL DWORD hash_sort_radix_thread (void *p)
+#else
+static HC_API_CALL void *hash_sort_radix_thread (void *p)
+#endif
+{
+  hash_sort_radix_thread_param_t *param = (hash_sort_radix_thread_param_t *) p;
+
+  const hash_t *src = param->src;
+
+  size_t *buckets = param->buckets;
+
+  const u32 digest_pos = param->digest_pos;
+  const u32 shift      = param->shift;
+
+  if (param->scatter == false)
+  {
+    for (size_t i = param->from; i < param->to; i++)
+    {
+      const u32 *digest = (const u32 *) src[i].digest;
+
+      const u32 bucket = (digest[digest_pos] >> shift) & 0xff;
+
+      buckets[bucket]++;
+    }
+  }
+  else
+  {
+    hash_t *dst = param->dst;
+
+    for (size_t i = param->from; i < param->to; i++)
+    {
+      const u32 *digest = (const u32 *) src[i].digest;
+
+      const u32 bucket = (digest[digest_pos] >> shift) & 0xff;
+
+      dst[buckets[bucket]++] = src[i];
+    }
+  }
+
+  return 0;
+}
+
+static void hash_sort_radix_run_threads (hc_thread_t *threads, hash_sort_radix_thread_param_t *params, const u32 threads_cnt)
+{
+  u32 threads_created = 0;
+
+  for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+  {
+    hc_thread_t thread;
+
+    #if defined (_WIN)
+    hc_thread_create (thread, hash_sort_radix_thread, &params[thread_pos]);
+
+    if (thread == NULL)
+    #else
+    if (hc_thread_create (thread, hash_sort_radix_thread, &params[thread_pos]) != 0)
+    #endif
+    {
+      // Preserve correctness under transient thread-handle/resource exhaustion.
+
+      hash_sort_radix_thread (&params[thread_pos]);
+    }
+    else
+    {
+      threads[threads_created++] = thread;
+    }
+  }
+
+  hc_thread_wait (threads_created, threads);
+
+  #if defined (_WIN)
+  for (u32 thread_pos = 0; thread_pos < threads_created; thread_pos++)
+  {
+    CloseHandle (threads[thread_pos]);
+  }
+  #endif
+}
+
+static bool hash_sort_radix (hash_t *hashes_buf, const u32 hashes_cnt, const hashconfig_t *hashconfig)
+{
+  if (hashes_cnt < HASH_SORT_RADIX_MINIMUM) return false;
+
+  const char *disable = getenv ("HASHCAT_HASH_SORT_RADIX_DISABLE");
+
+  if ((disable != NULL) && (disable[0] != 0) && (disable[0] != '0')) return false;
+
+  u32 threads_cnt = (u32) hc_get_processor_count ();
+
+  threads_cnt = MIN (threads_cnt, HASH_SORT_RADIX_THREADS_MAX);
+  threads_cnt = MIN (threads_cnt, hashes_cnt / HASH_SORT_RADIX_ITEMS_PER_THREAD);
+
+  if (threads_cnt < 2) return false;
+
+  if ((size_t) hashes_cnt > (SIZE_MAX / sizeof (hash_t))) return false;
+
+  const size_t hashes_sz = (size_t) hashes_cnt * sizeof (hash_t);
+
+  hash_t *tmp = (hash_t *) hcmalloc (hashes_sz);
+
+  if (tmp == NULL) return false;
+
+  hc_thread_t *threads = (hc_thread_t *) hccalloc (threads_cnt, sizeof (hc_thread_t));
+
+  hash_sort_radix_thread_param_t *params = (hash_sort_radix_thread_param_t *) hccalloc (threads_cnt, sizeof (hash_sort_radix_thread_param_t));
+
+  size_t *buckets = (size_t *) hccalloc ((size_t) threads_cnt * HASH_SORT_RADIX_BUCKETS, sizeof (size_t));
+
+  if ((threads == NULL) || (params == NULL) || (buckets == NULL))
+  {
+    hcfree (buckets);
+    hcfree (params);
+    hcfree (threads);
+    hcfree (tmp);
+
+    return false;
+  }
+
+  const u32 digest_positions[4] =
+  {
+    hashconfig->dgst_pos0,
+    hashconfig->dgst_pos1,
+    hashconfig->dgst_pos2,
+    hashconfig->dgst_pos3
+  };
+
+  hash_t *src = hashes_buf;
+  hash_t *dst = tmp;
+
+  for (u32 digest_idx = 0; digest_idx < 4; digest_idx++)
+  {
+    for (u32 shift = 0; shift < 32; shift += 8)
+    {
+      memset (buckets, 0, (size_t) threads_cnt * HASH_SORT_RADIX_BUCKETS * sizeof (size_t));
+
+      for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+      {
+        hash_sort_radix_thread_param_t *param = &params[thread_pos];
+
+        param->src        = src;
+        param->dst        = dst;
+        param->from       = ((size_t) hashes_cnt * (thread_pos + 0)) / threads_cnt;
+        param->to         = ((size_t) hashes_cnt * (thread_pos + 1)) / threads_cnt;
+        param->buckets    = buckets + ((size_t) thread_pos * HASH_SORT_RADIX_BUCKETS);
+        param->digest_pos = digest_positions[digest_idx];
+        param->shift      = shift;
+        param->scatter    = false;
+      }
+
+      hash_sort_radix_run_threads (threads, params, threads_cnt);
+
+      size_t bucket_base = 0;
+
+      for (u32 bucket = 0; bucket < HASH_SORT_RADIX_BUCKETS; bucket++)
+      {
+        size_t thread_base = bucket_base;
+
+        for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+        {
+          size_t *thread_bucket = &buckets[((size_t) thread_pos * HASH_SORT_RADIX_BUCKETS) + bucket];
+
+          const size_t bucket_cnt = *thread_bucket;
+
+          *thread_bucket = thread_base;
+
+          thread_base += bucket_cnt;
+        }
+
+        bucket_base = thread_base;
+      }
+
+      for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+      {
+        params[thread_pos].scatter = true;
+      }
+
+      hash_sort_radix_run_threads (threads, params, threads_cnt);
+
+      hash_t *swap = src;
+
+      src = dst;
+      dst = swap;
+    }
+  }
+
+  // Four 32-bit keys times four byte passes is even, so the final destination is hashes_buf.
+
+  if (src != hashes_buf) memcpy (hashes_buf, src, hashes_sz);
+
+  hcfree (buckets);
+  hcfree (params);
+  hcfree (threads);
+  hcfree (tmp);
+
+  return true;
+}
+
 int hash_encode (const user_options_t *user_options, const hashconfig_t *hashconfig, const hashes_t *hashes, const module_ctx_t *module_ctx, char *out_buf, const int out_size, const u32 salt_pos, const u32 digest_pos)
 {
   if (module_ctx->module_hash_encode == MODULE_DEFAULT)
@@ -2006,7 +2225,10 @@ int hashes_init_stage1 (hashcat_ctx_t *hashcat_ctx)
     }
     else
     {
-      hc_qsort_r (hashes_buf, hashes_cnt, sizeof (hash_t), sort_by_hash_no_salt, (void *) hashconfig);
+      if (hash_sort_radix (hashes_buf, hashes_cnt, hashconfig) == false)
+      {
+        hc_qsort_r (hashes_buf, hashes_cnt, sizeof (hash_t), sort_by_hash_no_salt, (void *) hashconfig);
+      }
     }
 
     EVENT (EVENT_HASHLIST_SORT_HASH_POST);

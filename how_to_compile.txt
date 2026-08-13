@@ -101,6 +101,9 @@ The official-hashcat synchronization through commit 9c735bade, including
 official general multi-hybrid attack mode 12, reports:
     v7.1.2-shooter.20260812.18
 
+The parallel large-unsalted-hashlist sorting build reports:
+    v7.1.2-shooter.20260812.19
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:
