@@ -413,11 +413,9 @@ int straight_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
     return 0;
   }
 
-  // What is left below is the attacks whose base word is not a feed. -a 1 under --slow-candidates
-  // still reads its base with the wordlist reader, and -a 7 under the pure kernel takes its base words
-  // from the mask.
-  //
-  // -a 0, -a 6, -a 8 and -a 9 have all returned above, and so has -a 7 under the optimized kernel.
+  // What is left below is the attacks whose base word is not a feed. Shooter's unaliased multi-file
+  // -a 1 reads its base with the wordlist reader. -a 7 under the pure kernel takes its base words from
+  // the mask, as does -a 12 under the pure kernel when its mask ends in ?w.
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {
@@ -443,7 +441,7 @@ int straight_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
   {
     logfile_sub_string (mask_ctx->mask);
   }
-  else if (user_options->attack_mode == ATTACK_MODE_HYBRID2)
+  else if (user_options->attack_mode == ATTACK_MODE_HYBRID)
   {
     straight_ctx->dict = straight_ctx->dicts[straight_ctx->dicts_pos];
 
@@ -551,15 +549,15 @@ int straight_ctx_init (hashcat_ctx_t *hashcat_ctx)
       if (straight_ctx_add_workv (hashcat_ctx, 0, user_options_extra->hc_workc) == -1) return -1;
     }
   }
-  else if (user_options->attack_mode == ATTACK_MODE_HYBRID1)
+  else if (user_options->attack_mode == ATTACK_MODE_HYBRID)
   {
-    if (straight_ctx_add_workv (hashcat_ctx, 0, user_options_extra->hc_workc - 1) == -1) return -1;
-  }
-  else if (user_options->attack_mode == ATTACK_MODE_HYBRID2)
-  {
-    if (straight_ctx_add_workv (hashcat_ctx, 1, user_options_extra->hc_workc) == -1) return -1;
-  }
+    // the mask is first and the wordlists follow it. A ?q wordlist is not in this list: it amplifies,
+    // and only the base word source is listed here.
 
+    const int to = user_options_extra->hc_workc - ((user_options_extra->hybrid_q == true) ? 1 : 0);
+
+    if (straight_ctx_add_workv (hashcat_ctx, 1, to) == -1) return -1;
+  }
   return 0;
 }
 

@@ -38,6 +38,7 @@ char       *status_get_guess_mod2                     (const hashcat_ctx_t *hash
 char       *status_get_guess_mod3                     (const hashcat_ctx_t *hashcat_ctx);
 char       *status_get_guess_mod4                     (const hashcat_ctx_t *hashcat_ctx);
 char       *status_get_guess_mod5                     (const hashcat_ctx_t *hashcat_ctx);
+char       *status_get_guess_mod_q                    (const hashcat_ctx_t *hashcat_ctx);
 int         status_get_guess_mod_offset               (const hashcat_ctx_t *hashcat_ctx);
 int         status_get_guess_mod_count                (const hashcat_ctx_t *hashcat_ctx);
 double      status_get_guess_mod_percent              (const hashcat_ctx_t *hashcat_ctx);

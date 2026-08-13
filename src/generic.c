@@ -11,6 +11,7 @@
 #include "shared.h"
 #include "folder.h"
 #include "rp.h"
+#include "mpsp.h"
 #include "generic.h"
 #include "dynloader.h"
 #include "user_options.h"
@@ -253,6 +254,15 @@ static int generic_instance_init (hashcat_ctx_t *hashcat_ctx, generic_ctx_t *gen
   }
 
   generic_ctx->thread_ctx = hccalloc (sizeof (generic_thread_ctx_t), DEVICES_MAX);
+
+  // These are indexed by device id everywhere, so each one can say which device it belongs to. It is
+  // set here rather than in generic_thread_init () because global_keyspace () runs before any device
+  // thread starts and plugins call their own thread_init () on thread_ctx[0] from inside it.
+
+  for (int device_id = 0; device_id < DEVICES_MAX; device_id++)
+  {
+    generic_ctx->thread_ctx[device_id].device_id = device_id;
+  }
 
   generic_ctx->autohex_enable = (*generic_plugin_options & GENERIC_PLUGIN_OPTIONS_AUTOHEX) ? true : false;
   generic_ctx->iconv_enable   = (*generic_plugin_options & GENERIC_PLUGIN_OPTIONS_ICONV)   ? true : false;
@@ -503,7 +513,6 @@ int generic_ctx_base_discard (hashcat_ctx_t *hashcat_ctx, const int device_id, c
 
 static bool generic_amp_is_wordlist (const hashcat_ctx_t *hashcat_ctx)
 {
-  const hashconfig_t         *hashconfig         = hashcat_ctx->hashconfig;
   const user_options_t       *user_options       = hashcat_ctx->user_options;
   const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
@@ -511,13 +520,14 @@ static bool generic_amp_is_wordlist (const hashcat_ctx_t *hashcat_ctx)
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI) return true;
 
-  if (user_options->attack_mode != ATTACK_MODE_HYBRID2) return false;
+  // The wordlist amplifies rather than being the base word source. That is a mask that ends in ?w
+  // under a pure kernel, and a ?q, and base_source and hybrid_q are where those two were settled.
 
-  if (user_options->slow_candidates == true) return false;
+  if (user_options->attack_mode != ATTACK_MODE_HYBRID) return false;
 
-  if (hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) return false;
+  const bool inverted = (hashcat_ctx->user_options_extra->base_source == BASE_SOURCE_MASK);
 
-  return true;
+  return inverted;
 }
 
 // -a 9 pairs word N with salt N, so the two counts have to agree exactly. Asked at init and again per
@@ -604,7 +614,7 @@ int generic_ctx_init (hashcat_ctx_t *hashcat_ctx)
 
   if (generic_amp_is_wordlist (hashcat_ctx) == true)
   {
-    // -a 7 under the pure kernel names its mask first and its dictionary second
+    // -a 7 under the pure kernel names its mask first and its dictionary second, and so does -a 12
 
     if (hc_path_is_file (user_options_extra->hc_workv[1]) == false)
     {
@@ -659,14 +669,45 @@ int generic_ctx_init (hashcat_ctx_t *hashcat_ctx)
     // Which of the work arguments are the base word instance's sources. -a 6 leaves its last argument
     // to the mask and -a 7 leaves its first, exactly as straight_ctx_add_workv splits them for the
     // wordlist reader.
+    //
+    // -a 12 writes the mask first and then its wordlists, one of them or two, and which is which is
+    // its position and nothing else. Nothing here opens a file to find out what it looks like.
 
     int from = 0;
     int to   = user_options_extra->hc_workc;
 
-    if (user_options->attack_mode == ATTACK_MODE_HYBRID1) to   = to - 1;
-    if (user_options->attack_mode == ATTACK_MODE_HYBRID2) from = 1;
+    const bool hybrid_q = user_options_extra->hybrid_q;
+
+    if (user_options->attack_mode == ATTACK_MODE_HYBRID1)
+    {
+      to--;
+    }
+    else if (user_options->attack_mode == ATTACK_MODE_HYBRID2)
+    {
+      from++;
+    }
+    else if (user_options->attack_mode == ATTACK_MODE_HYBRID)
+    {
+      from = 1;
+      to   = user_options_extra->hc_workc - ((hybrid_q == true) ? 1 : 0);
+    }
 
     if (generic_instance_open (hashcat_ctx, GENERIC_ROLE_BASE, from, to) == -1) return -1;
+
+    if (hybrid_q == true)
+    {
+      // the second wordlist is read by one instance from start to end, so unlike the base it cannot
+      // be a folder
+
+      if (hc_path_is_file (user_options_extra->hc_workv[to]) == false)
+      {
+        event_log_error (hashcat_ctx, "%s: Not a regular file.", user_options_extra->hc_workv[to]);
+
+        return -1;
+      }
+
+      if (generic_instance_open (hashcat_ctx, GENERIC_ROLE_AMP, to, to + 1) == -1) return -1;
+    }
   }
 
   if (user_options->attack_mode == ATTACK_MODE_ASSOCIATION)

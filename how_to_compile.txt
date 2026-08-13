@@ -97,6 +97,10 @@ The phpBB3 bcrypt-over-phpass module build reports:
 The responsive phpBB3 bcrypt-stage tuning build reports:
     v7.1.2-shooter.20260812.17
 
+The official-hashcat synchronization through commit 9c735bade, including
+official general multi-hybrid attack mode 12, reports:
+    v7.1.2-shooter.20260812.18
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:
@@ -137,7 +141,7 @@ exe launches, then let it find CUDA via the NVIDIA driver:
     $env:PATH = "M:\msys64\mingw64\bin;$env:PATH"
     M:\github\hashcat_shooter\hashcat.exe --version
     M:\github\hashcat_shooter\hashcat.exe -I
-    M:\github\hashcat_shooter\hashcat.exe --help  # confirm mode 1 says Combination and modes 11-14 are absent
+    M:\github\hashcat_shooter\hashcat.exe --help  # confirm mode 1 says Combination and official mode 12 is present
 
 Quick tests for multi-file mode 1 are documented in:
     M:\github\hashcat_shooter\docs\multi-file-combination.md

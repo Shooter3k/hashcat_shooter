@@ -76,13 +76,17 @@ Setting --brain-client-features on the command line overrules the decision in ei
 - Attack-Mode 9: Compares wordlist lines against unique salts, refusing files it once accepted
 - Attack-Mode 9: A hash file of username, separator and hash is now split by hashcat, with no wordlist
 - Attack-Mode 9: The username in front of the first separator becomes the candidate, and rules apply
-- Attack-Mode 1: Accepts two or more wordlists; modes 11-14 were removed in favor of this dynamic form
+- Attack-Mode 1: Accepts two or more wordlists; the former private Shooter modes 11-14 were removed in favor of this dynamic form
 - Attack-Mode 1: Whole-candidate-rule status reports the actual left dictionary instead of `(null)`
 - Attack-Modes 1, 3, 6, and 7: Rules can be applied after the complete candidate is assembled
 - Attack-Mode 8: Retains native rule support; attack-mode 9 retains native association-rule support
 - Terminal: Quit now reports GPU drain, worker, service, resource-release, and finalization progress
 - Mask attacks: --increment and mask files now form one keyspace, so --skip and --limit apply to all
 - Mask attacks: --keyspace now answers for the whole increment or mask file instead of being refused
+- Attack-Mode 12: A hybrid attack where the mask says where the word goes, with ?w marking the place
+- Attack-Mode 12: ?w?d?d is what -a 6 does and ?d?d?w is what -a 7 does, and mask on both sides is new
+- Attack-Mode 12: ?q marks a word from a second wordlist and has to come after ?w, so ?w?q is -a 1
+- Attack-Mode 12: Literals work anywhere in the mask, so Pass?w?d?d is a valid mask
 
 ##
 ## New Features
@@ -139,6 +143,7 @@ Setting --brain-client-features on the command line overrules the decision in ei
 ## Bugs
 ##
 
+- Fixed combinator and hybrid attacks reporting a plaintext truncated to 256 characters, which did not match the cracked digest
 - Fixed a one byte buffer overflow in fgetl() when a line was as long as the caller's buffer
 - Fixed missing libclang dependencies for Rust bridges in Ubuntu 20.04 and Arch containers
 - Fixed the Windows Rust plugin failing to link in the Arch container because lld was missing

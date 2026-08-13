@@ -7,9 +7,11 @@ from each file in command-line order:
 candidate = word1 + word2 + ... + wordN
 ```
 
-The former private attack modes 11, 12, 13, and 14 are removed. Their 3-, 4-,
-5-, and 6-file attacks are now ordinary mode-1 commands, and mode 1 is not
-limited to six files.
+The former private Shooter attack modes 11, 12, 13, and 14 are removed. Their
+3-, 4-, 5-, and 6-file attacks are now ordinary mode-1 commands, and mode 1 is
+not limited to six files. Official hashcat attack mode 12 is now present too,
+but it is a separate general multi-hybrid mode using `?w` and optional `?q` in
+a mask; it does not replace this multi-file mode-1 extension.
 
 ## Windows examples
 

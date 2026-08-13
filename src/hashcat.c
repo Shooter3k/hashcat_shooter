@@ -2351,6 +2351,7 @@ int hashcat_get_status (hashcat_ctx_t *hashcat_ctx, hashcat_status_t *hashcat_st
   hashcat_status->guess_mod3                  = status_get_guess_mod3                 (hashcat_ctx);
   hashcat_status->guess_mod4                  = status_get_guess_mod4                 (hashcat_ctx);
   hashcat_status->guess_mod5                  = status_get_guess_mod5                 (hashcat_ctx);
+  hashcat_status->guess_mod_q                 = status_get_guess_mod_q                (hashcat_ctx);
   hashcat_status->guess_mod_offset            = status_get_guess_mod_offset           (hashcat_ctx);
   hashcat_status->guess_mod_count             = status_get_guess_mod_count            (hashcat_ctx);
   hashcat_status->guess_mod_percent           = status_get_guess_mod_percent          (hashcat_ctx);

@@ -1377,10 +1377,10 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
     }
     #endif
 
-    // attack modes from here. -a 1 is asked about before the feed, because both of its sources are
-    // feeds and it would answer to that test as well.
+    // attack modes from here. -a 12 is asked about before the feed, because its base words come from
+    // one and it would answer to that test as well.
 
-    if (attack_mode == ATTACK_MODE_COMBI)
+    if (attack_mode == ATTACK_MODE_HYBRID)
     {
       extra_info_combi_t extra_info_combi;
 
@@ -1523,11 +1523,10 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
   }
   else
   {
-    // These producers build candidates outside of the generic feed path. A base word is either
-    // generated from a mask, which the device does for itself, or read from one or more wordlists.
-    // -a 3 and -a 7 under the pure kernel are the mask, and they are the whole of what
-    // BASE_SOURCE_MASK means, so the test that used to spell that out by attack mode and kernel type
-    // is the one below.
+    // The producers left build candidates from a mask or from one or more wordlists outside the
+    // ordinary feed path. -a 3, -a 7 under the pure kernel, and -a 12 under the pure kernel when its
+    // mask ends in ?w use the mask as their base source. Shooter's multi-file -a 1 path is handled
+    // explicitly below.
 
     if ((user_options_extra->whole_candidate_rules == true) && (attack_mode == ATTACK_MODE_COMBI))
     {

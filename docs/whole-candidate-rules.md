@@ -73,7 +73,9 @@ and `--stdout` output reconstruct the final ruled candidate.
 - Rules that make the candidate exceed the selected kernel's supported length
   are rejected by the normal rule/kernel processing.
 
-To migrate an older private mode 11-14 command, change the attack number to
-`-a 1` and keep all of its wordlists in the same order. To migrate the
+To migrate an older private Shooter mode 11-14 command, change the attack
+number to `-a 1` and keep all of its wordlists in the same order. The official
+mode 12 now in this tree is a different general multi-hybrid mode and is not a
+replacement for the old private mode-12 command syntax. To migrate the
 unreleased mode-15 syntax, replace `-a 15 left.txt right.txt -r rules.txt`
 with `-a 1 left.txt right.txt -r rules.txt`.

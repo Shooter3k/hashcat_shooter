@@ -1,5 +1,58 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260812.18 (local source build)
+
+Official hashcat synchronization through August 12, 2026.
+
+### Integrated from official hashcat
+
+- Merged all twelve official commits after the Shooter baseline
+  `fdad9f2f7` through official master `9c735bade`, preserving their commit
+  ancestry in the local merge.
+- Added official attack mode `12`, the general multi-hybrid mode introduced by
+  `554c1207a`. Its mask uses `?w` for the first wordlist and optional `?q` for
+  a second wordlist, allowing masks and literals on either side of the words.
+- Included official feed-to-device mapping, yescrypt address-space and layout
+  fixes, PDF mode 10500 empty-ID support, hash/salt pointer-overflow fixes,
+  full-length combinator plaintext/status buffers, and rule-processor
+  overflow, double-free, and out-of-bounds fixes.
+
+### Shooter compatibility
+
+- Preserved Shooter's three-or-more-file `-a 1` Cartesian combinator and its
+  multi-GPU range seeking, while no-rule two-file `-a 1` now uses the official
+  mode-12 alias path.
+- Preserved whole-candidate `-r`/`-g` processing for modes `1`, `3`, `6`, and
+  `7`. Rule-bearing commands stay on the Shooter paths instead of being
+  rewritten to official mode 12.
+- Preserved all 12 x RTX 4090 startup, staging, autotune-cache, checkpoint,
+  outfile-retry, resumable-stdout, runtime-control, and custom hash-mode work.
+- Restored the custom combinator's no-mask update path and host-to-device base
+  upload around the upstream multi-hybrid refactor. This prevents a
+  three-file `-a 1` access violation and incomplete `--stdout` candidates.
+- Restored recovered-plaintext reconstruction for Shooter's multi-file
+  combinator, so cracked `-a 1` candidates are written to the outfile instead
+  of appearing with an empty plaintext after the upstream refactor.
+- Restored the legacy hybrid argument slicing and mask initialization needed
+  by Shooter's whole-candidate-rule `-a 6` and `-a 7` paths.
+- Kept compatibility mode `67000` on the maintained yescrypt kernel used by
+  mode `36100`, matching its documented alias behavior after the upstream
+  yescrypt host/kernel layout change.
+
+### Verified
+
+- Built the merged sources with debug symbols while resolving integration
+  issues and confirmed the three-file access violation is gone.
+- Verified exact candidate sets for official one- and two-wordlist `-a 12`,
+  the official no-rule two-file `-a 1` alias, Shooter three-file `-a 1`, and
+  Shooter whole-candidate rules on modes `1`, `3`, `6`, and `7`.
+- Verified three-file `-a 1` reports keyspace `4`, total candidates `8`, and
+  outputs all eight expected candidates in command-line order.
+- Verified GPU known-answer cracks for official mode `12`, Shooter multi-file
+  and ruled mode `1`, custom modes `29950` and `29951`, yescrypt modes `36100`
+  and `67000`, and gost-yescrypt mode `36200`.
+- Verified mode `10500` accepts the newly supported empty PDF ID form.
+
 ## v7.1.2-shooter.20260812.17
 
 Responsive RTX 4090 tuning for phpBB3 bcrypt-over-phpass modes.

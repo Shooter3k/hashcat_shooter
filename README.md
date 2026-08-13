@@ -5,7 +5,8 @@
 and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
-The current source and published build is
+The current local source build is `v7.1.2-shooter.20260812.18`. The latest
+published build remains
 [`v7.1.2-shooter.20260812.17`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.17).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -15,6 +16,12 @@ Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 > from August 10, 2026. The list below describes the custom behavior added
 > after that exact commit. The complete source comparison is available in
 > [GitHub's compare view](https://github.com/Shooter3k/hashcat_shooter/compare/fdad9f2f7bd7ec7f53056727e39331a17514db7c...master).
+
+The source has now also been synchronized with official hashcat master through
+[`9c735bade`](https://github.com/hashcat/hashcat/commit/9c735badebda0792b78010a5b94e3c8733bc1825)
+from August 12, 2026. This includes the official general multi-hybrid attack
+mode 12 from
+[`554c1207a`](https://github.com/hashcat/hashcat/commit/554c1207ae367b551daf74ba641d0dc9fae419e0).
 
 ## Shooter changes from the upstream baseline
 
@@ -42,6 +49,26 @@ See [docs/startup-optimization.md](docs/startup-optimization.md) and
 [RTX_4090_AUTOTUNE_CACHE.md](RTX_4090_AUTOTUNE_CACHE.md) for the exact guards,
 cache key, validation rules, overrides, and measurements.
 
+### Official attack mode 12
+
+Official attack mode 12 is a general multi-hybrid mode. Its mask is the first
+attack argument, `?w` marks the first wordlist's position, and optional `?q`
+marks a second wordlist after `?w`:
+
+```powershell
+hashcat.exe -m 0 -a 12 hashes.txt "?w-?d?d" words.txt
+hashcat.exe -m 0 -a 12 hashes.txt "?w-?q!" left.txt right.txt
+```
+
+No-rule two-file `-a 1`, `-a 6`, and `-a 7` commands are internally mapped to
+this maintained official implementation. Shooter's three-or-more-wordlist
+`-a 1` extension remains on its custom path, and adding `-r` or `-g` keeps
+modes 1, 3, 6, and 7 on Shooter's whole-candidate-rule paths. The old private
+Shooter mode numbered 12 is not restored; official mode 12 has different
+syntax and behavior. See
+[docs/hashcat-generic-attack-mode.md](docs/hashcat-generic-attack-mode.md) for
+the complete upstream syntax and restrictions.
+
 ### Multi-file mode 1 and whole-candidate rules
 
 Attack mode 1 accepts two or more wordlists. Each candidate is one entry from
@@ -59,9 +86,10 @@ not replay the ranges assigned to earlier GPUs. Progress, restore, status,
 potfile, outfile, overflow, and password-length accounting use the normal
 hashcat paths.
 
-The former private modes 11-14 were removed; their fixed 3-6-file layouts are
-now expressed with `-a 1` and the corresponding number of files. Full usage
-and examples are in
+The former private Shooter modes 11-14 were removed; their fixed 3-6-file
+layouts are now expressed with `-a 1` and the corresponding number of files.
+The newly inherited official `-a 12` is the unrelated general multi-hybrid
+mode described above. Full usage and examples are in
 [docs/multi-file-combination.md](docs/multi-file-combination.md).
 
 Ordinary `-r` rule files and `-g` generated rules can now be applied to the
