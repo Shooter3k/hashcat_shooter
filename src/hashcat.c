@@ -776,7 +776,11 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
 
   if (hashconfig_init (hashcat_ctx) == -1)
   {
-    event_log_error (hashcat_ctx, "Invalid hash-mode '%u' selected.", user_options->hash_mode);
+    char hash_mode_buf[16];
+
+    hash_mode_to_string (user_options->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
+    event_log_error (hashcat_ctx, "Invalid hash-mode '%s' selected.", hash_mode_buf);
 
     return -1;
   }
@@ -1124,7 +1128,11 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
 
   if (bridges_salt_prepare (hashcat_ctx) == false)
   {
-    event_log_error (hashcat_ctx, "Bridge salt preparation for hash-mode '%u' failed.", user_options->hash_mode);
+    char hash_mode_buf[16];
+
+    hash_mode_to_string (user_options->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
+    event_log_error (hashcat_ctx, "Bridge salt preparation for hash-mode '%s' failed.", hash_mode_buf);
 
     return -1;
   }
@@ -1654,7 +1662,11 @@ int hashcat_session_init (hashcat_ctx_t *hashcat_ctx, const char *install_folder
 
   if (bridges_init (hashcat_ctx) == false)
   {
-    event_log_error (hashcat_ctx, "Bridge initialization for hash-mode '%u' failed.", user_options->hash_mode);
+    char hash_mode_buf[16];
+
+    hash_mode_to_string (user_options->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
+    event_log_error (hashcat_ctx, "Bridge initialization for hash-mode '%s' failed.", hash_mode_buf);
 
     return -1;
   }
@@ -2052,13 +2064,17 @@ int hashcat_session_execute (hashcat_ctx_t *hashcat_ctx)
 
       for (int i = 0; i < modes_cnt; i++)
       {
+        char hash_mode_buf[16];
+
+        hash_mode_to_string (usage_sort_buf[i].hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
         if (user_options->machine_readable == false)
         {
-          event_log_info (hashcat_ctx, "%7u | %-58s | %s", usage_sort_buf[i].hash_mode, usage_sort_buf[i].hash_name, strhashcategory (usage_sort_buf[i].hash_category));
+          event_log_info (hashcat_ctx, "%7s | %-58s | %s", hash_mode_buf, usage_sort_buf[i].hash_name, strhashcategory (usage_sort_buf[i].hash_category));
         }
         else
         {
-          event_log_info (hashcat_ctx, "%u", usage_sort_buf[i].hash_mode);
+          event_log_info (hashcat_ctx, "%s", hash_mode_buf);
         }
 
         hcfree (usage_sort_buf[i].hash_name);
@@ -2080,6 +2096,10 @@ int hashcat_session_execute (hashcat_ctx_t *hashcat_ctx)
 
     // modes_cnt == 1
 
+    char hash_mode_buf[16];
+
+    hash_mode_to_string (usage_sort_buf[0].hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
     if (user_options->identify == false)
     {
       event_log_warning (hashcat_ctx, "Hash-mode was not specified with -m. Attempting to auto-detect hash mode.");
@@ -2090,7 +2110,7 @@ int hashcat_session_execute (hashcat_ctx_t *hashcat_ctx)
     {
       if (user_options->machine_readable == true)
       {
-        event_log_info (hashcat_ctx, "%u", usage_sort_buf[0].hash_mode);
+        event_log_info (hashcat_ctx, "%s", hash_mode_buf);
       }
       else
       {
@@ -2098,13 +2118,13 @@ int hashcat_session_execute (hashcat_ctx_t *hashcat_ctx)
         event_log_info (hashcat_ctx, NULL);
         event_log_info (hashcat_ctx, "      # | Name                                                       | Category");
         event_log_info (hashcat_ctx, "  ======+============================================================+======================================");
-        event_log_info (hashcat_ctx, "%7u | %-58s | %s", usage_sort_buf[0].hash_mode, usage_sort_buf[0].hash_name, strhashcategory (usage_sort_buf[0].hash_category));
+        event_log_info (hashcat_ctx, "%7s | %-58s | %s", hash_mode_buf, usage_sort_buf[0].hash_name, strhashcategory (usage_sort_buf[0].hash_category));
         event_log_info (hashcat_ctx, NULL);
       }
     }
     else
     {
-      event_log_info (hashcat_ctx, "\n%u | %s | %s\n", usage_sort_buf[0].hash_mode, usage_sort_buf[0].hash_name, strhashcategory (usage_sort_buf[0].hash_category));
+      event_log_info (hashcat_ctx, "\n%s | %s | %s\n", hash_mode_buf, usage_sort_buf[0].hash_name, strhashcategory (usage_sort_buf[0].hash_category));
     }
 
     if (user_options->identify == false)

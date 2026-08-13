@@ -10,11 +10,22 @@
 #include "memory.h"
 #include "ext_lzma.h"
 #include "cpu_features.h"
+#include "mdxfind_modes.h"
 #include <errno.h>
 
 #if defined (__CYGWIN__)
 #include <sys/cygwin.h>
 #endif
+
+int hash_mode_to_string (const int hash_mode, char *out_buf, const size_t out_size)
+{
+  if (MDXFIND_HASH_MODE_IS_NAMED (hash_mode))
+  {
+    return snprintf (out_buf, out_size, "e%d", MDXFIND_HASH_MODE_TO_ID (hash_mode));
+  }
+
+  return snprintf (out_buf, out_size, "%d", hash_mode);
+}
 
 #if defined (__APPLE__)   || defined (__OpenBSD__)   || defined (__NetBSD__) || \
     defined (__FreeBSD__) || defined (__DragonFly__)

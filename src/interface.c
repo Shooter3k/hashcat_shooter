@@ -111,6 +111,10 @@ int hashconfig_init (hashcat_ctx_t *hashcat_ctx)
   const user_options_t       *user_options       = hashcat_ctx->user_options;
   const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
 
+  char hash_mode_buf[16];
+
+  hash_mode_to_string (user_options->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
   // set some boring defaults
 
   hashconfig->benchmark_mask          = default_benchmark_mask          (hashconfig, user_options, user_options_extra);
@@ -144,14 +148,14 @@ int hashconfig_init (hashcat_ctx_t *hashcat_ctx)
 
   if (module_ctx->module_context_size != MODULE_CONTEXT_SIZE_CURRENT)
   {
-    event_log_error (hashcat_ctx, "Module context size in 'module_init()' for hash-mode '%d' is invalid. Is this module based on an old template?", user_options->hash_mode);
+    event_log_error (hashcat_ctx, "Module context size in 'module_init()' for hash-mode '%s' is invalid. Is this module based on an old template?", hash_mode_buf);
 
     return -1;
   }
 
   if (module_ctx->module_interface_version < MODULE_INTERFACE_VERSION_MINIMUM)
   {
-    event_log_error (hashcat_ctx, "Interface version in module context in 'module_init()' for hash-mode '%d' is outdated. Please recompile.", user_options->hash_mode);
+    event_log_error (hashcat_ctx, "Interface version in module context in 'module_init()' for hash-mode '%s' is outdated. Please recompile.", hash_mode_buf);
 
     return -1;
   }
@@ -161,7 +165,7 @@ int hashconfig_init (hashcat_ctx_t *hashcat_ctx)
   #define CHECK_DEFINED(module_ctx, func)                                         \
     if ((module_ctx)->func == NULL)                                               \
     {                                                                             \
-      event_log_error (hashcat_ctx, "Module context missing field '%s' in 'module_init()' for hash-mode '%d'. Is this module based on an old template?", #func, user_options->hash_mode); \
+      event_log_error (hashcat_ctx, "Module context missing field '%s' in 'module_init()' for hash-mode '%s'. Is this module based on an old template?", #func, hash_mode_buf); \
                                                                                   \
       return -1;                                                                  \
     }
@@ -250,7 +254,7 @@ int hashconfig_init (hashcat_ctx_t *hashcat_ctx)
   #define CHECK_MANDATORY(module_ctx, func)                                   \
     if ((module_ctx)->func == MODULE_DEFAULT)                                 \
     {                                                                         \
-      event_log_error (hashcat_ctx, "Module context field '%s' in 'module_init()' for hash-mode '%d' is set to MODULE_DEFAULT, but must be explicitly set.", #func, user_options->hash_mode); \
+      event_log_error (hashcat_ctx, "Module context field '%s' in 'module_init()' for hash-mode '%s' is set to MODULE_DEFAULT, but must be explicitly set.", #func, hash_mode_buf); \
                                                                               \
       return -1;                                                              \
     }
@@ -304,7 +308,7 @@ int hashconfig_init (hashcat_ctx_t *hashcat_ctx)
   {
     if ((hashconfig->opts_type & OPTS_TYPE_KEYBOARD_MAPPING) == 0)
     {
-      if (user_options->autodetect == false) event_log_error (hashcat_ctx, "Parameter --keyboard-layout-mapping not valid for hash-type %u", hashconfig->hash_mode);
+      if (user_options->autodetect == false) event_log_error (hashcat_ctx, "Parameter --keyboard-layout-mapping not valid for hash-type %s", hash_mode_buf);
 
       return -1;
     }
@@ -338,7 +342,7 @@ int hashconfig_init (hashcat_ctx_t *hashcat_ctx)
     }
     else
     {
-      if (user_options->autodetect == false) event_log_error (hashcat_ctx, "Parameter --hex-salt not valid for hash-type %u", hashconfig->hash_mode);
+      if (user_options->autodetect == false) event_log_error (hashcat_ctx, "Parameter --hex-salt not valid for hash-type %s", hash_mode_buf);
 
       return -1;
     }

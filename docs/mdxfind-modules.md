@@ -8,6 +8,10 @@ identifiers accepted by mdxfind.
 hashcat.exe -m e987 hashes.txt wordlist.txt
 ```
 
+The same public spelling is used by help, hash information, status,
+benchmark, autodetect, diagnostic, and machine-readable output. For example,
+`hashcat.exe -hh` lists `e987`, not its private integer representation.
+
 The `eN` spelling is translated to a reserved internal range only after
 command-line parsing. It is then loaded from `modules/module_eN.dll` on Windows
 or `modules/module_eN.so` on Unix-like systems. Ordinary numeric modes still

@@ -828,7 +828,11 @@ void hash_info_single_json (hashcat_ctx_t *hashcat_ctx, user_options_extra_t *us
     hashconfig_t *hashconfig = hashcat_ctx->hashconfig;
     module_ctx_t *module_ctx = hashcat_ctx->module_ctx;
 
-    printf ("\"%u\": { ", hashconfig->hash_mode);
+    char hash_mode_buf[16];
+
+    hash_mode_to_string (hashconfig->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
+    printf ("\"%s\": { ", hash_mode_buf);
     printf ("\"name\": \"%s\", ", hashconfig->hash_name);
     printf ("\"category\": \"%s\", ", strhashcategory (hashconfig->hash_category));
     printf ("\"slow_hash\": %s, ", (hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL) ? "false" : "true");
@@ -1108,7 +1112,11 @@ void hash_info_single (hashcat_ctx_t *hashcat_ctx, user_options_extra_t *user_op
     hashconfig_t *hashconfig = hashcat_ctx->hashconfig;
     module_ctx_t *module_ctx = hashcat_ctx->module_ctx;
 
-    event_log_info (hashcat_ctx, "Hash mode #%u", hashconfig->hash_mode);
+    char hash_mode_buf[16];
+
+    hash_mode_to_string (hashconfig->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
+    event_log_info (hashcat_ctx, "Hash mode #%s", hash_mode_buf);
     event_log_info (hashcat_ctx, "  Name................: %s", hashconfig->hash_name);
     event_log_info (hashcat_ctx, "  Category............: %s", strhashcategory (hashconfig->hash_category));
     event_log_info (hashcat_ctx, "  Slow.Hash...........: %s", (hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL) ? "No" : "Yes");
@@ -3541,9 +3549,13 @@ void status_display (hashcat_ctx_t *hashcat_ctx)
     "Status...........: %s",
     hashcat_status->status_string);
 
+  char hash_mode_buf[16];
+
+  hash_mode_to_string (hashconfig->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
   event_log_info (hashcat_ctx,
-    "Hash.Mode........: %u (%s)",
-    hashconfig->hash_mode,
+    "Hash.Mode........: %s (%s)",
+    hash_mode_buf,
     hashcat_status->hash_name);
 
   event_log_info (hashcat_ctx,
@@ -4470,7 +4482,9 @@ void status_benchmark_machine_readable (hashcat_ctx_t *hashcat_ctx)
   const bridge_ctx_t *bridge_ctx = hashcat_ctx->bridge_ctx;
   const hashconfig_t *hashconfig = hashcat_ctx->hashconfig;
 
-  const u32 hash_mode = hashconfig->hash_mode;
+  char hash_mode_buf[16];
+
+  hash_mode_to_string (hashconfig->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
 
   hashcat_status_t *hashcat_status = (hashcat_status_t *) hcmalloc (sizeof (hashcat_status_t));
 
@@ -4483,7 +4497,7 @@ void status_benchmark_machine_readable (hashcat_ctx_t *hashcat_ctx)
 
   if (bridge_ctx->enabled == true)
   {
-    event_log_info (hashcat_ctx, "%u:%u:%u:%u:%.2f:%" PRIu64, 0, hash_mode, 0, 0, hashcat_status->hashes_msec_all, (u64) (hashcat_status->hashes_msec_all * 1000));
+    event_log_info (hashcat_ctx, "%u:%s:%u:%u:%.2f:%" PRIu64, 0, hash_mode_buf, 0, 0, hashcat_status->hashes_msec_all, (u64) (hashcat_status->hashes_msec_all * 1000));
   }
   else
   {
@@ -4494,7 +4508,7 @@ void status_benchmark_machine_readable (hashcat_ctx_t *hashcat_ctx)
       if (device_info->skipped_dev == true) continue;
       if (device_info->skipped_warning_dev == true) continue;
 
-      event_log_info (hashcat_ctx, "%u:%u:%u:%u:%.2f:%" PRIu64, device_id + 1, hash_mode, device_info->corespeed_dev, device_info->memoryspeed_dev, device_info->exec_msec_dev, (u64) (device_info->hashes_msec_dev_benchmark * 1000));
+      event_log_info (hashcat_ctx, "%u:%s:%u:%u:%.2f:%" PRIu64, device_id + 1, hash_mode_buf, device_info->corespeed_dev, device_info->memoryspeed_dev, device_info->exec_msec_dev, (u64) (device_info->hashes_msec_dev_benchmark * 1000));
     }
   }
 

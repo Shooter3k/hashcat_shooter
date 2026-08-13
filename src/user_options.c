@@ -4420,7 +4420,18 @@ void user_options_logger (hashcat_ctx_t *hashcat_ctx)
   logfile_top_uint   (user_options->force);
   logfile_top_uint   (user_options->hwmon);
   logfile_top_uint   (user_options->hwmon_temp_abort);
-  logfile_top_uint   (user_options->hash_mode);
+  if (MDXFIND_HASH_MODE_IS_NAMED (user_options->hash_mode))
+  {
+    char hash_mode_buf[16];
+
+    hash_mode_to_string (user_options->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
+    logfile_top_var_string ("user_options->hash_mode", hash_mode_buf);
+  }
+  else
+  {
+    logfile_top_uint (user_options->hash_mode);
+  }
   logfile_top_uint   (user_options->hex_charset);
   logfile_top_uint   (user_options->hex_salt);
   logfile_top_uint   (user_options->hex_wordlist);

@@ -26,7 +26,7 @@ static const char *const USAGE_BIG_PRE_HASHMODES[] =
   "",
   " Options Short / Long           | Type | Description                                          | Example",
   "================================+======+======================================================+=======================",
-  " -m, --hash-type                | Num  | Hash-type, references below (otherwise autodetect)   | -m 1000",
+  " -m, --hash-type                | Mode | Hash-type, references below (otherwise autodetect)   | -m 1000 or -m e987",
   " -a, --attack-mode              | Num  | Attack-mode, see references below                    | -a 3",
   " -V, --version                  |      | Print version                                        |",
   " -h, --help                     |      | Print help. Use -hh to show all supported hash-modes | -h or -hh",
@@ -415,7 +415,11 @@ void usage_big_print (hashcat_ctx_t *hashcat_ctx)
 
     for (int i = 0; i < usage_sort_cnt; i++)
     {
-      printf ("%7u | %-58s | %s", usage_sort_buf[i].hash_mode, usage_sort_buf[i].hash_name, strhashcategory (usage_sort_buf[i].hash_category));
+      char hash_mode_buf[16];
+
+      hash_mode_to_string (usage_sort_buf[i].hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
+      printf ("%7s | %-58s | %s", hash_mode_buf, usage_sort_buf[i].hash_name, strhashcategory (usage_sort_buf[i].hash_category));
 
       fwrite (EOL, strlen (EOL), 1, stdout);
     }

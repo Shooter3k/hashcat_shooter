@@ -85,7 +85,11 @@ void brain_client_check_features (hashcat_ctx_t *hashcat_ctx)
 
   user_options->brain_client_features = BRAIN_CLIENT_FEATURE_ATTACKS;
 
-  event_log_warning (hashcat_ctx, "Hash-mode %u computes in kernel and has %u salt(s), so candidates are produced far faster", hashconfig->hash_mode, hashes->salts_cnt);
+  char hash_mode_buf[16];
+
+  hash_mode_to_string (hashconfig->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
+  event_log_warning (hashcat_ctx, "Hash-mode %s computes in kernel and has %u salt(s), so candidates are produced far faster", hash_mode_buf, hashes->salts_cnt);
   event_log_warning (hashcat_ctx, "than the brain can usefully remember them. Storing them would cost the brain server more time");
   event_log_warning (hashcat_ctx, "and memory than testing them costs this client.");
   event_log_warning (hashcat_ctx, NULL);

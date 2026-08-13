@@ -28,6 +28,7 @@
 #include "terminal.h"
 #include "hwmon.h"
 #include "autotune.h"
+#include "mdxfind_modes.h"
 
 #if defined (__linux__)
 static const char *const  dri_card0_path = "/dev/dri/card0";
@@ -14970,7 +14971,11 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
         #endif
         if (device_param->is_opencl == true) memcpy (runtime_name, "OpenCL", 6);
 
-        event_log_warning (hashcat_ctx, "* Device #%u: Skipping (hash-mode %u)", device_id + 1, hashconfig->hash_mode);
+        char hash_mode_buf[16];
+
+        hash_mode_to_string (hashconfig->hash_mode, hash_mode_buf, sizeof (hash_mode_buf));
+
+        event_log_warning (hashcat_ctx, "* Device #%u: Skipping (hash-mode %s)", device_id + 1, hash_mode_buf);
         event_log_warning (hashcat_ctx, "             This is due to a known %s runtime and/or device driver issue (not a hashcat issue)", runtime_name);
         event_log_warning (hashcat_ctx, "             You can use --force to override, but do not report related errors.");
         event_log_warning (hashcat_ctx, NULL);
@@ -15327,10 +15332,21 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
               event_log_warning (hashcat_ctx, NULL);
               event_log_warning (hashcat_ctx, "This warning message disappears after a definition for the installed");
               event_log_warning (hashcat_ctx, "compute-device in this computer has been added to either list:");
-              event_log_warning (hashcat_ctx, "- src/modules/module_%05d.c", hashconfig->hash_mode);
+              char module_source[64];
+
+              if (MDXFIND_HASH_MODE_IS_NAMED (hashconfig->hash_mode))
+              {
+                snprintf (module_source, sizeof (module_source), "src/modules/module_e%d.c", MDXFIND_HASH_MODE_TO_ID (hashconfig->hash_mode));
+              }
+              else
+              {
+                snprintf (module_source, sizeof (module_source), "src/modules/module_%05d.c", hashconfig->hash_mode);
+              }
+
+              event_log_warning (hashcat_ctx, "- %s", module_source);
               event_log_warning (hashcat_ctx, "- hashcat.hctune");
               event_log_warning (hashcat_ctx, NULL);
-              event_log_warning (hashcat_ctx, "For instructions on tuning, see src/modules/module_%05d.c", hashconfig->hash_mode);
+              event_log_warning (hashcat_ctx, "For instructions on tuning, see %s", module_source);
               event_log_warning (hashcat_ctx, "Also, consider sending a PR to Hashcat Master so that other users can benefit from your work.");
               event_log_warning (hashcat_ctx, NULL);
             }

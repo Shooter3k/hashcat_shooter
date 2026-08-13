@@ -1,5 +1,27 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260813.21
+
+Consistent public `eN` names throughout the hashcat interface.
+
+### Fixed
+
+- `-hh` now lists all 1,001 mdxfind modes as `e1` through `e1001` instead of
+  exposing their private integer representations.
+- `-H`, `-HH`, example-hash output, runtime status, benchmark headings and
+  machine-readable rows, autodetect results, diagnostics, source-module hints,
+  and session logs now use the same public `eN` spelling.
+- The main help table now describes `-m` as a mode and includes `-m e987` as
+  an example. Existing numeric modes keep their original output unchanged.
+
+### Verified
+
+- Confirmed `-hh` contains exactly 1,001 named rows and maps representative
+  entries to `e1`, `e987`, and `e1001` without exposing `90001`
+  through `91001` as public mode values.
+- Confirmed human-readable and JSON hash information report `e987`, while
+  representative numeric modes retain their original numeric identifiers.
+
 ## v7.1.2-shooter.20260813.20
 
 Named hashcat modules for the complete mdxfind algorithm registry.

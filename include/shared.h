@@ -105,6 +105,8 @@ const char *strparser (const u32 parser_status);
 const char *strhashcategory (const u32 hash_category);
 const char *stroptitype (const u32 opti_type);
 
+int hash_mode_to_string (const int hash_mode, char *out_buf, const size_t out_size);
+
 bool generic_salt_decode (MAYBE_UNUSED const hashconfig_t *hashconfig, const u8 *in_buf, const int in_len, u8 *out_buf, int *out_len);
 int  generic_salt_encode (MAYBE_UNUSED const hashconfig_t *hashconfig, const u8 *in_buf, const int in_len, u8 *out_buf);
 
