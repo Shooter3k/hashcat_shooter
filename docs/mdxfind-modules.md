@@ -61,6 +61,18 @@ original numeric module's documented syntax, visible with:
 hashcat.exe -m e987 --example-hashes
 ```
 
+`e987` additionally accepts the Magento Argon2id forms supported by mdxfind:
+
+```text
+hex_digest:salt:2
+hex_digest:salt:3_digest_length_iterations_memory_bytes
+```
+
+These are translated internally to hashcat's Argon2 representation using the
+same mdxfind rules: version 19, one lane, and the first 16 salt characters.
+The original Magento line is retained for potfile, `--show`, `--left`, and
+outfile output.
+
 ## Regeneration
 
 Run the generator whenever mdxfind's live registry changes:

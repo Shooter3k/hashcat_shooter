@@ -6,7 +6,7 @@ and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
 The current release is
-[`v7.1.2-shooter.20260813.21`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260813.21).
+[`v7.1.2-shooter.20260813.22`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260813.22).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -208,6 +208,9 @@ mdxfind publishes a compatible mapping and otherwise creates a front end for
 the bundled mdxfind expression bridge. See
 [docs/mdxfind-modules.md](docs/mdxfind-modules.md) for input fields, bridge
 coverage, regeneration, and the complete machine-readable registry.
+
+`e987` accepts both standard Argon2 PHC strings and mdxfind's Magento
+`hex_digest:salt:2` / `hex_digest:salt:3_...` input forms.
 
 | Hash mode | Addition |
 | --- | --- |

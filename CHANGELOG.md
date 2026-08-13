@@ -1,5 +1,32 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260813.22
+
+Magento input compatibility for mdxfind `e987` Argon2.
+
+### Fixed
+
+- `e987` now accepts both standard `$argon2...` PHC strings and mdxfind's
+  Magento `hex_digest:salt:2` /
+  `hex_digest:salt:3_digest_length_iterations_memory_bytes` forms.
+- Magento inputs are converted to hashcat mode 34000 parameters internally
+  using mdxfind's version-19, single-lane, first-16-salt-character rules.
+- The original Magento hash line is retained for potfiles, `--show`, `--left`,
+  and cracked-output files rather than being replaced with the internal PHC
+  representation.
+- The module generator now records specialized compatibility aliases so
+  regenerating all 1,001 wrappers preserves the `e987` parser.
+
+### Verified
+
+- Parsed all 31,161 hashes in the supplied Magento `e987` file with zero
+  errors and confirmed `--left` returned every original line unchanged.
+- Completed an `e987` benchmark with the CUDA backend across all 12 detected
+  RTX 4090 devices. `-O` correctly reports that no optimized Argon2 kernel is
+  required and uses `m34000-pure.cl`.
+- Confirmed standard Argon2 PHC input and the existing numeric mode 34000
+  remain unchanged.
+
 ## v7.1.2-shooter.20260813.21
 
 Consistent public `eN` names throughout the hashcat interface.

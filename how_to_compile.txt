@@ -110,6 +110,9 @@ The complete mdxfind named-module build reports:
 The mdxfind public-mode display correction reports:
     v7.1.2-shooter.20260813.21
 
+The e987 Magento Argon2 compatibility build reports:
+    v7.1.2-shooter.20260813.22
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:

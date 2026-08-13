@@ -7508,7 +7508,7 @@
     "mode": "e987",
     "id": 987,
     "name": "ARGON2",
-    "implementation": "hashcat-34000",
+    "implementation": "hashcat-34000-mdxfind-format",
     "hashcat_candidates": [
       34000
     ]

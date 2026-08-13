@@ -1,9 +1,9 @@
 /**
- * Auto-generated mdxfind alias module: e987 ARGON2
+ * Auto-generated specialized mdxfind alias: e987 ARGON2
  * Source: tools/generate_mdxfind_modules.py
  *
- * The existing hashcat module is included unchanged.  This file only gives
- * that implementation an mdxfind-compatible module filename.
+ * The compatibility header preserves mdxfind-specific input formats before
+ * delegating computation to the existing hashcat module.
  */
 
 #include "common.h"
@@ -15,22 +15,6 @@
 #include "module_34000.c"
 #undef module_init
 
-static const char *MDXFIND_HASH_NAME = "mdxfind e987 ARGON2";
-
-static int mdxfind_alias_hash_mode (MAYBE_UNUSED const hashconfig_t *hashconfig, MAYBE_UNUSED const user_options_t *user_options, MAYBE_UNUSED const user_options_extra_t *user_options_extra)
-{
-  return MDXFIND_HASH_MODE_FROM_ID (987);
-}
-
-static const char *mdxfind_alias_hash_name (MAYBE_UNUSED const hashconfig_t *hashconfig, MAYBE_UNUSED const user_options_t *user_options, MAYBE_UNUSED const user_options_extra_t *user_options_extra)
-{
-  return MDXFIND_HASH_NAME;
-}
-
-void module_init (module_ctx_t *module_ctx)
-{
-  mdxfind_base_module_init (module_ctx);
-
-  module_ctx->module_hash_mode = mdxfind_alias_hash_mode;
-  module_ctx->module_hash_name = mdxfind_alias_hash_name;
-}
+#define MDXFIND_MODE_ID 987
+#define MDXFIND_MODE_NAME "ARGON2"
+#include "mdxfind_argon2_module.h"

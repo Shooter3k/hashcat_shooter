@@ -26,6 +26,10 @@ MANUAL_HASHCAT_MODES = {
 MDXFIND_HASH_MODE_BASE = 90000
 MDXFIND_HASH_MODE_COUNT = 1001
 
+SPECIALIZED_ALIAS_HEADERS = {
+    987: "mdxfind_argon2_module.h",
+}
+
 
 def parse_registry(mdxfind_c: Path) -> tuple[list[str], dict[int, list[int]]]:
     text = mdxfind_c.read_text(encoding="utf-8", errors="replace")
@@ -104,6 +108,32 @@ void module_init (module_ctx_t *module_ctx)
 """
 
 
+def specialized_alias_source(
+    mdxfind_id: int, name: str, hashcat_mode: int, header: str
+) -> str:
+    return f"""/**
+ * Auto-generated specialized mdxfind alias: e{mdxfind_id} {name}
+ * Source: tools/generate_mdxfind_modules.py
+ *
+ * The compatibility header preserves mdxfind-specific input formats before
+ * delegating computation to the existing hashcat module.
+ */
+
+#include "common.h"
+#include "types.h"
+#include "modules.h"
+#include "mdxfind_modes.h"
+
+#define module_init mdxfind_base_module_init
+#include "module_{hashcat_mode:05d}.c"
+#undef module_init
+
+#define MDXFIND_MODE_ID {mdxfind_id}
+#define MDXFIND_MODE_NAME {c_string(name)}
+#include "{header}"
+"""
+
+
 def bridge_source(mdxfind_id: int, name: str) -> str:
     return f"""/**
  * Auto-generated mdxfind bridge module: e{mdxfind_id} {name}
@@ -161,12 +191,22 @@ def main() -> int:
             output.write_text(bridge_source(mdxfind_id, name), encoding="utf-8", newline="\n")
             implementation = "mdxfind-bridge"
         else:
+            specialized_header = SPECIALIZED_ALIAS_HEADERS.get(mdxfind_id)
+
             output.write_text(
-                alias_source(mdxfind_id, name, hashcat_mode),
+                specialized_alias_source(
+                    mdxfind_id, name, hashcat_mode, specialized_header
+                )
+                if specialized_header is not None
+                else alias_source(mdxfind_id, name, hashcat_mode),
                 encoding="utf-8",
                 newline="\n",
             )
-            implementation = f"hashcat-{hashcat_mode}"
+            implementation = (
+                f"hashcat-{hashcat_mode}-mdxfind-format"
+                if specialized_header is not None
+                else f"hashcat-{hashcat_mode}"
+            )
 
         catalog.append(
             {
