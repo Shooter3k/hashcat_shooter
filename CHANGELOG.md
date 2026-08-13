@@ -1,5 +1,47 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260813.20
+
+Named hashcat modules for the complete mdxfind algorithm registry.
+
+### Added
+
+- Added `module_e1` through `module_e1001`, matching every live algorithm name
+  in mdxfind's `Types[]` registry. Hashcat now accepts names such as `-m e987`
+  and loads the corresponding `module_e987` plugin.
+- Kept every existing numeric hashcat module unchanged. The generated layer
+  uses 302 isolated aliases to compatible hashcat modules and 699 isolated
+  front ends for mdxfind's checked-in expression VM.
+- Added the native `bridge_mdxfind` CPU evaluator and a small OpenCL comparison
+  kernel. The bridge is self-contained in the Windows package and does not
+  require a separate OpenSSL runtime DLL.
+- Added `tools/generate_mdxfind_modules.py`, which reads mdxfind's live
+  `Types[]` and `Maphashcat[]` tables rather than the potentially older prose
+  list, plus `docs/mdxfind-modules.json` as the complete generated inventory.
+
+### Compatibility and diagnostics
+
+- Existing numeric `-m` values and numeric module filenames retain their
+  original parsing and loading behavior.
+- Mapped algorithms retain the original hashcat parser, self-test, kernel, and
+  hash syntax while reporting their mdxfind `eN` name.
+- Expression algorithms accept `hash[:salt[:salt2[:pepper[:user]]]]`. If the
+  checked-in mdxfind expression table marks an algorithm as an outlier or
+  needs a primitive unavailable in this bridge build, startup reports that
+  exact limitation instead of selecting a different algorithm.
+
+### Verified
+
+- Production-built representative native aliases `e536` and `e987`, the
+  translated expression module `e996`, the mdxfind bridge, and the main
+  executable with the MinGW64 toolchain.
+- Confirmed `hashcat.exe -m e536 --example-hashes`, `-m e987`, and `-m e996`
+  resolve their named module files and report internal names `mdxfind eN ...`.
+- Loaded all 1,001 generated modules with `--example-hashes`; every `e1`
+  through `e1001` module resolved successfully.
+- Confirmed the e996 expression VM produces the independently calculated
+  `md5(sha256(sha256("hashcat")))` known answer.
+
 ## v7.1.2-shooter.20260812.19
 
 Faster preprocessing for very large unsalted hash lists.

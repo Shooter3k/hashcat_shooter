@@ -1,0 +1,8 @@
+/**
+ * Auto-generated mdxfind bridge module: e156 RMD128MD5
+ * Source: tools/generate_mdxfind_modules.py
+ */
+
+#define MDXFIND_MODE_ID 156
+#define MDXFIND_MODE_NAME "RMD128MD5"
+#include "mdxfind_bridge_module.h"

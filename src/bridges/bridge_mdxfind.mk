@@ -1,0 +1,29 @@
+MDXFIND_BRIDGE_SOURCES := \
+  src/bridges/bridge_mdxfind.c \
+  src/bridges/mdxfind/hx_vm.c \
+  src/bridges/mdxfind/hx_func.c \
+  src/bridges/mdxfind/codegen/hx_specs_data.c
+
+MDXFIND_BRIDGE_FLAGS := -DHX_STANDALONE -Isrc/bridges -Isrc/bridges/mdxfind -Isrc/bridges/mdxfind/codegen
+MDXFIND_BRIDGE_LIBS_LINUX  := -lcrypto
+MDXFIND_BRIDGE_LIBS_WIN    := -Wl,-Bstatic -lcrypto -Wl,-Bdynamic -lws2_32 -lgdi32 -lcrypt32
+MDXFIND_BRIDGE_LIBS_NATIVE := $(MDXFIND_BRIDGE_LIBS_LINUX)
+
+ifneq (,$(filter $(UNAME),CYGWIN MSYS2))
+MDXFIND_BRIDGE_LIBS_NATIVE := $(MDXFIND_BRIDGE_LIBS_WIN)
+endif
+
+ifeq ($(BUILD_MODE),cross)
+bridges/bridge_mdxfind.so: $(MDXFIND_BRIDGE_SOURCES) obj/combined.LINUX.a
+	$(CC_LINUX) $(CCFLAGS) $(CFLAGS_CROSS_LINUX) $(MDXFIND_BRIDGE_FLAGS) $^ -o $@ $(LFLAGS_CROSS_LINUX) -shared -fPIC -D BRIDGE_INTERFACE_VERSION_CURRENT=$(BRIDGE_INTERFACE_VERSION) $(MDXFIND_BRIDGE_LIBS_LINUX)
+bridges/bridge_mdxfind.dll: $(MDXFIND_BRIDGE_SOURCES) obj/combined.WIN.a
+	$(CC_WIN) $(CCFLAGS) $(CFLAGS_CROSS_WIN) $(MDXFIND_BRIDGE_FLAGS) $^ -o $@ $(LFLAGS_CROSS_WIN) -shared -fPIC -D BRIDGE_INTERFACE_VERSION_CURRENT=$(BRIDGE_INTERFACE_VERSION) $(MDXFIND_BRIDGE_LIBS_WIN)
+else
+ifeq ($(SHARED),1)
+bridges/bridge_mdxfind.$(BRIDGE_SUFFIX): $(MDXFIND_BRIDGE_SOURCES) $(HASHCAT_LIBRARY)
+	$(CC) $(CCFLAGS) $(CFLAGS_NATIVE) $(MDXFIND_BRIDGE_FLAGS) $^ -o $@ $(LFLAGS_NATIVE) -shared -fPIC -D BRIDGE_INTERFACE_VERSION_CURRENT=$(BRIDGE_INTERFACE_VERSION) $(MDXFIND_BRIDGE_LIBS_NATIVE)
+else
+bridges/bridge_mdxfind.$(BRIDGE_SUFFIX): $(MDXFIND_BRIDGE_SOURCES) obj/combined.NATIVE.a
+	$(CC) $(CCFLAGS) $(CFLAGS_NATIVE) $(MDXFIND_BRIDGE_FLAGS) $^ -o $@ $(LFLAGS_NATIVE) -shared -fPIC -D BRIDGE_INTERFACE_VERSION_CURRENT=$(BRIDGE_INTERFACE_VERSION) $(MDXFIND_BRIDGE_LIBS_NATIVE)
+endif
+endif

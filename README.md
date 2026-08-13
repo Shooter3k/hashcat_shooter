@@ -6,7 +6,7 @@ and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
 The current release is
-[`v7.1.2-shooter.20260812.18`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260812.18).
+[`v7.1.2-shooter.20260813.20`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260813.20).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -193,6 +193,21 @@ share stdin with the interactive menu. Full behavior and limitations are in
 | Dated build identity | Production builds report `v7.1.2-shooter.YYYYMMDD.REVISION`, making the binary's source/release generation visible in `hashcat.exe --version`. |
 
 ### Added and compatibility hash modes
+
+Every algorithm in mdxfind's live `Types[]` registry is also available under
+its mdxfind name, from `e1` through `e1001`. For example:
+
+```powershell
+hashcat.exe -m e987 hashes.txt wordlist.txt
+hashcat.exe -m e996 hashes.txt wordlist.txt
+```
+
+These are separate `module_eN` plugins; no existing numeric hashcat module is
+changed. The generator reuses an existing hashcat implementation where
+mdxfind publishes a compatible mapping and otherwise creates a front end for
+the bundled mdxfind expression bridge. See
+[docs/mdxfind-modules.md](docs/mdxfind-modules.md) for input fields, bridge
+coverage, regeneration, and the complete machine-readable registry.
 
 | Hash mode | Addition |
 | --- | --- |

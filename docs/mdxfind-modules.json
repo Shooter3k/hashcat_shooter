@@ -1,0 +1,7644 @@
+[
+  {
+    "mode": "e1",
+    "id": 1,
+    "name": "MD5",
+    "implementation": "hashcat-0",
+    "hashcat_candidates": [
+      0,
+      2600,
+      5100
+    ]
+  },
+  {
+    "mode": "e2",
+    "id": 2,
+    "name": "MD5UC",
+    "implementation": "hashcat-4300",
+    "hashcat_candidates": [
+      4300
+    ]
+  },
+  {
+    "mode": "e3",
+    "id": 3,
+    "name": "MD4",
+    "implementation": "hashcat-900",
+    "hashcat_candidates": [
+      900
+    ]
+  },
+  {
+    "mode": "e4",
+    "id": 4,
+    "name": "MD2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e5",
+    "id": 5,
+    "name": "WRL",
+    "implementation": "hashcat-6100",
+    "hashcat_candidates": [
+      6100
+    ]
+  },
+  {
+    "mode": "e6",
+    "id": 6,
+    "name": "HAV128",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e7",
+    "id": 7,
+    "name": "SHA0",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e8",
+    "id": 8,
+    "name": "SHA1",
+    "implementation": "hashcat-100",
+    "hashcat_candidates": [
+      100,
+      4500
+    ]
+  },
+  {
+    "mode": "e9",
+    "id": 9,
+    "name": "SHA224",
+    "implementation": "hashcat-1300",
+    "hashcat_candidates": [
+      1300,
+      34400
+    ]
+  },
+  {
+    "mode": "e10",
+    "id": 10,
+    "name": "SHA256",
+    "implementation": "hashcat-1400",
+    "hashcat_candidates": [
+      1400
+    ]
+  },
+  {
+    "mode": "e11",
+    "id": 11,
+    "name": "SHA384",
+    "implementation": "hashcat-10800",
+    "hashcat_candidates": [
+      10800
+    ]
+  },
+  {
+    "mode": "e12",
+    "id": 12,
+    "name": "SHA512",
+    "implementation": "hashcat-1700",
+    "hashcat_candidates": [
+      1700
+    ]
+  },
+  {
+    "mode": "e13",
+    "id": 13,
+    "name": "GOST",
+    "implementation": "hashcat-6900",
+    "hashcat_candidates": [
+      6900
+    ]
+  },
+  {
+    "mode": "e14",
+    "id": 14,
+    "name": "GOST-CRYPTO",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e15",
+    "id": 15,
+    "name": "HAV256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e16",
+    "id": 16,
+    "name": "RMD128",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e17",
+    "id": 17,
+    "name": "RMD160",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e18",
+    "id": 18,
+    "name": "TIGER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e19",
+    "id": 19,
+    "name": "TTH",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e20",
+    "id": 20,
+    "name": "ED2K",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e21",
+    "id": 21,
+    "name": "AICH",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e22",
+    "id": 22,
+    "name": "HAS160",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e23",
+    "id": 23,
+    "name": "EDON256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e24",
+    "id": 24,
+    "name": "EDON512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e25",
+    "id": 25,
+    "name": "SNE128",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e26",
+    "id": 26,
+    "name": "SNE256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e27",
+    "id": 27,
+    "name": "MD6",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e28",
+    "id": 28,
+    "name": "MD6128",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e29",
+    "id": 29,
+    "name": "MD6256",
+    "implementation": "hashcat-34600",
+    "hashcat_candidates": [
+      34600
+    ]
+  },
+  {
+    "mode": "e30",
+    "id": 30,
+    "name": "MD6512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e31",
+    "id": 31,
+    "name": "MD5SALT",
+    "implementation": "hashcat-2611",
+    "hashcat_candidates": [
+      2611,
+      2711
+    ]
+  },
+  {
+    "mode": "e32",
+    "id": 32,
+    "name": "MDC2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e33",
+    "id": 33,
+    "name": "MD5RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e34",
+    "id": 34,
+    "name": "SHA1RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e35",
+    "id": 35,
+    "name": "SHA224RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e36",
+    "id": 36,
+    "name": "SHA256RAW",
+    "implementation": "hashcat-21400",
+    "hashcat_candidates": [
+      21400,
+      30420
+    ]
+  },
+  {
+    "mode": "e37",
+    "id": 37,
+    "name": "SHA384RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e38",
+    "id": 38,
+    "name": "SHA512RAW",
+    "implementation": "hashcat-21000",
+    "hashcat_candidates": [
+      21000
+    ]
+  },
+  {
+    "mode": "e39",
+    "id": 39,
+    "name": "HAV128-4",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e40",
+    "id": 40,
+    "name": "HAV128-5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e41",
+    "id": 41,
+    "name": "HAV160-3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e42",
+    "id": 42,
+    "name": "HAV160-4",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e43",
+    "id": 43,
+    "name": "HAV160-5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e44",
+    "id": 44,
+    "name": "HAV192-3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e45",
+    "id": 45,
+    "name": "HAV192-4",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e46",
+    "id": 46,
+    "name": "HAV192-5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e47",
+    "id": 47,
+    "name": "HAV224-3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e48",
+    "id": 48,
+    "name": "HAV224-4",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e49",
+    "id": 49,
+    "name": "HAV224-5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e50",
+    "id": 50,
+    "name": "HAV256-4",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e51",
+    "id": 51,
+    "name": "HAV256-5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e52",
+    "id": 52,
+    "name": "BLAKE224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e53",
+    "id": 53,
+    "name": "BLAKE256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e54",
+    "id": 54,
+    "name": "BLAKE384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e55",
+    "id": 55,
+    "name": "BLAKE512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e56",
+    "id": 56,
+    "name": "BMW224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e57",
+    "id": 57,
+    "name": "BMW256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e58",
+    "id": 58,
+    "name": "BMW384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e59",
+    "id": 59,
+    "name": "BMW512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e60",
+    "id": 60,
+    "name": "CUBE224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e61",
+    "id": 61,
+    "name": "CUBE256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e62",
+    "id": 62,
+    "name": "CUBE384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e63",
+    "id": 63,
+    "name": "CUBE512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e64",
+    "id": 64,
+    "name": "ECHO224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e65",
+    "id": 65,
+    "name": "ECHO256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e66",
+    "id": 66,
+    "name": "ECHO384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e67",
+    "id": 67,
+    "name": "ECHO512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e68",
+    "id": 68,
+    "name": "FUGUE224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e69",
+    "id": 69,
+    "name": "FUGUE256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e70",
+    "id": 70,
+    "name": "FUGUE384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e71",
+    "id": 71,
+    "name": "FUGUE512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e72",
+    "id": 72,
+    "name": "GROESTL224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e73",
+    "id": 73,
+    "name": "GROESTL256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e74",
+    "id": 74,
+    "name": "GROESTL384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e75",
+    "id": 75,
+    "name": "GROESTL512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e76",
+    "id": 76,
+    "name": "HAMSI224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e77",
+    "id": 77,
+    "name": "HAMSI256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e78",
+    "id": 78,
+    "name": "HAMSI384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e79",
+    "id": 79,
+    "name": "HAMSI512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e80",
+    "id": 80,
+    "name": "JH224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e81",
+    "id": 81,
+    "name": "JH256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e82",
+    "id": 82,
+    "name": "JH384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e83",
+    "id": 83,
+    "name": "JH512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e84",
+    "id": 84,
+    "name": "KECCAK224",
+    "implementation": "hashcat-17700",
+    "hashcat_candidates": [
+      17700
+    ]
+  },
+  {
+    "mode": "e85",
+    "id": 85,
+    "name": "KECCAK256",
+    "implementation": "hashcat-17800",
+    "hashcat_candidates": [
+      17800
+    ]
+  },
+  {
+    "mode": "e86",
+    "id": 86,
+    "name": "KECCAK384",
+    "implementation": "hashcat-17900",
+    "hashcat_candidates": [
+      17900
+    ]
+  },
+  {
+    "mode": "e87",
+    "id": 87,
+    "name": "KECCAK512",
+    "implementation": "hashcat-18000",
+    "hashcat_candidates": [
+      18000
+    ]
+  },
+  {
+    "mode": "e88",
+    "id": 88,
+    "name": "SHA3-224",
+    "implementation": "hashcat-17300",
+    "hashcat_candidates": [
+      17300
+    ]
+  },
+  {
+    "mode": "e89",
+    "id": 89,
+    "name": "SHA3-256",
+    "implementation": "hashcat-17400",
+    "hashcat_candidates": [
+      17400
+    ]
+  },
+  {
+    "mode": "e90",
+    "id": 90,
+    "name": "SHA3-384",
+    "implementation": "hashcat-17500",
+    "hashcat_candidates": [
+      17500
+    ]
+  },
+  {
+    "mode": "e91",
+    "id": 91,
+    "name": "SHA3-512",
+    "implementation": "hashcat-17600",
+    "hashcat_candidates": [
+      17600
+    ]
+  },
+  {
+    "mode": "e92",
+    "id": 92,
+    "name": "LUFFA224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e93",
+    "id": 93,
+    "name": "LUFFA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e94",
+    "id": 94,
+    "name": "LUFFA384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e95",
+    "id": 95,
+    "name": "LUFFA512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e96",
+    "id": 96,
+    "name": "PANAMA",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e97",
+    "id": 97,
+    "name": "RADIOGATUN32",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e98",
+    "id": 98,
+    "name": "RADIOGATUN64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e99",
+    "id": 99,
+    "name": "SHABAL224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e100",
+    "id": 100,
+    "name": "SHABAL256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e101",
+    "id": 101,
+    "name": "SHABAL384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e102",
+    "id": 102,
+    "name": "SHABAL512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e103",
+    "id": 103,
+    "name": "SHAVITE224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e104",
+    "id": 104,
+    "name": "SHAVITE256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e105",
+    "id": 105,
+    "name": "SHAVITE384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e106",
+    "id": 106,
+    "name": "SHAVITE512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e107",
+    "id": 107,
+    "name": "SIMD224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e108",
+    "id": 108,
+    "name": "SIMD256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e109",
+    "id": 109,
+    "name": "SIMD384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e110",
+    "id": 110,
+    "name": "SIMD512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e111",
+    "id": 111,
+    "name": "SKEIN224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e112",
+    "id": 112,
+    "name": "SKEIN256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e113",
+    "id": 113,
+    "name": "SKEIN384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e114",
+    "id": 114,
+    "name": "SKEIN512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e115",
+    "id": 115,
+    "name": "TIGER2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e116",
+    "id": 116,
+    "name": "WRL0",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e117",
+    "id": 117,
+    "name": "WRL1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e118",
+    "id": 118,
+    "name": "RIPEMD",
+    "implementation": "hashcat-6000",
+    "hashcat_candidates": [
+      6000
+    ]
+  },
+  {
+    "mode": "e119",
+    "id": 119,
+    "name": "MD2MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e120",
+    "id": 120,
+    "name": "MD2MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e121",
+    "id": 121,
+    "name": "MD4MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e122",
+    "id": 122,
+    "name": "MD4MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e123",
+    "id": 123,
+    "name": "MD5MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e124",
+    "id": 124,
+    "name": "GOSTMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e125",
+    "id": 125,
+    "name": "GOSTMD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e126",
+    "id": 126,
+    "name": "HAV128MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e127",
+    "id": 127,
+    "name": "HAV128MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e128",
+    "id": 128,
+    "name": "HAV128-4MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e129",
+    "id": 129,
+    "name": "HAV128-4MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e130",
+    "id": 130,
+    "name": "HAV128-5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e131",
+    "id": 131,
+    "name": "HAV128-5MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e132",
+    "id": 132,
+    "name": "HAV160-3MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e133",
+    "id": 133,
+    "name": "HAV160-3MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e134",
+    "id": 134,
+    "name": "HAV160-4MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e135",
+    "id": 135,
+    "name": "HAV160-4MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e136",
+    "id": 136,
+    "name": "HAV160-5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e137",
+    "id": 137,
+    "name": "HAV160-5MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e138",
+    "id": 138,
+    "name": "HAV192-3MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e139",
+    "id": 139,
+    "name": "HAV192-3MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e140",
+    "id": 140,
+    "name": "HAV192-4MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e141",
+    "id": 141,
+    "name": "HAV192-4MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e142",
+    "id": 142,
+    "name": "HAV192-5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e143",
+    "id": 143,
+    "name": "HAV192-5MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e144",
+    "id": 144,
+    "name": "HAV224-3MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e145",
+    "id": 145,
+    "name": "HAV224-3MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e146",
+    "id": 146,
+    "name": "HAV224-4MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e147",
+    "id": 147,
+    "name": "HAV224-4MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e148",
+    "id": 148,
+    "name": "HAV224-5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e149",
+    "id": 149,
+    "name": "HAV224-5MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e150",
+    "id": 150,
+    "name": "HAV256MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e151",
+    "id": 151,
+    "name": "HAV256MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e152",
+    "id": 152,
+    "name": "HAV256-4MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e153",
+    "id": 153,
+    "name": "HAV256-4MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e154",
+    "id": 154,
+    "name": "HAV256-5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e155",
+    "id": 155,
+    "name": "HAV256-5MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e156",
+    "id": 156,
+    "name": "RMD128MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e157",
+    "id": 157,
+    "name": "RMD128MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e158",
+    "id": 158,
+    "name": "RMD160MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e159",
+    "id": 159,
+    "name": "RMD160MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e160",
+    "id": 160,
+    "name": "SHA1MD5",
+    "implementation": "hashcat-4700",
+    "hashcat_candidates": [
+      4700
+    ]
+  },
+  {
+    "mode": "e161",
+    "id": 161,
+    "name": "SHA1MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e162",
+    "id": 162,
+    "name": "SHA224MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e163",
+    "id": 163,
+    "name": "SHA224MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e164",
+    "id": 164,
+    "name": "SHA256MD5",
+    "implementation": "hashcat-20800",
+    "hashcat_candidates": [
+      20800
+    ]
+  },
+  {
+    "mode": "e165",
+    "id": 165,
+    "name": "SHA256MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e166",
+    "id": 166,
+    "name": "SHA384MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e167",
+    "id": 167,
+    "name": "SHA384MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e168",
+    "id": 168,
+    "name": "SHA512MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e169",
+    "id": 169,
+    "name": "SHA512MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e170",
+    "id": 170,
+    "name": "TIGERMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e171",
+    "id": 171,
+    "name": "TIGERMD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e172",
+    "id": 172,
+    "name": "WRLMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e173",
+    "id": 173,
+    "name": "WRLMD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e174",
+    "id": 174,
+    "name": "SNE128MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e175",
+    "id": 175,
+    "name": "SNE128MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e176",
+    "id": 176,
+    "name": "SNE256MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e177",
+    "id": 177,
+    "name": "SNE256MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e178",
+    "id": 178,
+    "name": "MD5SHA1",
+    "implementation": "hashcat-4400",
+    "hashcat_candidates": [
+      4400
+    ]
+  },
+  {
+    "mode": "e179",
+    "id": 179,
+    "name": "MD5SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e180",
+    "id": 180,
+    "name": "MD5SHA512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e181",
+    "id": 181,
+    "name": "SHA1PASSSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e182",
+    "id": 182,
+    "name": "SHA1UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e183",
+    "id": 183,
+    "name": "MD5HEXSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e184",
+    "id": 184,
+    "name": "SHA1HEXSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e185",
+    "id": 185,
+    "name": "SHA256HEXSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e186",
+    "id": 186,
+    "name": "GOSTHEXSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e187",
+    "id": 187,
+    "name": "HAV128HEXSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e188",
+    "id": 188,
+    "name": "MD5SHA1MD5",
+    "implementation": "hashcat-32800",
+    "hashcat_candidates": [
+      32800
+    ]
+  },
+  {
+    "mode": "e189",
+    "id": 189,
+    "name": "MD5SHA1MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e190",
+    "id": 190,
+    "name": "MD5SHA1MD5SHA1SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e191",
+    "id": 191,
+    "name": "SHA1MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e192",
+    "id": 192,
+    "name": "SHA1MD5SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e193",
+    "id": 193,
+    "name": "MD5HAV160-3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e194",
+    "id": 194,
+    "name": "MD5SHA1HAV160-4",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e195",
+    "id": 195,
+    "name": "MD5SHA1MD5SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e196",
+    "id": 196,
+    "name": "MD5RMD160",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e197",
+    "id": 197,
+    "name": "MD5SHA1SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e198",
+    "id": 198,
+    "name": "SHA256SHA512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e199",
+    "id": 199,
+    "name": "MD5WRL",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e200",
+    "id": 200,
+    "name": "MD5SHA1SHA1RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e201",
+    "id": 201,
+    "name": "MD5PASSMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e202",
+    "id": 202,
+    "name": "MD5-DBL-PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e203",
+    "id": 203,
+    "name": "SHA1MD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e204",
+    "id": 204,
+    "name": "SHA1MD5SHA1MD5SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e205",
+    "id": 205,
+    "name": "MD5SQL5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e206",
+    "id": 206,
+    "name": "SHA1SQL5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e207",
+    "id": 207,
+    "name": "MD5MD5UCMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e208",
+    "id": 208,
+    "name": "HMAC-MD2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e209",
+    "id": 209,
+    "name": "HMAC-MD4",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e210",
+    "id": 210,
+    "name": "HMAC-RMD128",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e211",
+    "id": 211,
+    "name": "HMAC-RMD160",
+    "implementation": "hashcat-6060",
+    "hashcat_candidates": [
+      6060
+    ]
+  },
+  {
+    "mode": "e212",
+    "id": 212,
+    "name": "HMAC-RMD256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e213",
+    "id": 213,
+    "name": "HMAC-RMD320",
+    "implementation": "hashcat-33660",
+    "hashcat_candidates": [
+      33660
+    ]
+  },
+  {
+    "mode": "e214",
+    "id": 214,
+    "name": "HMAC-MD5",
+    "implementation": "hashcat-60",
+    "hashcat_candidates": [
+      60
+    ]
+  },
+  {
+    "mode": "e215",
+    "id": 215,
+    "name": "HMAC-SHA1",
+    "implementation": "hashcat-160",
+    "hashcat_candidates": [
+      160
+    ]
+  },
+  {
+    "mode": "e216",
+    "id": 216,
+    "name": "HMAC-SHA224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e217",
+    "id": 217,
+    "name": "HMAC-SHA256",
+    "implementation": "hashcat-1460",
+    "hashcat_candidates": [
+      1460
+    ]
+  },
+  {
+    "mode": "e218",
+    "id": 218,
+    "name": "HMAC-SHA512",
+    "implementation": "hashcat-1760",
+    "hashcat_candidates": [
+      1760
+    ]
+  },
+  {
+    "mode": "e219",
+    "id": 219,
+    "name": "HMAC-HAV128",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e220",
+    "id": 220,
+    "name": "HMAC-HAV160",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e221",
+    "id": 221,
+    "name": "HMAC-HAV192",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e222",
+    "id": 222,
+    "name": "HMAC-HAV224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e223",
+    "id": 223,
+    "name": "HMAC-HAV256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e224",
+    "id": 224,
+    "name": "HMAC-TIGER128",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e225",
+    "id": 225,
+    "name": "HMAC-TIGER160",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e226",
+    "id": 226,
+    "name": "HMAC-TIGER192",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e227",
+    "id": 227,
+    "name": "HMAC-GOST",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e228",
+    "id": 228,
+    "name": "HMAC-WRL",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e229",
+    "id": 229,
+    "name": "HMAC-SNE128",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e230",
+    "id": 230,
+    "name": "HMAC-SNE256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e231",
+    "id": 231,
+    "name": "RMD128MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e232",
+    "id": 232,
+    "name": "MD5BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e233",
+    "id": 233,
+    "name": "MD5BASE64MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e234",
+    "id": 234,
+    "name": "MD5SHA1BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e235",
+    "id": 235,
+    "name": "MD5SHA1MD5BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e236",
+    "id": 236,
+    "name": "SHA1BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e237",
+    "id": 237,
+    "name": "MD5BASE64MD5RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e238",
+    "id": 238,
+    "name": "MD5BASE64SHA1RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e239",
+    "id": 239,
+    "name": "SHA1BASE64MD5RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e240",
+    "id": 240,
+    "name": "SHA1BASE64SHA1RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e241",
+    "id": 241,
+    "name": "MD5BASE64SHA1RAWMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e242",
+    "id": 242,
+    "name": "MD5BASE64MD5RAWSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e243",
+    "id": 243,
+    "name": "MD5BASE64MD5RAWMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e244",
+    "id": 244,
+    "name": "MD5BASE64MD5RAWMD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e245",
+    "id": 245,
+    "name": "MD5BASE64SHA1RAWBASE64SHA1RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e246",
+    "id": 246,
+    "name": "MD5SHA1UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e247",
+    "id": 247,
+    "name": "MD5SHA1UCMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e248",
+    "id": 248,
+    "name": "MD5SHA1UCMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e249",
+    "id": 249,
+    "name": "SHA1SHA1u32",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e250",
+    "id": 250,
+    "name": "MD5SHA1u32",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e251",
+    "id": 251,
+    "name": "SHA256SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e252",
+    "id": 252,
+    "name": "MD5BASE64revMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e253",
+    "id": 253,
+    "name": "MD5revMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e254",
+    "id": 254,
+    "name": "MD5revMD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e255",
+    "id": 255,
+    "name": "MD5BASE64MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e256",
+    "id": 256,
+    "name": "MD5SQL5-40",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e257",
+    "id": 257,
+    "name": "SHA1SQL5-40",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e258",
+    "id": 258,
+    "name": "MD5revSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e259",
+    "id": 259,
+    "name": "SQL5",
+    "implementation": "hashcat-300",
+    "hashcat_candidates": [
+      300
+    ]
+  },
+  {
+    "mode": "e260",
+    "id": 260,
+    "name": "MD5USERIDMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e261",
+    "id": 261,
+    "name": "MD5USERIDMD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e262",
+    "id": 262,
+    "name": "MD5MD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e263",
+    "id": 263,
+    "name": "MD5USERnulPASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e264",
+    "id": 264,
+    "name": "RADMIN2",
+    "implementation": "hashcat-9900",
+    "hashcat_candidates": [
+      9900
+    ]
+  },
+  {
+    "mode": "e265",
+    "id": 265,
+    "name": "MD5RADMIN2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e266",
+    "id": 266,
+    "name": "MD5RADMIN2SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e267",
+    "id": 267,
+    "name": "RADMIN2MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e268",
+    "id": 268,
+    "name": "RADMIN2MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e269",
+    "id": 269,
+    "name": "RADMIN2MD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e270",
+    "id": 270,
+    "name": "RADMIN2MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e271",
+    "id": 271,
+    "name": "RADMIN2SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e272",
+    "id": 272,
+    "name": "RADMIN2SQL5-40",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e273",
+    "id": 273,
+    "name": "RADMIN2BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e274",
+    "id": 274,
+    "name": "RADMIN2SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e275",
+    "id": 275,
+    "name": "RADMIN2SQL3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e276",
+    "id": 276,
+    "name": "RADMIN2MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e277",
+    "id": 277,
+    "name": "MD5RADMIN2MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e278",
+    "id": 278,
+    "name": "MD51SALTMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e279",
+    "id": 279,
+    "name": "SHA1RADMIN2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e280",
+    "id": 280,
+    "name": "SHA1RADMIN2MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e281",
+    "id": 281,
+    "name": "SHA1RADMIN2BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e282",
+    "id": 282,
+    "name": "MD5-MULTISALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e283",
+    "id": 283,
+    "name": "MD52SALTMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e284",
+    "id": 284,
+    "name": "MD51SALTMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e285",
+    "id": 285,
+    "name": "MD51SALTMD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e286",
+    "id": 286,
+    "name": "MD5MD5USER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e287",
+    "id": 287,
+    "name": "SHA1MD5MD5",
+    "implementation": "hashcat-18500",
+    "hashcat_candidates": [
+      18500
+    ]
+  },
+  {
+    "mode": "e288",
+    "id": 288,
+    "name": "SHA1SHA1RAWMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e289",
+    "id": 289,
+    "name": "SHA1MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e290",
+    "id": 290,
+    "name": "SHA1MD5MD5SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e291",
+    "id": 291,
+    "name": "SHA1MD5MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e292",
+    "id": 292,
+    "name": "SHA1MD5MD5MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e293",
+    "id": 293,
+    "name": "SHA1MD5MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e294",
+    "id": 294,
+    "name": "SHA1MD5MD5MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e295",
+    "id": 295,
+    "name": "SHA1SHA1RAWMD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e296",
+    "id": 296,
+    "name": "SHA1SHA1RAWMD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e297",
+    "id": 297,
+    "name": "SHA1MD51SALTMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e298",
+    "id": 298,
+    "name": "SHA1MD5x",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e299",
+    "id": 299,
+    "name": "MD5SHA1SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e300",
+    "id": 300,
+    "name": "MD5SHA1SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e301",
+    "id": 301,
+    "name": "MD5SQL5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e302",
+    "id": 302,
+    "name": "MD5SQL5-chop40",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e303",
+    "id": 303,
+    "name": "MD5-2xMD5",
+    "implementation": "hashcat-3500",
+    "hashcat_candidates": [
+      3500
+    ]
+  },
+  {
+    "mode": "e304",
+    "id": 304,
+    "name": "MD5-2xMD5-MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e305",
+    "id": 305,
+    "name": "MD5-2xMD5-SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e306",
+    "id": 306,
+    "name": "MD5-2xMD5-MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e307",
+    "id": 307,
+    "name": "MD5-2xMD5-MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e308",
+    "id": 308,
+    "name": "SHA1MD5USER",
+    "implementation": "hashcat-4711",
+    "hashcat_candidates": [
+      4711
+    ]
+  },
+  {
+    "mode": "e309",
+    "id": 309,
+    "name": "SHA1MD5RADMIN2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e310",
+    "id": 310,
+    "name": "SHA1SHA1USER",
+    "implementation": "hashcat-4510",
+    "hashcat_candidates": [
+      4510
+    ]
+  },
+  {
+    "mode": "e311",
+    "id": 311,
+    "name": "SHA11SALTMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e312",
+    "id": 312,
+    "name": "MD5-3xMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e313",
+    "id": 313,
+    "name": "MD5-3xMD5-MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e314",
+    "id": 314,
+    "name": "MD5-3xMD5-SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e315",
+    "id": 315,
+    "name": "MD5-3xMD5-MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e316",
+    "id": 316,
+    "name": "MD5-3xMD5-MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e317",
+    "id": 317,
+    "name": "SHA1-2xSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e318",
+    "id": 318,
+    "name": "SHA1-2xSHA1-MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e319",
+    "id": 319,
+    "name": "SHA1-2xSHA1-SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e320",
+    "id": 320,
+    "name": "SHA1-2xSHA1-MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e321",
+    "id": 321,
+    "name": "SHA1-2xSHA1-MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e322",
+    "id": 322,
+    "name": "MD5-1xMD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e323",
+    "id": 323,
+    "name": "MD5-1xSHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e324",
+    "id": 324,
+    "name": "SHA1-1xSHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e325",
+    "id": 325,
+    "name": "SHA1-1xMD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e326",
+    "id": 326,
+    "name": "MD5-1xMD5SHA1-MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e327",
+    "id": 327,
+    "name": "MD5-1xSHA1MD5-MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e328",
+    "id": 328,
+    "name": "MD5-1xMD5SHA1-MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e329",
+    "id": 329,
+    "name": "MD5-1xSHA1MD5-MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e330",
+    "id": 330,
+    "name": "MD5-1xSHA1MD5pSHA1p",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e331",
+    "id": 331,
+    "name": "SHA1-1xSHA1MD5pSHA1p",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e332",
+    "id": 332,
+    "name": "MD5SHA1-1xSHA1MD5pSHA1p",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e333",
+    "id": 333,
+    "name": "SHA1-1xSHA1psubp",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e334",
+    "id": 334,
+    "name": "SHA1revp",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e335",
+    "id": 335,
+    "name": "MD5revp",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e336",
+    "id": 336,
+    "name": "MD5TIGER2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e337",
+    "id": 337,
+    "name": "MD5SHA1MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e338",
+    "id": 338,
+    "name": "MD5SHA1MD5RADMIN2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e339",
+    "id": 339,
+    "name": "MD5SHA1MD5MD5MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e340",
+    "id": 340,
+    "name": "MD5SHA1RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e341",
+    "id": 341,
+    "name": "MD5SHA1MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e342",
+    "id": 342,
+    "name": "MD5SQL5-32",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e343",
+    "id": 343,
+    "name": "MD51SALTMD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e344",
+    "id": 344,
+    "name": "MD51SALTMD5MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e345",
+    "id": 345,
+    "name": "MD51SALTMD5MD5MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e346",
+    "id": 346,
+    "name": "MD5BASE64ROT13",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e347",
+    "id": 347,
+    "name": "MD5MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e348",
+    "id": 348,
+    "name": "MD52SALTMD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e349",
+    "id": 349,
+    "name": "MD52SALTMD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e350",
+    "id": 350,
+    "name": "MD5UCSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e351",
+    "id": 351,
+    "name": "MD5TIGER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e352",
+    "id": 352,
+    "name": "MD5SHA1MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e353",
+    "id": 353,
+    "name": "MD5CAP",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e354",
+    "id": 354,
+    "name": "MD5CAPMD5USER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e355",
+    "id": 355,
+    "name": "MD5CAPMD5MD5USER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e356",
+    "id": 356,
+    "name": "MD5MD5MD5USER",
+    "implementation": "hashcat-3610",
+    "hashcat_candidates": [
+      3610
+    ]
+  },
+  {
+    "mode": "e357",
+    "id": 357,
+    "name": "MD5MD5SALT-SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e358",
+    "id": 358,
+    "name": "MD5CAPSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e359",
+    "id": 359,
+    "name": "MD5SHA1MD5x",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e360",
+    "id": 360,
+    "name": "MD5SHA1BASE64MD5RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e361",
+    "id": 361,
+    "name": "MD5SHA1MD5MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e362",
+    "id": 362,
+    "name": "MD5SHA1MD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e363",
+    "id": 363,
+    "name": "MD5MD5HUM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e364",
+    "id": 364,
+    "name": "SHA1MD5HUM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e365",
+    "id": 365,
+    "name": "SHA1SHA1HUM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e366",
+    "id": 366,
+    "name": "MD5SHA1HUM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e367",
+    "id": 367,
+    "name": "MD5-MD5SALTMD5PASS",
+    "implementation": "hashcat-2811",
+    "hashcat_candidates": [
+      2811
+    ]
+  },
+  {
+    "mode": "e368",
+    "id": 368,
+    "name": "MD5NTLM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e369",
+    "id": 369,
+    "name": "NTLM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e370",
+    "id": 370,
+    "name": "MD5MD4",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e371",
+    "id": 371,
+    "name": "MD5NTLMUC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e372",
+    "id": 372,
+    "name": "MD5USERPASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e373",
+    "id": 373,
+    "name": "MD5PASSSALT",
+    "implementation": "hashcat-10",
+    "hashcat_candidates": [
+      10,
+      11,
+      2630
+    ]
+  },
+  {
+    "mode": "e374",
+    "id": 374,
+    "name": "MD5SHA1RADMIN2MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e375",
+    "id": 375,
+    "name": "MD5UCBASE64MD5RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e376",
+    "id": 376,
+    "name": "MD5UCBASE64SHA1RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e377",
+    "id": 377,
+    "name": "MD5SHA1MD5MD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e378",
+    "id": 378,
+    "name": "MD5SHA1MD5HUM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e379",
+    "id": 379,
+    "name": "LM",
+    "implementation": "hashcat-3000",
+    "hashcat_candidates": [
+      3000
+    ]
+  },
+  {
+    "mode": "e380",
+    "id": 380,
+    "name": "MD5LM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e381",
+    "id": 381,
+    "name": "MD5LMUC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e382",
+    "id": 382,
+    "name": "SHA256SHA256SALT",
+    "implementation": "hashcat-20710",
+    "hashcat_candidates": [
+      20710
+    ]
+  },
+  {
+    "mode": "e383",
+    "id": 383,
+    "name": "MD5RAWUC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e384",
+    "id": 384,
+    "name": "MD5SHA1UCu32",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e385",
+    "id": 385,
+    "name": "SHA1SALTPASS",
+    "implementation": "hashcat-120",
+    "hashcat_candidates": [
+      120,
+      124
+    ]
+  },
+  {
+    "mode": "e386",
+    "id": 386,
+    "name": "SHA512PASSSALT",
+    "implementation": "hashcat-1710",
+    "hashcat_candidates": [
+      1710
+    ]
+  },
+  {
+    "mode": "e387",
+    "id": 387,
+    "name": "SHA512SHA512SALT",
+    "implementation": "hashcat-32410",
+    "hashcat_candidates": [
+      32410
+    ]
+  },
+  {
+    "mode": "e388",
+    "id": 388,
+    "name": "SHA512SALTPASS",
+    "implementation": "hashcat-1720",
+    "hashcat_candidates": [
+      1720
+    ]
+  },
+  {
+    "mode": "e389",
+    "id": 389,
+    "name": "SHA512SALTSHA512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e390",
+    "id": 390,
+    "name": "WRLPASSSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e391",
+    "id": 391,
+    "name": "WRLWRLSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e392",
+    "id": 392,
+    "name": "WRLSALTPASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e393",
+    "id": 393,
+    "name": "WRLSALTWRL",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e394",
+    "id": 394,
+    "name": "MD5SALTPASS",
+    "implementation": "hashcat-20",
+    "hashcat_candidates": [
+      20,
+      21,
+      24,
+      11000
+    ]
+  },
+  {
+    "mode": "e395",
+    "id": 395,
+    "name": "SHA1SALTPASSSALT",
+    "implementation": "hashcat-4900",
+    "hashcat_candidates": [
+      4900
+    ]
+  },
+  {
+    "mode": "e396",
+    "id": 396,
+    "name": "MD5MD5UCSHA1MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e397",
+    "id": 397,
+    "name": "MD5SHA256MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e398",
+    "id": 398,
+    "name": "SHA1lsb32",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e399",
+    "id": 399,
+    "name": "MD5-2xMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e400",
+    "id": 400,
+    "name": "MD5-4xMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e401",
+    "id": 401,
+    "name": "MD5-SHA1numSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e402",
+    "id": 402,
+    "name": "MD5-2xSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e403",
+    "id": 403,
+    "name": "SHA1-2xMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e404",
+    "id": 404,
+    "name": "SHA1DRU",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e405",
+    "id": 405,
+    "name": "SHA1PASSSALT",
+    "implementation": "hashcat-110",
+    "hashcat_candidates": [
+      110
+    ]
+  },
+  {
+    "mode": "e406",
+    "id": 406,
+    "name": "SHA256MD5SALTPASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e407",
+    "id": 407,
+    "name": "MD5padMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e408",
+    "id": 408,
+    "name": "MD5DSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e409",
+    "id": 409,
+    "name": "SHA1lsb35",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e410",
+    "id": 410,
+    "name": "MD4SQL3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e411",
+    "id": 411,
+    "name": "MD5SALTPASSSALT",
+    "implementation": "hashcat-3800",
+    "hashcat_candidates": [
+      3800
+    ]
+  },
+  {
+    "mode": "e412",
+    "id": 412,
+    "name": "SHA256SALTPASS",
+    "implementation": "hashcat-1420",
+    "hashcat_candidates": [
+      1420
+    ]
+  },
+  {
+    "mode": "e413",
+    "id": 413,
+    "name": "SHA256PASSSALT",
+    "implementation": "hashcat-1410",
+    "hashcat_candidates": [
+      1410,
+      20730
+    ]
+  },
+  {
+    "mode": "e414",
+    "id": 414,
+    "name": "SMF",
+    "implementation": "hashcat-121",
+    "hashcat_candidates": [
+      121
+    ]
+  },
+  {
+    "mode": "e415",
+    "id": 415,
+    "name": "MD5-MD5SHA1MD5SHA1MD5SHA1p",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e416",
+    "id": 416,
+    "name": "MD5MD5UCSQL3p",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e417",
+    "id": 417,
+    "name": "MD5MD5UCp",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e418",
+    "id": 418,
+    "name": "MD5NTLMp",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e419",
+    "id": 419,
+    "name": "MD5-MD5USERSHA1MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e420",
+    "id": 420,
+    "name": "MD5SHA1u32SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e421",
+    "id": 421,
+    "name": "MD5-LMNTLM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e422",
+    "id": 422,
+    "name": "MD5-MD5psSHA1MD5psp",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e423",
+    "id": 423,
+    "name": "MD5-MD5puSHA1MD5pup",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e424",
+    "id": 424,
+    "name": "MD5WRLMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e425",
+    "id": 425,
+    "name": "NULL",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e426",
+    "id": 426,
+    "name": "PARALLEL",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e427",
+    "id": 427,
+    "name": "GOST2012-32",
+    "implementation": "hashcat-11700",
+    "hashcat_candidates": [
+      11700
+    ]
+  },
+  {
+    "mode": "e428",
+    "id": 428,
+    "name": "GOST2012-64",
+    "implementation": "hashcat-11800",
+    "hashcat_candidates": [
+      11780,
+      11800
+    ]
+  },
+  {
+    "mode": "e429",
+    "id": 429,
+    "name": "POMELO",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e430",
+    "id": 430,
+    "name": "STREEBOG-32",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e431",
+    "id": 431,
+    "name": "STREEBOG-64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e432",
+    "id": 432,
+    "name": "MD5AM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e433",
+    "id": 433,
+    "name": "MD5AM2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e434",
+    "id": 434,
+    "name": "MD5SWAP",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e435",
+    "id": 435,
+    "name": "MD5SPECAM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e436",
+    "id": 436,
+    "name": "SHA1HESK",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e437",
+    "id": 437,
+    "name": "MD5HESK",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e438",
+    "id": 438,
+    "name": "SHA1SALTSHA1SALTSHA1PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e439",
+    "id": 439,
+    "name": "MSCACHE",
+    "implementation": "hashcat-1100",
+    "hashcat_candidates": [
+      1100
+    ]
+  },
+  {
+    "mode": "e440",
+    "id": 440,
+    "name": "MD5SHA1SALTMD5PASS",
+    "implementation": "hashcat-21200",
+    "hashcat_candidates": [
+      21200
+    ]
+  },
+  {
+    "mode": "e441",
+    "id": 441,
+    "name": "MD5SALTMD5PASS",
+    "implementation": "hashcat-3710",
+    "hashcat_candidates": [
+      3710
+    ]
+  },
+  {
+    "mode": "e442",
+    "id": 442,
+    "name": "MD5SHA1PASSMD5PASSSHA1PASS",
+    "implementation": "hashcat-20900",
+    "hashcat_candidates": [
+      20900
+    ]
+  },
+  {
+    "mode": "e443",
+    "id": 443,
+    "name": "MD5SHA1PASSSALT",
+    "implementation": "hashcat-4420",
+    "hashcat_candidates": [
+      4420
+    ]
+  },
+  {
+    "mode": "e444",
+    "id": 444,
+    "name": "LEET-SHA512-WRL-USER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e445",
+    "id": 445,
+    "name": "SHA1-SALT-SPECIAL",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e446",
+    "id": 446,
+    "name": "SHA1-SALT-UTF16-PEPPER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e447",
+    "id": 447,
+    "name": "SHA256RAWSALTPASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e448",
+    "id": 448,
+    "name": "SHA512-CUSTOM1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e449",
+    "id": 449,
+    "name": "MD5SQL3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e450",
+    "id": 450,
+    "name": "BCRYPT",
+    "implementation": "hashcat-3200",
+    "hashcat_candidates": [
+      3200
+    ]
+  },
+  {
+    "mode": "e451",
+    "id": 451,
+    "name": "BCRYPTMD5",
+    "implementation": "hashcat-25600",
+    "hashcat_candidates": [
+      25600
+    ]
+  },
+  {
+    "mode": "e452",
+    "id": 452,
+    "name": "BCRYPTSHA1",
+    "implementation": "hashcat-25800",
+    "hashcat_candidates": [
+      25800
+    ]
+  },
+  {
+    "mode": "e453",
+    "id": 453,
+    "name": "MD5sub8-24MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e454",
+    "id": 454,
+    "name": "MD5sub8-24MD5sub8-24MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e455",
+    "id": 455,
+    "name": "PHPBB3",
+    "implementation": "hashcat-400",
+    "hashcat_candidates": [
+      400
+    ]
+  },
+  {
+    "mode": "e456",
+    "id": 456,
+    "name": "MYSQL3",
+    "implementation": "hashcat-200",
+    "hashcat_candidates": [
+      200
+    ]
+  },
+  {
+    "mode": "e457",
+    "id": 457,
+    "name": "APACHE-SHA",
+    "implementation": "hashcat-101",
+    "hashcat_candidates": [
+      101
+    ]
+  },
+  {
+    "mode": "e458",
+    "id": 458,
+    "name": "MD5-MD5PASSMD5SALT",
+    "implementation": "hashcat-3910",
+    "hashcat_candidates": [
+      3910
+    ]
+  },
+  {
+    "mode": "e459",
+    "id": 459,
+    "name": "YAF-SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e460",
+    "id": 460,
+    "name": "MD5revMD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e461",
+    "id": 461,
+    "name": "APR1",
+    "implementation": "hashcat-1600",
+    "hashcat_candidates": [
+      1600
+    ]
+  },
+  {
+    "mode": "e462",
+    "id": 462,
+    "name": "MD5SHA1BASE64SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e463",
+    "id": 463,
+    "name": "SHA1-8TRACK",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e464",
+    "id": 464,
+    "name": "SHA1WRL",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e465",
+    "id": 465,
+    "name": "SHA1revMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e466",
+    "id": 466,
+    "name": "SHA1-MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e467",
+    "id": 467,
+    "name": "SHA1-revMD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e468",
+    "id": 468,
+    "name": "SHA1revMD5PASSSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e469",
+    "id": 469,
+    "name": "SHA1MD5PASSSALT",
+    "implementation": "hashcat-21100",
+    "hashcat_candidates": [
+      21100
+    ]
+  },
+  {
+    "mode": "e470",
+    "id": 470,
+    "name": "SHA1-MD5MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e471",
+    "id": 471,
+    "name": "SHA1MD5PASS-SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e472",
+    "id": 472,
+    "name": "SHA1SALTMD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e473",
+    "id": 473,
+    "name": "SHA1SALTrevMD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e474",
+    "id": 474,
+    "name": "SHA1USERSQL3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e475",
+    "id": 475,
+    "name": "SHA1SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e476",
+    "id": 476,
+    "name": "SHA1SHA384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e477",
+    "id": 477,
+    "name": "SHA1SHA512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e478",
+    "id": 478,
+    "name": "SHA1SQL3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e479",
+    "id": 479,
+    "name": "SHA1UCWRL",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e480",
+    "id": 480,
+    "name": "SHA1WRLMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e481",
+    "id": 481,
+    "name": "SHA1MD5SHA1MD5SHA1MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e482",
+    "id": 482,
+    "name": "WRLSHA512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e483",
+    "id": 483,
+    "name": "MD5GOST",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e484",
+    "id": 484,
+    "name": "MD5GOSTMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e485",
+    "id": 485,
+    "name": "MD5GOSTMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e486",
+    "id": 486,
+    "name": "MD5WRLRAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e487",
+    "id": 487,
+    "name": "MD5-4xMD5-SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e488",
+    "id": 488,
+    "name": "SHA256UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e489",
+    "id": 489,
+    "name": "MD4SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e490",
+    "id": 490,
+    "name": "MD5RAWMD5RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e491",
+    "id": 491,
+    "name": "MD5SHA1BASE64SHA1RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e492",
+    "id": 492,
+    "name": "MD5revMD5SHA1SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e493",
+    "id": 493,
+    "name": "MD5MD2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e494",
+    "id": 494,
+    "name": "MD5MD2RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e495",
+    "id": 495,
+    "name": "MD5BASE64SHA256RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e496",
+    "id": 496,
+    "name": "MD4UTF16",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e497",
+    "id": 497,
+    "name": "MD4UTF16MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e498",
+    "id": 498,
+    "name": "RMD128MD4",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e499",
+    "id": 499,
+    "name": "MD5SHA0",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e500",
+    "id": 500,
+    "name": "DESCRYPT",
+    "implementation": "hashcat-1500",
+    "hashcat_candidates": [
+      1500
+    ]
+  },
+  {
+    "mode": "e501",
+    "id": 501,
+    "name": "MD5DESCRYPT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e502",
+    "id": 502,
+    "name": "MD4DESCRYPT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e503",
+    "id": 503,
+    "name": "MD5PASSSHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e504",
+    "id": 504,
+    "name": "MD5PASSMD5MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e505",
+    "id": 505,
+    "name": "MD5PASSMD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e506",
+    "id": 506,
+    "name": "MD5-MD5PASSMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e507",
+    "id": 507,
+    "name": "MD5PASSSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e508",
+    "id": 508,
+    "name": "MD5MD5PASSSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e509",
+    "id": 509,
+    "name": "SHA1MD5MD5SHA1MD5SHA1SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e510",
+    "id": 510,
+    "name": "SHA512SHA512RAWUSER",
+    "implementation": "hashcat-32420",
+    "hashcat_candidates": [
+      32420
+    ]
+  },
+  {
+    "mode": "e511",
+    "id": 511,
+    "name": "MD5CRYPT",
+    "implementation": "hashcat-500",
+    "hashcat_candidates": [
+      500
+    ]
+  },
+  {
+    "mode": "e512",
+    "id": 512,
+    "name": "SHA256CRYPT",
+    "implementation": "hashcat-7400",
+    "hashcat_candidates": [
+      7400
+    ]
+  },
+  {
+    "mode": "e513",
+    "id": 513,
+    "name": "SHA512CRYPT",
+    "implementation": "hashcat-1800",
+    "hashcat_candidates": [
+      1800
+    ]
+  },
+  {
+    "mode": "e514",
+    "id": 514,
+    "name": "SHA512SALTMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e515",
+    "id": 515,
+    "name": "MD5-SALTMD5PASSSALT",
+    "implementation": "hashcat-4110",
+    "hashcat_candidates": [
+      4110
+    ]
+  },
+  {
+    "mode": "e516",
+    "id": 516,
+    "name": "MD5-SALTMD5SALTPASS",
+    "implementation": "hashcat-4010",
+    "hashcat_candidates": [
+      4010
+    ]
+  },
+  {
+    "mode": "e517",
+    "id": 517,
+    "name": "MD5-MD5PASS-SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e518",
+    "id": 518,
+    "name": "MD5-MD5SALT-PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e519",
+    "id": 519,
+    "name": "MD5-PASS-MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e520",
+    "id": 520,
+    "name": "SHA1SALTSHA1PASS",
+    "implementation": "hashcat-4520",
+    "hashcat_candidates": [
+      4520
+    ]
+  },
+  {
+    "mode": "e521",
+    "id": 521,
+    "name": "SHA1SALTCX",
+    "implementation": "hashcat-14400",
+    "hashcat_candidates": [
+      14400
+    ]
+  },
+  {
+    "mode": "e522",
+    "id": 522,
+    "name": "MD5SHA1MD5SHA1MD5SHA1MD5SHA1MD5SHA1MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e523",
+    "id": 523,
+    "name": "SHA256SALTSHA256PASS",
+    "implementation": "hashcat-20720",
+    "hashcat_candidates": [
+      20720
+    ]
+  },
+  {
+    "mode": "e524",
+    "id": 524,
+    "name": "MD5dcab",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e525",
+    "id": 525,
+    "name": "MD5bcad",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e526",
+    "id": 526,
+    "name": "MD5BASE64BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e527",
+    "id": 527,
+    "name": "MD5BASE64BASE64BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e528",
+    "id": 528,
+    "name": "MD5-SALTSHA1SALTPASS",
+    "implementation": "hashcat-21300",
+    "hashcat_candidates": [
+      21300
+    ]
+  },
+  {
+    "mode": "e529",
+    "id": 529,
+    "name": "CISCO8",
+    "implementation": "hashcat-9200",
+    "hashcat_candidates": [
+      9200
+    ]
+  },
+  {
+    "mode": "e530",
+    "id": 530,
+    "name": "PBKDF2-SHA256",
+    "implementation": "hashcat-10000",
+    "hashcat_candidates": [
+      10000,
+      10900,
+      20300
+    ]
+  },
+  {
+    "mode": "e531",
+    "id": 531,
+    "name": "PBKDF2-MD5",
+    "implementation": "hashcat-11900",
+    "hashcat_candidates": [
+      11900
+    ]
+  },
+  {
+    "mode": "e532",
+    "id": 532,
+    "name": "PBKDF2-SHA1",
+    "implementation": "hashcat-12000",
+    "hashcat_candidates": [
+      12000,
+      20400,
+      32050
+    ]
+  },
+  {
+    "mode": "e533",
+    "id": 533,
+    "name": "PBKDF2-SHA512",
+    "implementation": "hashcat-7100",
+    "hashcat_candidates": [
+      7100,
+      7200,
+      12100,
+      20200
+    ]
+  },
+  {
+    "mode": "e534",
+    "id": 534,
+    "name": "PKCS5S2",
+    "implementation": "hashcat-12001",
+    "hashcat_candidates": [
+      12001
+    ]
+  },
+  {
+    "mode": "e535",
+    "id": 535,
+    "name": "SHA1-CUSTOMUSERSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e536",
+    "id": 536,
+    "name": "PROGRESSENCODE",
+    "implementation": "hashcat-26200",
+    "hashcat_candidates": [
+      26200
+    ]
+  },
+  {
+    "mode": "e537",
+    "id": 537,
+    "name": "PHPBB3MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e538",
+    "id": 538,
+    "name": "SHA512CRYPTMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e539",
+    "id": 539,
+    "name": "MYSQL5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e540",
+    "id": 540,
+    "name": "MANGOS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e541",
+    "id": 541,
+    "name": "MD5revMD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e542",
+    "id": 542,
+    "name": "MD5sub8-24SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e543",
+    "id": 543,
+    "name": "HMAC-SHA384",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e544",
+    "id": 544,
+    "name": "CRYPTEXT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e545",
+    "id": 545,
+    "name": "MD5SHA1lsb35",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e546",
+    "id": 546,
+    "name": "MD5sub1-20MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e547",
+    "id": 547,
+    "name": "MD5sub1-20MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e548",
+    "id": 548,
+    "name": "MD5SQL3SQL5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e549",
+    "id": 549,
+    "name": "SHA1MD5SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e550",
+    "id": 550,
+    "name": "SHA1SHA256MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e551",
+    "id": 551,
+    "name": "MD4UTF16MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e552",
+    "id": 552,
+    "name": "MD5-2xSHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e553",
+    "id": 553,
+    "name": "MD5-6xMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e554",
+    "id": 554,
+    "name": "MD5-5xMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e555",
+    "id": 555,
+    "name": "MD5SHA1SALT",
+    "implementation": "hashcat-4410",
+    "hashcat_candidates": [
+      4410
+    ]
+  },
+  {
+    "mode": "e556",
+    "id": 556,
+    "name": "MD5SHA1u39",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e557",
+    "id": 557,
+    "name": "MD5-MD5SHA1PASSSHA1MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e558",
+    "id": 558,
+    "name": "MD5UCMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e559",
+    "id": 559,
+    "name": "MD4UTF16MD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e560",
+    "id": 560,
+    "name": "MD4UTF16MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e561",
+    "id": 561,
+    "name": "MD4UTF16SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e562",
+    "id": 562,
+    "name": "MD4UTF16SHA1SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e563",
+    "id": 563,
+    "name": "MD4UTF16SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e564",
+    "id": 564,
+    "name": "MD4UTF16SHA256SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e565",
+    "id": 565,
+    "name": "MD4UTF16SHA256SHA256SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e566",
+    "id": 566,
+    "name": "MD4UTF16SHA256SHA256SHA256SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e567",
+    "id": 567,
+    "name": "MD4UTF16SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e568",
+    "id": 568,
+    "name": "MD4UTF16MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e569",
+    "id": 569,
+    "name": "MD4UTF16SHA256UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e570",
+    "id": 570,
+    "name": "MD4UTF16UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e571",
+    "id": 571,
+    "name": "SHA1SHA256UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e572",
+    "id": 572,
+    "name": "MD5BASE64SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e573",
+    "id": 573,
+    "name": "SHA1DESCRYPT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e574",
+    "id": 574,
+    "name": "MD4UTF16DESCRYPT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e575",
+    "id": 575,
+    "name": "MD4UTF16MD5HUM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e576",
+    "id": 576,
+    "name": "MD4UTF16SHA1HUM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e577",
+    "id": 577,
+    "name": "BCRYPT256",
+    "implementation": "hashcat-30600",
+    "hashcat_candidates": [
+      30600
+    ]
+  },
+  {
+    "mode": "e578",
+    "id": 578,
+    "name": "SHA1-MD5PASSSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e579",
+    "id": 579,
+    "name": "SHA1SHA1PASSSALT",
+    "implementation": "hashcat-4521",
+    "hashcat_candidates": [
+      4521,
+      4522
+    ]
+  },
+  {
+    "mode": "e580",
+    "id": 580,
+    "name": "SHA1SHA256x",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e581",
+    "id": 581,
+    "name": "SHA1SHA256UCx",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e582",
+    "id": 582,
+    "name": "SHA1SHA256UCxSHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e583",
+    "id": 583,
+    "name": "SHA1SHA256UCSHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e584",
+    "id": 584,
+    "name": "SHA1SHA256UCSHA256SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e585",
+    "id": 585,
+    "name": "SHA1SHA256SHA512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e586",
+    "id": 586,
+    "name": "SHA1MD5MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e587",
+    "id": 587,
+    "name": "SHA1MD5SALT",
+    "implementation": "hashcat-4710",
+    "hashcat_candidates": [
+      4710
+    ]
+  },
+  {
+    "mode": "e588",
+    "id": 588,
+    "name": "SHA1-MD5-MD5SALTMD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e589",
+    "id": 589,
+    "name": "SHA1-MD5UC-MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e590",
+    "id": 590,
+    "name": "SHA1MD5DSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e591",
+    "id": 591,
+    "name": "SHA1MD5MD5DSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e592",
+    "id": 592,
+    "name": "SHA1-MD5-MD5SALTMD5PASS-SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e593",
+    "id": 593,
+    "name": "SHA1MD5MD5SHA1SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e594",
+    "id": 594,
+    "name": "SHA1SHA1MD5PASSSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e595",
+    "id": 595,
+    "name": "SHA1MD5UCMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e596",
+    "id": 596,
+    "name": "SHA1-MD5PEPPER-MD5SALTMD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e597",
+    "id": 597,
+    "name": "SHA1-MD5PEPPER-MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e598",
+    "id": 598,
+    "name": "SHA1MD5-PASSMD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e599",
+    "id": 599,
+    "name": "SHA1SHA256SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e600",
+    "id": 600,
+    "name": "SHA1MD5-SHA1PASSPASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e601",
+    "id": 601,
+    "name": "SHA1PASS-TRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e602",
+    "id": 602,
+    "name": "SHA1SALTMD5PASSPEPPER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e603",
+    "id": 603,
+    "name": "SHA1MD5SALTMD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e604",
+    "id": 604,
+    "name": "SHA1SHA1u34",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e605",
+    "id": 605,
+    "name": "SHA1SHA1u36",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e606",
+    "id": 606,
+    "name": "SHA1SHA1u38",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e607",
+    "id": 607,
+    "name": "SHA1MD5SALTPASSPEPPER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e608",
+    "id": 608,
+    "name": "SHA1SHA256u32",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e609",
+    "id": 609,
+    "name": "SHA1SHA256u40",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e610",
+    "id": 610,
+    "name": "SHA1SHA256u34",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e611",
+    "id": 611,
+    "name": "SHA1-MD5PEPPER-MD5MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e612",
+    "id": 612,
+    "name": "SHA1SHA256u42",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e613",
+    "id": 613,
+    "name": "SHA1SHA256SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e614",
+    "id": 614,
+    "name": "SHA1SHA256SHA256SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e615",
+    "id": 615,
+    "name": "SHA1SHA256u38",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e616",
+    "id": 616,
+    "name": "SHA1SHA256u36",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e617",
+    "id": 617,
+    "name": "SHA1NTLM",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e618",
+    "id": 618,
+    "name": "SHA1MD5SHA1MD5SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e619",
+    "id": 619,
+    "name": "SHA1SALTSHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e620",
+    "id": 620,
+    "name": "SHA1SHA1u35",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e621",
+    "id": 621,
+    "name": "SHA1SHA256u37",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e622",
+    "id": 622,
+    "name": "SHA1SHA256TRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e623",
+    "id": 623,
+    "name": "SHA1SHA256TRUNCMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e624",
+    "id": 624,
+    "name": "SHA1SHA1u39",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e625",
+    "id": 625,
+    "name": "SHA1SHA1u37",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e626",
+    "id": 626,
+    "name": "SHA1SHA1TRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e627",
+    "id": 627,
+    "name": "SHA1-MD5SHA1PASSSHA1MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e628",
+    "id": 628,
+    "name": "SHA1MD5CAP",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e629",
+    "id": 629,
+    "name": "SHA1MD5CAPMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e630",
+    "id": 630,
+    "name": "SHA1SHA256UCTRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e631",
+    "id": 631,
+    "name": "SHA1MD5MD5UCx",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e632",
+    "id": 632,
+    "name": "SHA1SHA256CAP",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e633",
+    "id": 633,
+    "name": "SHA1MD5SHA1-SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e634",
+    "id": 634,
+    "name": "SHA1SHA224",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e635",
+    "id": 635,
+    "name": "SHA1WRLTRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e636",
+    "id": 636,
+    "name": "SHA1SHA512TRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e637",
+    "id": 637,
+    "name": "SHA1-SHA512PASSSHA512SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e638",
+    "id": 638,
+    "name": "SHA1SHA512TRUNC1SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e639",
+    "id": 639,
+    "name": "SHA1SHA1PASS-TRUNC1SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e640",
+    "id": 640,
+    "name": "SHA1HAV128",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e641",
+    "id": 641,
+    "name": "SHA1MD5RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e642",
+    "id": 642,
+    "name": "SHA1MD2",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e643",
+    "id": 643,
+    "name": "SHA1MD5BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e644",
+    "id": 644,
+    "name": "SHA1MD6TRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e645",
+    "id": 645,
+    "name": "SHA1NTLMUC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e646",
+    "id": 646,
+    "name": "SHA1MD5SHA512",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e647",
+    "id": 647,
+    "name": "SHA1MD5WRLSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e648",
+    "id": 648,
+    "name": "MD5WRLSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e649",
+    "id": 649,
+    "name": "SHA1MD5BASE641SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e650",
+    "id": 650,
+    "name": "SHA1-MD5PASSMD5MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e651",
+    "id": 651,
+    "name": "SHA1SALTMD5UCPASSPEPPER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e652",
+    "id": 652,
+    "name": "SHA1MD5UCSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e653",
+    "id": 653,
+    "name": "SHA1WRLUCTRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e654",
+    "id": 654,
+    "name": "SHA1-MD5CAPPEPPER-MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e655",
+    "id": 655,
+    "name": "SHA1-MD5CAPSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e656",
+    "id": 656,
+    "name": "SHA1SHA1CAPTRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e657",
+    "id": 657,
+    "name": "SHA1MD6CAPTRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e658",
+    "id": 658,
+    "name": "SHA1MD5UCMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e659",
+    "id": 659,
+    "name": "SHA1MD5CAPSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e660",
+    "id": 660,
+    "name": "SHA1SQL5-32",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e661",
+    "id": 661,
+    "name": "SHA1SHA1UCTRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e662",
+    "id": 662,
+    "name": "SHA1-MD5UCMD5UCPASSMD5UCSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e663",
+    "id": 663,
+    "name": "SHA1MD5MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e664",
+    "id": 664,
+    "name": "SHA1MD51CAP",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e665",
+    "id": 665,
+    "name": "SHA1SALTMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e666",
+    "id": 666,
+    "name": "SHA1SHA1CAPSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e667",
+    "id": 667,
+    "name": "SHA1MD5UCMD5UCMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e668",
+    "id": 668,
+    "name": "SHA1MD5UCMD5UCMD5UCMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e669",
+    "id": 669,
+    "name": "SHA1MD51CAPSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e670",
+    "id": 670,
+    "name": "SHA1-MD5CAPMD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e671",
+    "id": 671,
+    "name": "SHA1SHA512UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e672",
+    "id": 672,
+    "name": "SHA1WRLUCTRUNCSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e673",
+    "id": 673,
+    "name": "SHA1-MD5SHA256SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e674",
+    "id": 674,
+    "name": "SHA256MD5SHA256MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e675",
+    "id": 675,
+    "name": "SHA1SHA256MD5SHA256MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e676",
+    "id": 676,
+    "name": "SHA1-MD5sub8-24SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e677",
+    "id": 677,
+    "name": "SHA1-PEPPER-MD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e678",
+    "id": 678,
+    "name": "SHA1SHA256TRUNCSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e679",
+    "id": 679,
+    "name": "SHA1SHA256TRUNCMD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e680",
+    "id": 680,
+    "name": "SHA1-HMAC-MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e681",
+    "id": 681,
+    "name": "SHA1SALTSHA1PASSPEPPER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e682",
+    "id": 682,
+    "name": "SHA1SALTMD5MD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e683",
+    "id": 683,
+    "name": "SHA1MD5TRUNCSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e684",
+    "id": 684,
+    "name": "SHA1SHA1TRUNC-SHA1PASS-3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e685",
+    "id": 685,
+    "name": "SHA1MD5-SALTMD5PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e686",
+    "id": 686,
+    "name": "SHA1MD5-2xMD5-MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e687",
+    "id": 687,
+    "name": "SHA1SHA1MD5MD5PASS1SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e688",
+    "id": 688,
+    "name": "SHA1MD5sub1-20MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e689",
+    "id": 689,
+    "name": "SHA1SHA512UCTRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e690",
+    "id": 690,
+    "name": "SHA1SALTSHA512UCTRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e691",
+    "id": 691,
+    "name": "SHA1SALTSHA256UCTRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e692",
+    "id": 692,
+    "name": "SHA1MD5UC-MD5UCSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e693",
+    "id": 693,
+    "name": "SHA1MD5PASSMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e694",
+    "id": 694,
+    "name": "MD5DECBASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e695",
+    "id": 695,
+    "name": "SHA1DECBASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e696",
+    "id": 696,
+    "name": "SHA1MD5UCSHA1BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e697",
+    "id": 697,
+    "name": "SHA1MD5SHA1MD5MD5SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e698",
+    "id": 698,
+    "name": "MD5SHA1MD5MD5SHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e699",
+    "id": 699,
+    "name": "SHA1MD5UCSHA1UCMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e700",
+    "id": 700,
+    "name": "MD5MD5SHA1SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e701",
+    "id": 701,
+    "name": "MD5MD5SHA256SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e702",
+    "id": 702,
+    "name": "MD5SHA1x",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e703",
+    "id": 703,
+    "name": "MD5DECBASE64MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e704",
+    "id": 704,
+    "name": "SHA1SALTMD5PASSMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e705",
+    "id": 705,
+    "name": "SHA1MD5sub8-24MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e706",
+    "id": 706,
+    "name": "SHA1GOST",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e707",
+    "id": 707,
+    "name": "MD4UTF16SHA256x",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e708",
+    "id": 708,
+    "name": "MD4UTF16SHA256SHA256SHA256SHA256SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e709",
+    "id": 709,
+    "name": "SHA1MD5RAWUCMD5RAW",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e710",
+    "id": 710,
+    "name": "SHA1SHA3-256TRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e711",
+    "id": 711,
+    "name": "SHA1SHA3-256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e712",
+    "id": 712,
+    "name": "SHA1MD5SQL5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e713",
+    "id": 713,
+    "name": "SHA1MD5MD5SQL5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e714",
+    "id": 714,
+    "name": "SHA1RMD128",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e715",
+    "id": 715,
+    "name": "SHA1-SHA1SALTSHA1PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e716",
+    "id": 716,
+    "name": "SHA1MD5MD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e717",
+    "id": 717,
+    "name": "SHA1MD5MD5UCMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e718",
+    "id": 718,
+    "name": "SHA11SALTMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e719",
+    "id": 719,
+    "name": "SHA1SALTMD5MD5PASSPEPPER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e720",
+    "id": 720,
+    "name": "SHA1SHA1UCPASSSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e721",
+    "id": 721,
+    "name": "SHA1MD5sub1-20MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e722",
+    "id": 722,
+    "name": "SHA1MD4UTF16UCMD4UTF16UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e723",
+    "id": 723,
+    "name": "SHA1SHA512TRUNCMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e724",
+    "id": 724,
+    "name": "SHA1MD5UCx",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e725",
+    "id": 725,
+    "name": "SHA1SALTSHA256TRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e726",
+    "id": 726,
+    "name": "SHA1SALTSHA256TRUNCMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e727",
+    "id": 727,
+    "name": "SHA1UTF16LE",
+    "implementation": "hashcat-170",
+    "hashcat_candidates": [
+      170
+    ]
+  },
+  {
+    "mode": "e728",
+    "id": 728,
+    "name": "SHA1UTF16BEZ",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e729",
+    "id": 729,
+    "name": "SHA1ZUTF16LE",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e730",
+    "id": 730,
+    "name": "SHA1UCUTF16LE",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e731",
+    "id": 731,
+    "name": "SHA1MD5UC1LC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e732",
+    "id": 732,
+    "name": "SHA1UTF7",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e733",
+    "id": 733,
+    "name": "SHA1MD51CAPMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e734",
+    "id": 734,
+    "name": "SHA1BASE64MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e735",
+    "id": 735,
+    "name": "SHA1SALTSHA1UCPASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e736",
+    "id": 736,
+    "name": "SHA1MD5xSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e737",
+    "id": 737,
+    "name": "SHA1SHA11CAP",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e738",
+    "id": 738,
+    "name": "SHA1SALTMD5SHA1PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e739",
+    "id": 739,
+    "name": "SHA1SHA1TRUNCSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e740",
+    "id": 740,
+    "name": "SHA1-MD5SALT-CR",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e741",
+    "id": 741,
+    "name": "SHA1-MD5MD5SALT-CR",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e742",
+    "id": 742,
+    "name": "SHA1SALTMD5SHA1PASSPEPPER",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e743",
+    "id": 743,
+    "name": "SHA1MD5CAPMD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e744",
+    "id": 744,
+    "name": "SHA1SALTSHA1CAP",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e745",
+    "id": 745,
+    "name": "SHA1SHA384TRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e746",
+    "id": 746,
+    "name": "SHA1RMD160TRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e747",
+    "id": 747,
+    "name": "SHA1BASE64MD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e748",
+    "id": 748,
+    "name": "SHA1MD5CAPSHA1SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e749",
+    "id": 749,
+    "name": "SHA1MD5x1CAP",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e750",
+    "id": 750,
+    "name": "SHA1SHA1SHA1TRUNC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e751",
+    "id": 751,
+    "name": "SHA1SALTSHA1MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e752",
+    "id": 752,
+    "name": "SHA1UTF16BE",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e753",
+    "id": 753,
+    "name": "SHA1SHA0",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e754",
+    "id": 754,
+    "name": "SHA1MD4",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e755",
+    "id": 755,
+    "name": "SHA1SHA1TRUNCMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e756",
+    "id": 756,
+    "name": "SHA1MD5MD5UCMD5MD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e757",
+    "id": 757,
+    "name": "SHA1SALTMD5UCMD5UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e758",
+    "id": 758,
+    "name": "SHA1MD51CAPMD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e759",
+    "id": 759,
+    "name": "SHA1MD5SHA1PASSSALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e760",
+    "id": 760,
+    "name": "SHA1SQL5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e761",
+    "id": 761,
+    "name": "SHA1SQL5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e762",
+    "id": 762,
+    "name": "SHA1revSHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e763",
+    "id": 763,
+    "name": "SHA11SALTMD5SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e764",
+    "id": 764,
+    "name": "SHA1SHA256MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e765",
+    "id": 765,
+    "name": "SHA1MD5SALTPASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e766",
+    "id": 766,
+    "name": "SHA224SHA1",
+    "implementation": "hashcat-34500",
+    "hashcat_candidates": [
+      34500
+    ]
+  },
+  {
+    "mode": "e767",
+    "id": 767,
+    "name": "MD5DECBASE64MD5BASE64MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e768",
+    "id": 768,
+    "name": "SHA1revBASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e769",
+    "id": 769,
+    "name": "SHA1revBASE64x",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e770",
+    "id": 770,
+    "name": "SHA1BASE64CUSTBASE64MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e771",
+    "id": 771,
+    "name": "SHA1MD5sub1-16",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e772",
+    "id": 772,
+    "name": "SHA1MD5sub1-16MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e773",
+    "id": 773,
+    "name": "SHA1MD5sub1-16MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e774",
+    "id": 774,
+    "name": "SHA1SHA1sub1-16",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e775",
+    "id": 775,
+    "name": "MD4UTF16MD5MD5MD5MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e776",
+    "id": 776,
+    "name": "MD4UTF16SHA1UC",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e777",
+    "id": 777,
+    "name": "MD4UTF16MD5x",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e778",
+    "id": 778,
+    "name": "MD4UTF16SHA1x",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e779",
+    "id": 779,
+    "name": "MD4UTF16SHA256MD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e780",
+    "id": 780,
+    "name": "MD4UTF16SHA256SHA1",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e781",
+    "id": 781,
+    "name": "MD4UTF16-2xMD5",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e782",
+    "id": 782,
+    "name": "MD4UTF16MD5PASSMD5SHA1PASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e783",
+    "id": 783,
+    "name": "MD4UTF16MD5PASSMD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e784",
+    "id": 784,
+    "name": "MD4UTF16MD5MD5PASSMD5SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e785",
+    "id": 785,
+    "name": "MD4UTF16MD5PASSMD5SHA1SALT",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e786",
+    "id": 786,
+    "name": "NTLMH",
+    "implementation": "hashcat-1000",
+    "hashcat_candidates": [
+      1000
+    ]
+  },
+  {
+    "mode": "e787",
+    "id": 787,
+    "name": "MD4UTF16SQL3",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e788",
+    "id": 788,
+    "name": "MD4UTF16BASE64",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e789",
+    "id": 789,
+    "name": "MD4UTF16revBASE64x",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e790",
+    "id": 790,
+    "name": "SHA1BASE64SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e791",
+    "id": 791,
+    "name": "MD4UTF16BASE64SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e792",
+    "id": 792,
+    "name": "HMAC-MD5-KPASS",
+    "implementation": "hashcat-50",
+    "hashcat_candidates": [
+      50
+    ]
+  },
+  {
+    "mode": "e793",
+    "id": 793,
+    "name": "HMAC-SHA1-KPASS",
+    "implementation": "hashcat-150",
+    "hashcat_candidates": [
+      150
+    ]
+  },
+  {
+    "mode": "e794",
+    "id": 794,
+    "name": "HMAC-SHA224-KPASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e795",
+    "id": 795,
+    "name": "HMAC-SHA256-KPASS",
+    "implementation": "hashcat-1450",
+    "hashcat_candidates": [
+      1450
+    ]
+  },
+  {
+    "mode": "e796",
+    "id": 796,
+    "name": "HMAC-SHA384-KPASS",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e797",
+    "id": 797,
+    "name": "HMAC-SHA512-KPASS",
+    "implementation": "hashcat-1750",
+    "hashcat_candidates": [
+      1750
+    ]
+  },
+  {
+    "mode": "e798",
+    "id": 798,
+    "name": "HMAC-RMD160-KPASS",
+    "implementation": "hashcat-6050",
+    "hashcat_candidates": [
+      6050
+    ]
+  },
+  {
+    "mode": "e799",
+    "id": 799,
+    "name": "HMAC-RMD320-KPASS",
+    "implementation": "hashcat-33650",
+    "hashcat_candidates": [
+      33650
+    ]
+  },
+  {
+    "mode": "e800",
+    "id": 800,
+    "name": "MD5UTF16LE",
+    "implementation": "hashcat-70",
+    "hashcat_candidates": [
+      70
+    ]
+  },
+  {
+    "mode": "e801",
+    "id": 801,
+    "name": "MD5UTF16LEPASSSALT",
+    "implementation": "hashcat-30",
+    "hashcat_candidates": [
+      30
+    ]
+  },
+  {
+    "mode": "e802",
+    "id": 802,
+    "name": "MD5UTF16LESALTPASS",
+    "implementation": "hashcat-40",
+    "hashcat_candidates": [
+      40
+    ]
+  },
+  {
+    "mode": "e803",
+    "id": 803,
+    "name": "SHA1UTF16LEPASSSALT",
+    "implementation": "hashcat-130",
+    "hashcat_candidates": [
+      130
+    ]
+  },
+  {
+    "mode": "e804",
+    "id": 804,
+    "name": "SHA1UTF16LESALTPASS",
+    "implementation": "hashcat-140",
+    "hashcat_candidates": [
+      140
+    ]
+  },
+  {
+    "mode": "e805",
+    "id": 805,
+    "name": "SHA256UTF16LE",
+    "implementation": "hashcat-1470",
+    "hashcat_candidates": [
+      1470
+    ]
+  },
+  {
+    "mode": "e806",
+    "id": 806,
+    "name": "SHA256UTF16LEPASSSALT",
+    "implementation": "hashcat-1430",
+    "hashcat_candidates": [
+      1430
+    ]
+  },
+  {
+    "mode": "e807",
+    "id": 807,
+    "name": "SHA256UTF16LESALTPASS",
+    "implementation": "hashcat-1440",
+    "hashcat_candidates": [
+      1440
+    ]
+  },
+  {
+    "mode": "e808",
+    "id": 808,
+    "name": "SHA512UTF16LE",
+    "implementation": "hashcat-1770",
+    "hashcat_candidates": [
+      1770
+    ]
+  },
+  {
+    "mode": "e809",
+    "id": 809,
+    "name": "SHA512UTF16LEPASSSALT",
+    "implementation": "hashcat-1730",
+    "hashcat_candidates": [
+      1730
+    ]
+  },
+  {
+    "mode": "e810",
+    "id": 810,
+    "name": "SHA512UTF16LESALTPASS",
+    "implementation": "hashcat-1740",
+    "hashcat_candidates": [
+      1740
+    ]
+  },
+  {
+    "mode": "e811",
+    "id": 811,
+    "name": "SHA384PASSSALT",
+    "implementation": "hashcat-10810",
+    "hashcat_candidates": [
+      10810
+    ]
+  },
+  {
+    "mode": "e812",
+    "id": 812,
+    "name": "SHA384SALTPASS",
+    "implementation": "hashcat-10820",
+    "hashcat_candidates": [
+      10820
+    ]
+  },
+  {
+    "mode": "e813",
+    "id": 813,
+    "name": "SHA384UTF16LE",
+    "implementation": "hashcat-10870",
+    "hashcat_candidates": [
+      10870
+    ]
+  },
+  {
+    "mode": "e814",
+    "id": 814,
+    "name": "SHA384UTF16LEPASSSALT",
+    "implementation": "hashcat-10830",
+    "hashcat_candidates": [
+      10830
+    ]
+  },
+  {
+    "mode": "e815",
+    "id": 815,
+    "name": "SHA384UTF16LESALTPASS",
+    "implementation": "hashcat-10840",
+    "hashcat_candidates": [
+      10840
+    ]
+  },
+  {
+    "mode": "e816",
+    "id": 816,
+    "name": "RMD320",
+    "implementation": "hashcat-33600",
+    "hashcat_candidates": [
+      33600
+    ]
+  },
+  {
+    "mode": "e817",
+    "id": 817,
+    "name": "MD5-SHA1SALTPASS",
+    "implementation": "hashcat-4430",
+    "hashcat_candidates": [
+      4430
+    ]
+  },
+  {
+    "mode": "e818",
+    "id": 818,
+    "name": "MD5-SALTMD5PASS-SALT",
+    "implementation": "hashcat-33100",
+    "hashcat_candidates": [
+      33100
+    ]
+  },
+  {
+    "mode": "e819",
+    "id": 819,
+    "name": "MD5-MD5MD5PASSSALT-PEP",
+    "implementation": "hashcat-31700",
+    "hashcat_candidates": [
+      31700
+    ]
+  },
+  {
+    "mode": "e820",
+    "id": 820,
+    "name": "MD5-MD5SALT-MD5MD5PASS",
+    "implementation": "hashcat-30500",
+    "hashcat_candidates": [
+      30500
+    ]
+  },
+  {
+    "mode": "e821",
+    "id": 821,
+    "name": "MD5-MD5MD5PASSSALT-PEP2",
+    "implementation": "hashcat-21900",
+    "hashcat_candidates": [
+      21900
+    ]
+  },
+  {
+    "mode": "e822",
+    "id": 822,
+    "name": "MD5-SALT-SHA1PEPPASS",
+    "implementation": "hashcat-21310",
+    "hashcat_candidates": [
+      21310
+    ]
+  },
+  {
+    "mode": "e823",
+    "id": 823,
+    "name": "SHA1-SALTSHA1PASSSALT",
+    "implementation": "hashcat-24300",
+    "hashcat_candidates": [
+      24300
+    ]
+  },
+  {
+    "mode": "e824",
+    "id": 824,
+    "name": "SHA1-SALTSHA1U16",
+    "implementation": "hashcat-29000",
+    "hashcat_candidates": [
+      29000
+    ]
+  },
+  {
+    "mode": "e825",
+    "id": 825,
+    "name": "SHA256SALTPASSSALT",
+    "implementation": "hashcat-22300",
+    "hashcat_candidates": [
+      22300
+    ]
+  },
+  {
+    "mode": "e826",
+    "id": 826,
+    "name": "SHA256-SALTSHA256RAW",
+    "implementation": "hashcat-21420",
+    "hashcat_candidates": [
+      21420
+    ]
+  },
+  {
+    "mode": "e827",
+    "id": 827,
+    "name": "WRLSALTPASSSALT",
+    "implementation": "hashcat-32600",
+    "hashcat_candidates": [
+      32600
+    ]
+  },
+  {
+    "mode": "e828",
+    "id": 828,
+    "name": "HMAC-BLAKE2S",
+    "implementation": "hashcat-33300",
+    "hashcat_candidates": [
+      33300
+    ]
+  },
+  {
+    "mode": "e829",
+    "id": 829,
+    "name": "MURMUR64A",
+    "implementation": "hashcat-34200",
+    "hashcat_candidates": [
+      34200
+    ]
+  },
+  {
+    "mode": "e830",
+    "id": 830,
+    "name": "MURMUR64AZERO",
+    "implementation": "hashcat-34201",
+    "hashcat_candidates": [
+      34201
+    ]
+  },
+  {
+    "mode": "e831",
+    "id": 831,
+    "name": "SHA224PASSSALT",
+    "implementation": "hashcat-1310",
+    "hashcat_candidates": [
+      1310
+    ]
+  },
+  {
+    "mode": "e832",
+    "id": 832,
+    "name": "SHA224SALTPASS",
+    "implementation": "hashcat-1320",
+    "hashcat_candidates": [
+      1320
+    ]
+  },
+  {
+    "mode": "e833",
+    "id": 833,
+    "name": "SSHA1BASE64",
+    "implementation": "hashcat-111",
+    "hashcat_candidates": [
+      111
+    ]
+  },
+  {
+    "mode": "e834",
+    "id": 834,
+    "name": "SHA1PASSHEXSALT",
+    "implementation": "hashcat-112",
+    "hashcat_candidates": [
+      112
+    ]
+  },
+  {
+    "mode": "e835",
+    "id": 835,
+    "name": "SSHA256BASE64",
+    "implementation": "hashcat-1411",
+    "hashcat_candidates": [
+      1411
+    ]
+  },
+  {
+    "mode": "e836",
+    "id": 836,
+    "name": "SSHA512BASE64",
+    "implementation": "hashcat-1711",
+    "hashcat_candidates": [
+      1711
+    ]
+  },
+  {
+    "mode": "e837",
+    "id": 837,
+    "name": "HMAC-STREEBOG256-KPASS",
+    "implementation": "hashcat-11750",
+    "hashcat_candidates": [
+      11750
+    ]
+  },
+  {
+    "mode": "e838",
+    "id": 838,
+    "name": "HMAC-STREEBOG256",
+    "implementation": "hashcat-11760",
+    "hashcat_candidates": [
+      11760
+    ]
+  },
+  {
+    "mode": "e839",
+    "id": 839,
+    "name": "HMAC-STREEBOG512-KPASS",
+    "implementation": "hashcat-11850",
+    "hashcat_candidates": [
+      11850
+    ]
+  },
+  {
+    "mode": "e840",
+    "id": 840,
+    "name": "HMAC-STREEBOG512",
+    "implementation": "hashcat-11860",
+    "hashcat_candidates": [
+      11860
+    ]
+  },
+  {
+    "mode": "e841",
+    "id": 841,
+    "name": "BLAKE2B512",
+    "implementation": "hashcat-600",
+    "hashcat_candidates": [
+      600
+    ]
+  },
+  {
+    "mode": "e842",
+    "id": 842,
+    "name": "BLAKE2B512PASSSALT",
+    "implementation": "hashcat-610",
+    "hashcat_candidates": [
+      610
+    ]
+  },
+  {
+    "mode": "e843",
+    "id": 843,
+    "name": "BLAKE2B512SALTPASS",
+    "implementation": "hashcat-620",
+    "hashcat_candidates": [
+      620
+    ]
+  },
+  {
+    "mode": "e844",
+    "id": 844,
+    "name": "BLAKE2S256",
+    "implementation": "hashcat-31000",
+    "hashcat_candidates": [
+      31000
+    ]
+  },
+  {
+    "mode": "e845",
+    "id": 845,
+    "name": "BLAKE2B256",
+    "implementation": "hashcat-34800",
+    "hashcat_candidates": [
+      34800
+    ]
+  },
+  {
+    "mode": "e846",
+    "id": 846,
+    "name": "BLAKE2B256PASSSALT",
+    "implementation": "hashcat-34810",
+    "hashcat_candidates": [
+      34810
+    ]
+  },
+  {
+    "mode": "e847",
+    "id": 847,
+    "name": "BLAKE2B256SALTPASS",
+    "implementation": "hashcat-34820",
+    "hashcat_candidates": [
+      34820
+    ]
+  },
+  {
+    "mode": "e848",
+    "id": 848,
+    "name": "DESENCRYPT",
+    "implementation": "hashcat-14000",
+    "hashcat_candidates": [
+      14000
+    ]
+  },
+  {
+    "mode": "e849",
+    "id": 849,
+    "name": "DES3ENCRYPT",
+    "implementation": "hashcat-14100",
+    "hashcat_candidates": [
+      14100
+    ]
+  },
+  {
+    "mode": "e850",
+    "id": 850,
+    "name": "MSSQL2000",
+    "implementation": "hashcat-131",
+    "hashcat_candidates": [
+      131
+    ]
+  },
+  {
+    "mode": "e851",
+    "id": 851,
+    "name": "MSSQL2005",
+    "implementation": "hashcat-132",
+    "hashcat_candidates": [
+      132
+    ]
+  },
+  {
+    "mode": "e852",
+    "id": 852,
+    "name": "MSSQL2012",
+    "implementation": "hashcat-1731",
+    "hashcat_candidates": [
+      1731
+    ]
+  },
+  {
+    "mode": "e853",
+    "id": 853,
+    "name": "MACOSX",
+    "implementation": "hashcat-122",
+    "hashcat_candidates": [
+      122
+    ]
+  },
+  {
+    "mode": "e854",
+    "id": 854,
+    "name": "MACOSX7",
+    "implementation": "hashcat-1722",
+    "hashcat_candidates": [
+      1722
+    ]
+  },
+  {
+    "mode": "e855",
+    "id": 855,
+    "name": "POSTGRESQL",
+    "implementation": "hashcat-12",
+    "hashcat_candidates": [
+      12
+    ]
+  },
+  {
+    "mode": "e856",
+    "id": 856,
+    "name": "JUNIPERSSG",
+    "implementation": "hashcat-22",
+    "hashcat_candidates": [
+      22
+    ]
+  },
+  {
+    "mode": "e857",
+    "id": 857,
+    "name": "SKYPE",
+    "implementation": "hashcat-23",
+    "hashcat_candidates": [
+      23
+    ]
+  },
+  {
+    "mode": "e858",
+    "id": 858,
+    "name": "PEOPLESOFT",
+    "implementation": "hashcat-133",
+    "hashcat_candidates": [
+      133
+    ]
+  },
+  {
+    "mode": "e859",
+    "id": 859,
+    "name": "EPISERVER",
+    "implementation": "hashcat-141",
+    "hashcat_candidates": [
+      141,
+      1441
+    ]
+  },
+  {
+    "mode": "e860",
+    "id": 860,
+    "name": "HMAILSERVER",
+    "implementation": "hashcat-1421",
+    "hashcat_candidates": [
+      1421
+    ]
+  },
+  {
+    "mode": "e861",
+    "id": 861,
+    "name": "CISCOPIX",
+    "implementation": "hashcat-2400",
+    "hashcat_candidates": [
+      2400
+    ]
+  },
+  {
+    "mode": "e862",
+    "id": 862,
+    "name": "CISCOASA",
+    "implementation": "hashcat-2410",
+    "hashcat_candidates": [
+      2410
+    ]
+  },
+  {
+    "mode": "e863",
+    "id": 863,
+    "name": "MEDIAWIKI",
+    "implementation": "hashcat-3711",
+    "hashcat_candidates": [
+      3711
+    ]
+  },
+  {
+    "mode": "e864",
+    "id": 864,
+    "name": "DAHUA",
+    "implementation": "hashcat-3730",
+    "hashcat_candidates": [
+      3730
+    ]
+  },
+  {
+    "mode": "e865",
+    "id": 865,
+    "name": "CISCO4",
+    "implementation": "hashcat-5700",
+    "hashcat_candidates": [
+      5700
+    ]
+  },
+  {
+    "mode": "e866",
+    "id": 866,
+    "name": "CISCOISE",
+    "implementation": "hashcat-5720",
+    "hashcat_candidates": [
+      5720
+    ]
+  },
+  {
+    "mode": "e867",
+    "id": 867,
+    "name": "SAMSUNGSHA1",
+    "implementation": "hashcat-5800",
+    "hashcat_candidates": [
+      5800
+    ]
+  },
+  {
+    "mode": "e868",
+    "id": 868,
+    "name": "AIX-MD5",
+    "implementation": "hashcat-6300",
+    "hashcat_candidates": [
+      6300
+    ]
+  },
+  {
+    "mode": "e869",
+    "id": 869,
+    "name": "AIX-SHA1",
+    "implementation": "hashcat-6700",
+    "hashcat_candidates": [
+      6700
+    ]
+  },
+  {
+    "mode": "e870",
+    "id": 870,
+    "name": "AIX-SHA256",
+    "implementation": "hashcat-6400",
+    "hashcat_candidates": [
+      6400
+    ]
+  },
+  {
+    "mode": "e871",
+    "id": 871,
+    "name": "AIX-SHA512",
+    "implementation": "hashcat-6500",
+    "hashcat_candidates": [
+      6500
+    ]
+  },
+  {
+    "mode": "e872",
+    "id": 872,
+    "name": "IPMI2-SHA1",
+    "implementation": "hashcat-7300",
+    "hashcat_candidates": [
+      7300
+    ]
+  },
+  {
+    "mode": "e873",
+    "id": 873,
+    "name": "IPMI2-MD5",
+    "implementation": "hashcat-7350",
+    "hashcat_candidates": [
+      7350
+    ]
+  },
+  {
+    "mode": "e874",
+    "id": 874,
+    "name": "KRB5PA23",
+    "implementation": "hashcat-7500",
+    "hashcat_candidates": [
+      7500
+    ]
+  },
+  {
+    "mode": "e875",
+    "id": 875,
+    "name": "MYSQL-SHA256CRYPT",
+    "implementation": "hashcat-7401",
+    "hashcat_candidates": [
+      7401
+    ]
+  },
+  {
+    "mode": "e876",
+    "id": 876,
+    "name": "DRUPAL7",
+    "implementation": "hashcat-7900",
+    "hashcat_candidates": [
+      7900
+    ]
+  },
+  {
+    "mode": "e877",
+    "id": 877,
+    "name": "SYBASE-ASE",
+    "implementation": "hashcat-8000",
+    "hashcat_candidates": [
+      8000
+    ]
+  },
+  {
+    "mode": "e878",
+    "id": 878,
+    "name": "NETSCALER",
+    "implementation": "hashcat-8100",
+    "hashcat_candidates": [
+      8100
+    ]
+  },
+  {
+    "mode": "e879",
+    "id": 879,
+    "name": "NSEC3",
+    "implementation": "hashcat-8300",
+    "hashcat_candidates": [
+      8300
+    ]
+  },
+  {
+    "mode": "e880",
+    "id": 880,
+    "name": "WBB3",
+    "implementation": "hashcat-8400",
+    "hashcat_candidates": [
+      8400
+    ]
+  },
+  {
+    "mode": "e881",
+    "id": 881,
+    "name": "RACF",
+    "implementation": "hashcat-8500",
+    "hashcat_candidates": [
+      8500
+    ]
+  },
+  {
+    "mode": "e882",
+    "id": 882,
+    "name": "DOMINO5",
+    "implementation": "hashcat-8600",
+    "hashcat_candidates": [
+      8600
+    ]
+  },
+  {
+    "mode": "e883",
+    "id": 883,
+    "name": "DOMINO6",
+    "implementation": "hashcat-8700",
+    "hashcat_candidates": [
+      8700
+    ]
+  },
+  {
+    "mode": "e884",
+    "id": 884,
+    "name": "SCRYPT",
+    "implementation": "hashcat-8900",
+    "hashcat_candidates": [
+      8900
+    ]
+  },
+  {
+    "mode": "e885",
+    "id": 885,
+    "name": "JUNIPERIVE",
+    "implementation": "hashcat-501",
+    "hashcat_candidates": [
+      501
+    ]
+  },
+  {
+    "mode": "e886",
+    "id": 886,
+    "name": "PHPS",
+    "implementation": "hashcat-2612",
+    "hashcat_candidates": [
+      2612
+    ]
+  },
+  {
+    "mode": "e887",
+    "id": 887,
+    "name": "ARUBAOS",
+    "implementation": "hashcat-125",
+    "hashcat_candidates": [
+      125
+    ]
+  },
+  {
+    "mode": "e888",
+    "id": 888,
+    "name": "ISCSI-CHAP",
+    "implementation": "hashcat-4800",
+    "hashcat_candidates": [
+      4800
+    ]
+  },
+  {
+    "mode": "e889",
+    "id": 889,
+    "name": "WERKZEUG-MD5",
+    "implementation": "hashcat-30000",
+    "hashcat_candidates": [
+      30000
+    ]
+  },
+  {
+    "mode": "e890",
+    "id": 890,
+    "name": "WERKZEUG-SHA256",
+    "implementation": "hashcat-30120",
+    "hashcat_candidates": [
+      30120
+    ]
+  },
+  {
+    "mode": "e891",
+    "id": 891,
+    "name": "AUTHME",
+    "implementation": "hashcat-20711",
+    "hashcat_candidates": [
+      20711
+    ]
+  },
+  {
+    "mode": "e892",
+    "id": 892,
+    "name": "NETWITNESS",
+    "implementation": "hashcat-20712",
+    "hashcat_candidates": [
+      20712
+    ]
+  },
+  {
+    "mode": "e893",
+    "id": 893,
+    "name": "NETSCALER-SHA512",
+    "implementation": "hashcat-22200",
+    "hashcat_candidates": [
+      22200
+    ]
+  },
+  {
+    "mode": "e894",
+    "id": 894,
+    "name": "SHA1SHA1SALTPASSSALT",
+    "implementation": "hashcat-5000",
+    "hashcat_candidates": [
+      5000
+    ]
+  },
+  {
+    "mode": "e895",
+    "id": 895,
+    "name": "NETSCALER-PBKDF2",
+    "implementation": "hashcat-33900",
+    "hashcat_candidates": [
+      33900
+    ]
+  },
+  {
+    "mode": "e896",
+    "id": 896,
+    "name": "ORACLE7",
+    "implementation": "hashcat-3100",
+    "hashcat_candidates": [
+      3100
+    ]
+  },
+  {
+    "mode": "e897",
+    "id": 897,
+    "name": "NETNTLMV1",
+    "implementation": "hashcat-5500",
+    "hashcat_candidates": [
+      5500
+    ]
+  },
+  {
+    "mode": "e898",
+    "id": 898,
+    "name": "NETNTLMV2",
+    "implementation": "hashcat-5600",
+    "hashcat_candidates": [
+      5600
+    ]
+  },
+  {
+    "mode": "e899",
+    "id": 899,
+    "name": "LASTPASS",
+    "implementation": "hashcat-6800",
+    "hashcat_candidates": [
+      6800
+    ]
+  },
+  {
+    "mode": "e900",
+    "id": 900,
+    "name": "FORTIGATE",
+    "implementation": "hashcat-7000",
+    "hashcat_candidates": [
+      7000
+    ]
+  },
+  {
+    "mode": "e901",
+    "id": 901,
+    "name": "DOMINO8",
+    "implementation": "hashcat-9100",
+    "hashcat_candidates": [
+      9100
+    ]
+  },
+  {
+    "mode": "e902",
+    "id": 902,
+    "name": "SIPHASH",
+    "implementation": "hashcat-10100",
+    "hashcat_candidates": [
+      10100
+    ]
+  },
+  {
+    "mode": "e903",
+    "id": 903,
+    "name": "CRAMMD5",
+    "implementation": "hashcat-10200",
+    "hashcat_candidates": [
+      10200
+    ]
+  },
+  {
+    "mode": "e904",
+    "id": 904,
+    "name": "SAPCODVNH",
+    "implementation": "hashcat-10300",
+    "hashcat_candidates": [
+      10300
+    ]
+  },
+  {
+    "mode": "e905",
+    "id": 905,
+    "name": "REDHAT389DS",
+    "implementation": "hashcat-10901",
+    "hashcat_candidates": [
+      10901
+    ]
+  },
+  {
+    "mode": "e906",
+    "id": 906,
+    "name": "POSTGRESCRAM",
+    "implementation": "hashcat-11100",
+    "hashcat_candidates": [
+      11100
+    ]
+  },
+  {
+    "mode": "e907",
+    "id": 907,
+    "name": "MYSQLCRAM",
+    "implementation": "hashcat-11200",
+    "hashcat_candidates": [
+      11200
+    ]
+  },
+  {
+    "mode": "e908",
+    "id": 908,
+    "name": "SHIRO1",
+    "implementation": "hashcat-12150",
+    "hashcat_candidates": [
+      12150
+    ]
+  },
+  {
+    "mode": "e909",
+    "id": 909,
+    "name": "ECRYPTFS",
+    "implementation": "hashcat-12200",
+    "hashcat_candidates": [
+      12200
+    ]
+  },
+  {
+    "mode": "e910",
+    "id": 910,
+    "name": "ORACLE12",
+    "implementation": "hashcat-12300",
+    "hashcat_candidates": [
+      12300
+    ]
+  },
+  {
+    "mode": "e911",
+    "id": 911,
+    "name": "COLDFUSION10",
+    "implementation": "hashcat-12600",
+    "hashcat_candidates": [
+      12600
+    ]
+  },
+  {
+    "mode": "e912",
+    "id": 912,
+    "name": "AZURESYNC",
+    "implementation": "hashcat-12800",
+    "hashcat_candidates": [
+      12800
+    ]
+  },
+  {
+    "mode": "e913",
+    "id": 913,
+    "name": "ANDROIDFDE",
+    "implementation": "hashcat-12900",
+    "hashcat_candidates": [
+      12900
+    ]
+  },
+  {
+    "mode": "e914",
+    "id": 914,
+    "name": "KRB5TGS23",
+    "implementation": "hashcat-13100",
+    "hashcat_candidates": [
+      13100
+    ]
+  },
+  {
+    "mode": "e915",
+    "id": 915,
+    "name": "AXCRYPT",
+    "implementation": "hashcat-13200",
+    "hashcat_candidates": [
+      13200
+    ]
+  },
+  {
+    "mode": "e916",
+    "id": 916,
+    "name": "AXCRYPTSHA1",
+    "implementation": "hashcat-13300",
+    "hashcat_candidates": [
+      13300
+    ]
+  },
+  {
+    "mode": "e917",
+    "id": 917,
+    "name": "CISCO9",
+    "implementation": "hashcat-9300",
+    "hashcat_candidates": [
+      9300
+    ]
+  },
+  {
+    "mode": "e918",
+    "id": 918,
+    "name": "DCC2",
+    "implementation": "hashcat-2100",
+    "hashcat_candidates": [
+      2100
+    ]
+  },
+  {
+    "mode": "e919",
+    "id": 919,
+    "name": "PWSAFE3",
+    "implementation": "hashcat-5200",
+    "hashcat_candidates": [
+      5200
+    ]
+  },
+  {
+    "mode": "e920",
+    "id": 920,
+    "name": "IKEPSK-MD5",
+    "implementation": "hashcat-5300",
+    "hashcat_candidates": [
+      5300
+    ]
+  },
+  {
+    "mode": "e921",
+    "id": 921,
+    "name": "IKEPSK-SHA1",
+    "implementation": "hashcat-5400",
+    "hashcat_candidates": [
+      5400
+    ]
+  },
+  {
+    "mode": "e922",
+    "id": 922,
+    "name": "SAP-BCODE",
+    "implementation": "hashcat-7700",
+    "hashcat_candidates": [
+      7700
+    ]
+  },
+  {
+    "mode": "e923",
+    "id": 923,
+    "name": "SAP-BCODE4",
+    "implementation": "hashcat-7701",
+    "hashcat_candidates": [
+      7701
+    ]
+  },
+  {
+    "mode": "e924",
+    "id": 924,
+    "name": "SAP-PASSCODE",
+    "implementation": "hashcat-7800",
+    "hashcat_candidates": [
+      7800
+    ]
+  },
+  {
+    "mode": "e925",
+    "id": 925,
+    "name": "SAP-PASSCODE5",
+    "implementation": "hashcat-7801",
+    "hashcat_candidates": [
+      7801
+    ]
+  },
+  {
+    "mode": "e926",
+    "id": 926,
+    "name": "AS400-DES",
+    "implementation": "hashcat-8501",
+    "hashcat_candidates": [
+      8501
+    ]
+  },
+  {
+    "mode": "e927",
+    "id": 927,
+    "name": "PS-TOKEN",
+    "implementation": "hashcat-13500",
+    "hashcat_candidates": [
+      13500
+    ]
+  },
+  {
+    "mode": "e928",
+    "id": 928,
+    "name": "WINPHONE",
+    "implementation": "hashcat-13800",
+    "hashcat_candidates": [
+      13800
+    ]
+  },
+  {
+    "mode": "e929",
+    "id": 929,
+    "name": "RACF-KDFAES",
+    "implementation": "hashcat-14200",
+    "hashcat_candidates": [
+      14200
+    ]
+  },
+  {
+    "mode": "e930",
+    "id": 930,
+    "name": "TACACS",
+    "implementation": "hashcat-16100",
+    "hashcat_candidates": [
+      16100
+    ]
+  },
+  {
+    "mode": "e931",
+    "id": 931,
+    "name": "APPLE-SECURE-NOTES",
+    "implementation": "hashcat-16200",
+    "hashcat_candidates": [
+      16200,
+      16700
+    ]
+  },
+  {
+    "mode": "e932",
+    "id": 932,
+    "name": "CRAMMD5-DOVECOT",
+    "implementation": "hashcat-16400",
+    "hashcat_candidates": [
+      16400
+    ]
+  },
+  {
+    "mode": "e933",
+    "id": 933,
+    "name": "JWT",
+    "implementation": "hashcat-16500",
+    "hashcat_candidates": [
+      16500
+    ]
+  },
+  {
+    "mode": "e934",
+    "id": 934,
+    "name": "QNX-MD5",
+    "implementation": "hashcat-19000",
+    "hashcat_candidates": [
+      19000
+    ]
+  },
+  {
+    "mode": "e935",
+    "id": 935,
+    "name": "QNX-SHA256",
+    "implementation": "hashcat-19100",
+    "hashcat_candidates": [
+      19100
+    ]
+  },
+  {
+    "mode": "e936",
+    "id": 936,
+    "name": "QNX-SHA512",
+    "implementation": "hashcat-19200",
+    "hashcat_candidates": [
+      19200
+    ]
+  },
+  {
+    "mode": "e937",
+    "id": 937,
+    "name": "QNX7-SHA512",
+    "implementation": "hashcat-19210",
+    "hashcat_candidates": [
+      19210
+    ]
+  },
+  {
+    "mode": "e938",
+    "id": 938,
+    "name": "SHA1-S1PS2",
+    "implementation": "hashcat-19300",
+    "hashcat_candidates": [
+      19300
+    ]
+  },
+  {
+    "mode": "e939",
+    "id": 939,
+    "name": "RAILS-RESTFUL",
+    "implementation": "hashcat-19500",
+    "hashcat_candidates": [
+      19500
+    ]
+  },
+  {
+    "mode": "e940",
+    "id": 940,
+    "name": "KRB5PA-17",
+    "implementation": "hashcat-19800",
+    "hashcat_candidates": [
+      19800
+    ]
+  },
+  {
+    "mode": "e941",
+    "id": 941,
+    "name": "KRB5PA-18",
+    "implementation": "hashcat-19900",
+    "hashcat_candidates": [
+      19900
+    ]
+  },
+  {
+    "mode": "e942",
+    "id": 942,
+    "name": "WPA-PMKID",
+    "implementation": "hashcat-16800",
+    "hashcat_candidates": [
+      16800,
+      22000
+    ]
+  },
+  {
+    "mode": "e943",
+    "id": 943,
+    "name": "WPA-EAPOL",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e944",
+    "id": 944,
+    "name": "ANSIBLE-VAULT",
+    "implementation": "hashcat-16900",
+    "hashcat_candidates": [
+      16900
+    ]
+  },
+  {
+    "mode": "e945",
+    "id": 945,
+    "name": "APFS",
+    "implementation": "hashcat-18300",
+    "hashcat_candidates": [
+      18300
+    ]
+  },
+  {
+    "mode": "e946",
+    "id": 946,
+    "name": "OTM-SHA256",
+    "implementation": "hashcat-20600",
+    "hashcat_candidates": [
+      20600
+    ]
+  },
+  {
+    "mode": "e947",
+    "id": 947,
+    "name": "TELEGRAM-SHA256",
+    "implementation": "hashcat-22301",
+    "hashcat_candidates": [
+      22301
+    ]
+  },
+  {
+    "mode": "e948",
+    "id": 948,
+    "name": "WEB2PY-SHA512",
+    "implementation": "hashcat-21600",
+    "hashcat_candidates": [
+      21600
+    ]
+  },
+  {
+    "mode": "e949",
+    "id": 949,
+    "name": "SOLARWINDS",
+    "implementation": "hashcat-21500",
+    "hashcat_candidates": [
+      21500
+    ]
+  },
+  {
+    "mode": "e950",
+    "id": 950,
+    "name": "SOLARWINDS2",
+    "implementation": "hashcat-21501",
+    "hashcat_candidates": [
+      21501
+    ]
+  },
+  {
+    "mode": "e951",
+    "id": 951,
+    "name": "SIMPLACMS",
+    "implementation": "hashcat-22800",
+    "hashcat_candidates": [
+      22800
+    ]
+  },
+  {
+    "mode": "e952",
+    "id": 952,
+    "name": "APPLE-KEYCHAIN",
+    "implementation": "hashcat-23100",
+    "hashcat_candidates": [
+      23100
+    ]
+  },
+  {
+    "mode": "e953",
+    "id": 953,
+    "name": "APPLE-IWORK",
+    "implementation": "hashcat-23300",
+    "hashcat_candidates": [
+      23300
+    ]
+  },
+  {
+    "mode": "e954",
+    "id": 954,
+    "name": "BITWARDEN",
+    "implementation": "hashcat-23400",
+    "hashcat_candidates": [
+      23400
+    ]
+  },
+  {
+    "mode": "e955",
+    "id": 955,
+    "name": "MONGODB-SHA1",
+    "implementation": "hashcat-24100",
+    "hashcat_candidates": [
+      24100
+    ]
+  },
+  {
+    "mode": "e956",
+    "id": 956,
+    "name": "MONGODB-SHA256",
+    "implementation": "hashcat-24200",
+    "hashcat_candidates": [
+      24200
+    ]
+  },
+  {
+    "mode": "e957",
+    "id": 957,
+    "name": "FORTIGATE256",
+    "implementation": "hashcat-26300",
+    "hashcat_candidates": [
+      26300
+    ]
+  },
+  {
+    "mode": "e958",
+    "id": 958,
+    "name": "UMBRACO",
+    "implementation": "hashcat-24800",
+    "hashcat_candidates": [
+      24800
+    ]
+  },
+  {
+    "mode": "e959",
+    "id": 959,
+    "name": "DAHUA-AUTH",
+    "implementation": "hashcat-24900",
+    "hashcat_candidates": [
+      24900
+    ]
+  },
+  {
+    "mode": "e960",
+    "id": 960,
+    "name": "BESDER-AUTH",
+    "implementation": "hashcat-24901",
+    "hashcat_candidates": [
+      24901
+    ]
+  },
+  {
+    "mode": "e961",
+    "id": 961,
+    "name": "SQLCIPHER",
+    "implementation": "hashcat-24600",
+    "hashcat_candidates": [
+      24600
+    ]
+  },
+  {
+    "mode": "e962",
+    "id": 962,
+    "name": "RORAILS-SHA1",
+    "implementation": "hashcat-27200",
+    "hashcat_candidates": [
+      27200
+    ]
+  },
+  {
+    "mode": "e963",
+    "id": 963,
+    "name": "AES128-NOKDF",
+    "implementation": "hashcat-26401",
+    "hashcat_candidates": [
+      26401
+    ]
+  },
+  {
+    "mode": "e964",
+    "id": 964,
+    "name": "AES192-NOKDF",
+    "implementation": "hashcat-26402",
+    "hashcat_candidates": [
+      26402
+    ]
+  },
+  {
+    "mode": "e965",
+    "id": 965,
+    "name": "AES256-NOKDF",
+    "implementation": "hashcat-26403",
+    "hashcat_candidates": [
+      26403
+    ]
+  },
+  {
+    "mode": "e966",
+    "id": 966,
+    "name": "VMWARE-VMX",
+    "implementation": "hashcat-27400",
+    "hashcat_candidates": [
+      27400
+    ]
+  },
+  {
+    "mode": "e967",
+    "id": 967,
+    "name": "BCRYPTSHA512",
+    "implementation": "hashcat-28400",
+    "hashcat_candidates": [
+      28400
+    ]
+  },
+  {
+    "mode": "e968",
+    "id": 968,
+    "name": "POSTGRESSCRAM256",
+    "implementation": "hashcat-28600",
+    "hashcat_candidates": [
+      28600
+    ]
+  },
+  {
+    "mode": "e969",
+    "id": 969,
+    "name": "AWSSIGV4",
+    "implementation": "hashcat-28700",
+    "hashcat_candidates": [
+      28700
+    ]
+  },
+  {
+    "mode": "e970",
+    "id": 970,
+    "name": "KRB5DB17",
+    "implementation": "hashcat-28800",
+    "hashcat_candidates": [
+      28800
+    ]
+  },
+  {
+    "mode": "e971",
+    "id": 971,
+    "name": "KRB5DB18",
+    "implementation": "hashcat-28900",
+    "hashcat_candidates": [
+      28900
+    ]
+  },
+  {
+    "mode": "e972",
+    "id": 972,
+    "name": "MURMUR3",
+    "implementation": "hashcat-27800",
+    "hashcat_candidates": [
+      27800
+    ]
+  },
+  {
+    "mode": "e973",
+    "id": 973,
+    "name": "VEEAM-VBK",
+    "implementation": "hashcat-31200",
+    "hashcat_candidates": [
+      31200
+    ]
+  },
+  {
+    "mode": "e974",
+    "id": 974,
+    "name": "MSSNTP",
+    "implementation": "hashcat-31300",
+    "hashcat_candidates": [
+      31300
+    ]
+  },
+  {
+    "mode": "e975",
+    "id": 975,
+    "name": "SSPR-MD5",
+    "implementation": "hashcat-32000",
+    "hashcat_candidates": [
+      32000
+    ]
+  },
+  {
+    "mode": "e976",
+    "id": 976,
+    "name": "SSPR-SHA1",
+    "implementation": "hashcat-32010",
+    "hashcat_candidates": [
+      32010
+    ]
+  },
+  {
+    "mode": "e977",
+    "id": 977,
+    "name": "SSPR-SHA1S",
+    "implementation": "hashcat-32020",
+    "hashcat_candidates": [
+      32020
+    ]
+  },
+  {
+    "mode": "e978",
+    "id": 978,
+    "name": "SSPR-SHA256",
+    "implementation": "hashcat-32030",
+    "hashcat_candidates": [
+      32030,
+      32031
+    ]
+  },
+  {
+    "mode": "e979",
+    "id": 979,
+    "name": "SSPR-SHA512",
+    "implementation": "hashcat-32040",
+    "hashcat_candidates": [
+      32040,
+      32041
+    ]
+  },
+  {
+    "mode": "e980",
+    "id": 980,
+    "name": "EMPIRECMS",
+    "implementation": "hashcat-32300",
+    "hashcat_candidates": [
+      32300
+    ]
+  },
+  {
+    "mode": "e981",
+    "id": 981,
+    "name": "PBKDF1-SHA1",
+    "implementation": "hashcat-32900",
+    "hashcat_candidates": [
+      32900
+    ]
+  },
+  {
+    "mode": "e982",
+    "id": 982,
+    "name": "MSONLINE",
+    "implementation": "hashcat-33700",
+    "hashcat_candidates": [
+      33700
+    ]
+  },
+  {
+    "mode": "e983",
+    "id": 983,
+    "name": "WBB4",
+    "implementation": "hashcat-33800",
+    "hashcat_candidates": [
+      33800
+    ]
+  },
+  {
+    "mode": "e984",
+    "id": 984,
+    "name": "SAPCODVNH512",
+    "implementation": "hashcat-35000",
+    "hashcat_candidates": [
+      35000
+    ]
+  },
+  {
+    "mode": "e985",
+    "id": 985,
+    "name": "SM3CRYPT",
+    "implementation": "hashcat-35100",
+    "hashcat_candidates": [
+      35100
+    ]
+  },
+  {
+    "mode": "e986",
+    "id": 986,
+    "name": "AS400SSHA1",
+    "implementation": "hashcat-35200",
+    "hashcat_candidates": [
+      35200
+    ]
+  },
+  {
+    "mode": "e987",
+    "id": 987,
+    "name": "ARGON2",
+    "implementation": "hashcat-34000",
+    "hashcat_candidates": [
+      34000
+    ]
+  },
+  {
+    "mode": "e988",
+    "id": 988,
+    "name": "SM3",
+    "implementation": "hashcat-31100",
+    "hashcat_candidates": [
+      31100
+    ]
+  },
+  {
+    "mode": "e989",
+    "id": 989,
+    "name": "BCRYPTHMACSHA256",
+    "implementation": "hashcat-30601",
+    "hashcat_candidates": [
+      30601
+    ]
+  },
+  {
+    "mode": "e990",
+    "id": 990,
+    "name": "WPA-PMK",
+    "implementation": "hashcat-22001",
+    "hashcat_candidates": [
+      22001
+    ]
+  },
+  {
+    "mode": "e991",
+    "id": 991,
+    "name": "MD5SALT1SALT2",
+    "implementation": "hashcat-33000",
+    "hashcat_candidates": [
+      33000
+    ]
+  },
+  {
+    "mode": "e992",
+    "id": 992,
+    "name": "SYMFONY256",
+    "implementation": "hashcat-35800",
+    "hashcat_candidates": [
+      35800
+    ]
+  },
+  {
+    "mode": "e993",
+    "id": 993,
+    "name": "WPBCRYPT",
+    "implementation": "hashcat-35500",
+    "hashcat_candidates": [
+      35500
+    ]
+  },
+  {
+    "mode": "e994",
+    "id": 994,
+    "name": "GOST12512CRYPT",
+    "implementation": "hashcat-35600",
+    "hashcat_candidates": [
+      35600
+    ]
+  },
+  {
+    "mode": "e995",
+    "id": 995,
+    "name": "YESCRYPT",
+    "implementation": "hashcat-67000",
+    "hashcat_candidates": [
+      67000
+    ]
+  },
+  {
+    "mode": "e996",
+    "id": 996,
+    "name": "MD5SHA256SHA256",
+    "implementation": "mdxfind-bridge",
+    "hashcat_candidates": []
+  },
+  {
+    "mode": "e997",
+    "id": 997,
+    "name": "BSDICRYPT",
+    "implementation": "hashcat-12400",
+    "hashcat_candidates": [
+      12400,
+      12400
+    ]
+  },
+  {
+    "mode": "e998",
+    "id": 998,
+    "name": "GOST-YESCRYPT",
+    "implementation": "hashcat-36200",
+    "hashcat_candidates": [
+      36200,
+      46100
+    ]
+  },
+  {
+    "mode": "e999",
+    "id": 999,
+    "name": "SHA1CRYPT",
+    "implementation": "hashcat-15100",
+    "hashcat_candidates": [
+      15100,
+      15100
+    ]
+  },
+  {
+    "mode": "e1000",
+    "id": 1000,
+    "name": "7ZIP",
+    "implementation": "hashcat-11600",
+    "hashcat_candidates": [
+      11600,
+      11600
+    ]
+  },
+  {
+    "mode": "e1001",
+    "id": 1001,
+    "name": "CMIYC",
+    "implementation": "hashcat-29970",
+    "hashcat_candidates": [
+      29970
+    ]
+  }
+]

@@ -12,6 +12,7 @@
 #include "modules.h"
 #include "dynloader.h"
 #include "interface.h"
+#include "mdxfind_modes.h"
 
 /**
  * parsing
@@ -19,6 +20,18 @@
 
 int module_filename (const folder_config_t *folder_config, const int hash_mode, char *out_buf, const size_t out_size)
 {
+  // mdxfind-compatible modes use their public eN name on disk.
+  if (MDXFIND_HASH_MODE_IS_NAMED (hash_mode))
+  {
+    const int mdxfind_id = MDXFIND_HASH_MODE_TO_ID (hash_mode);
+
+    #if defined (_WIN) || defined (__CYGWIN__)
+    return snprintf (out_buf, out_size, "%s/modules/module_e%d.dll", folder_config->shared_dir, mdxfind_id);
+    #else
+    return snprintf (out_buf, out_size, "%s/modules/module_e%d.so", folder_config->shared_dir, mdxfind_id);
+    #endif
+  }
+
   // native compiled
   #if defined (_WIN) || defined (__CYGWIN__)
   return snprintf (out_buf, out_size, "%s/modules/module_%05d.dll", folder_config->shared_dir, hash_mode);

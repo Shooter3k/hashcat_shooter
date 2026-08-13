@@ -11,6 +11,7 @@
 #include "logfile.h"
 #include "interface.h"
 #include "shared.h"
+#include "mdxfind_modes.h"
 #include "usage.h"
 #include "backend.h"
 #include "user_options.h"
@@ -31,6 +32,33 @@ static const char *const short_options = "hHVvm:a:r:j:k:g:o:t:d:D:n:u:T:c:p:s:l:
 #endif
 
 static char *const SEPARATOR = ":";
+
+static bool mdxfind_hash_mode_parse (const char *value, int *hash_mode)
+{
+  // Keep the public eN spelling while translating to an unused internal range.
+  if ((value[0] != 'e') && (value[0] != 'E')) return false;
+
+  u32 mdxfind_id = 0;
+
+  const char *p = value + 1;
+
+  if ((*p < '0') || (*p > '9')) return false;
+
+  while ((*p >= '0') && (*p <= '9'))
+  {
+    mdxfind_id = (mdxfind_id * 10) + (u32) (*p - '0');
+
+    if (mdxfind_id > 1001) return false;
+
+    p++;
+  }
+
+  if ((*p != 0) || (mdxfind_id < 1) || (mdxfind_id > 1001)) return false;
+
+  if (hash_mode != NULL) *hash_mode = MDXFIND_HASH_MODE_FROM_ID (mdxfind_id);
+
+  return true;
+}
 
 static bool attack_mode_uses_whole_candidate_rules (const u32 attack_mode)
 {
@@ -402,7 +430,6 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
       case IDX_SKIP:
       case IDX_LIMIT:
       case IDX_STATUS_TIMER:
-      case IDX_HASH_MODE:
       case IDX_RUNTIME:
       case IDX_METAL_COMPILER_RUNTIME:
       case IDX_ATTACK_MODE:
@@ -444,6 +471,17 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
       if (hc_string_is_digit (optarg) == false)
       {
         event_log_error (hashcat_ctx, "The specified parameter cannot use '%s' as a value - must be a number.", optarg);
+
+        return -1;
+      }
+
+      break;
+
+      case IDX_HASH_MODE:
+
+      if ((hc_string_is_digit (optarg) == false) && (mdxfind_hash_mode_parse (optarg, NULL) == false))
+      {
+        event_log_error (hashcat_ctx, "The specified parameter cannot use '%s' as a hash-mode.", optarg);
 
         return -1;
       }
@@ -518,7 +556,10 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
       case IDX_LOOPBACK:                  user_options->loopback                  = true;                            break;
       case IDX_SESSION:                   user_options->session                   = optarg;
                                           user_options->session_chgd              = true;                            break;
-      case IDX_HASH_MODE:                 user_options->hash_mode                 = hc_strtoul (optarg, NULL, 10);
+      case IDX_HASH_MODE:                 if (mdxfind_hash_mode_parse (optarg, &user_options->hash_mode) == false)
+                                          {
+                                            user_options->hash_mode = hc_strtoul (optarg, NULL, 10);
+                                          }
                                           user_options->hash_mode_chgd            = true;                            break;
       case IDX_RUNTIME:                   user_options->runtime                   = hc_strtoul (optarg, NULL, 10);
                                           user_options->runtime_chgd              = true;                            break;
