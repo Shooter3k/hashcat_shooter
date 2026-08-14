@@ -4,49 +4,59 @@
 
 This is hashcat_shooter based on the latest GitHub master, with the local
 beta improvements ported forward. It is compiled on Windows using the MSYS2
-MinGW64 toolchain. The steps below reproduce how hashcat.exe is built.
+MinGW64 toolchain. The steps below work with a fresh clone in any directory.
 
 ------------------------------------------------------------------------
  PREREQUISITES (one-time)
 ------------------------------------------------------------------------
-- MSYS2 installed at:  M:\msys64
-- The MinGW64 toolchain + build tools installed inside MSYS2. If you ever
-  need to (re)install them, open the "MSYS2 MSYS" shell and run:
+- Install MSYS2 from https://www.msys2.org/ and finish its initial update.
+- Open the "MSYS2 MINGW64" shell. Do not use the plain MSYS, UCRT64, MINGW32,
+  or CLANG shells: the package names and compiler target below are for
+  64-bit MinGW Windows builds.
+- Update MSYS2, restarting the shell and repeating the command if requested:
+
+    pacman -Syu
+
+- Install the compiler, build tools, and the OpenSSL 3 development files used
+  by the mdxfind bridge:
 
     pacman -S --needed \
       mingw-w64-x86_64-gcc \
       mingw-w64-x86_64-make \
+      mingw-w64-x86_64-openssl \
       make git
 
-- Source tree lives at:  M:\github\hashcat_shooter
-  In MSYS2, the M: drive is reached as /m
-  (so this path = /m/github/hashcat_shooter).
+- Clone this repository, not the upstream hashcat repository:
+
+    git clone https://github.com/Shooter3k/hashcat_shooter.git
+    cd hashcat_shooter
+
+  OpenSSL is linked statically into bridge_mdxfind.dll. Builders need the
+  package above, but users of the resulting Windows build do not need a
+  separate OpenSSL DLL.
 
 - CUDA is loaded at RUN time (not needed to compile). The compiled .exe
   finds CUDA via the NVIDIA driver at runtime.
 
 ------------------------------------------------------------------------
- BUILD (the normal way - run from a Windows PowerShell prompt)
+ BUILD (the normal way - from the MSYS2 MINGW64 shell)
 ------------------------------------------------------------------------
-This is the exact command used to build. It launches an MSYS2 MinGW64
-login shell, changes into the source dir, and runs a parallel make:
+From the repository directory, run:
 
-    $env:MSYSTEM='MINGW64'; & 'M:\msys64\usr\bin\bash.exe' -lc 'cd /m/github/hashcat_shooter && make PRODUCTION=1 -j 2>&1 | tail -20; echo RC=${PIPESTATUS[0]}'
+    make PRODUCTION=1 -j
 
 Notes:
-- $env:MSYSTEM='MINGW64'  selects the MinGW64 environment (so gcc =
-  the mingw64 compiler that produces native Windows .exe files).
 - make PRODUCTION=1 -j builds using all CPU cores and embeds the dated shooter
   version instead of a dirty-tree Git description.
-- RC=0 printed at the end means the build succeeded. Any other value
-  means it failed - scroll up in the output for the first error.
+- A zero exit status means the build succeeded. For a failure, diagnose the
+  first error in the complete output rather than only the final message.
 - IMPORTANT: after editing include/types.h, use the CLEAN REBUILD below.
   This Makefile does not track every header dependency; an incremental build
   can mix incompatible structure layouts and produce an access-violation
   crash. Editing only a .c file can use the normal incremental build.
 
 Output binary:
-    M:\github\hashcat_shooter\hashcat.exe
+    hashcat.exe in the repository root
 
 Version format:
     v7.1.2-shooter.YYYYMMDD.REVISION
@@ -128,6 +138,9 @@ The optimized high-throughput plaintext/stdout release reports:
 The outfile-check-dir status distinction release reports:
     v7.1.2-shooter.20260814.27
 
+The portable third-party Windows build release reports:
+    v7.1.2-shooter.20260814.28
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:
@@ -135,23 +148,26 @@ revision on the same date. For a one-off build, it can also be overridden:
     make SHOOTER_BUILD_REVISION=5 -j
 
 ------------------------------------------------------------------------
- BUILD (alternative - from inside an MSYS2 MinGW64 shell directly)
+ BUILD (optional - launch the build from PowerShell)
 ------------------------------------------------------------------------
-1. Launch the shell:  M:\msys64\mingw64.exe
-   (this is the "MSYS2 MinGW x64" shortcut)
+Set these two paths for your machine. The default MSYS2 installation directory
+is C:\msys64; the repository can be anywhere:
 
-2. Then run:
+    $MsysRoot = 'C:\msys64'
+    $Repo = 'C:\path\to\hashcat_shooter'
+    $RepoMsys = (& "$MsysRoot\usr\bin\cygpath.exe" -u $Repo).Trim()
+    $env:MSYSTEM = 'MINGW64'
+    & "$MsysRoot\usr\bin\bash.exe" -lc "cd '$RepoMsys' && make PRODUCTION=1 -j"
 
-    cd /m/github/hashcat_shooter
-    make PRODUCTION=1 -j
+The cygpath conversion makes this work for repositories on any drive.
 
 ------------------------------------------------------------------------
  CLEAN REBUILD (from scratch)
 ------------------------------------------------------------------------
-If a build behaves oddly or you want a guaranteed-fresh binary, clean
-first, then build:
+If a build behaves oddly or you want a guaranteed-fresh binary, run this from
+the repository directory in the MSYS2 MINGW64 shell:
 
-    $env:MSYSTEM='MINGW64'; & 'M:\msys64\usr\bin\bash.exe' -lc 'cd /m/github/hashcat_shooter && make clean && make PRODUCTION=1 -j 2>&1 | tail -20; echo RC=${PIPESTATUS[0]}'
+    make clean && make PRODUCTION=1 -j
 
 WARNING: this repository's make clean target removes more than obj/ artifacts.
 It also removes the built executable and runtime files in the source root,
@@ -162,43 +178,46 @@ running it. Normal .restore files are not removed by make clean.
 ------------------------------------------------------------------------
  RUNNING WHAT YOU BUILT (quick sanity check)
 ------------------------------------------------------------------------
-Run from PowerShell. Put the MinGW64 runtime DLLs on PATH first so the
-exe launches, then let it find CUDA via the NVIDIA driver:
+Run from PowerShell. Set the same paths used above, put the MinGW64 runtime
+DLLs on PATH, and run from the repository directory:
 
-    $env:PATH = "M:\msys64\mingw64\bin;$env:PATH"
-    M:\github\hashcat_shooter\hashcat.exe --version
-    M:\github\hashcat_shooter\hashcat.exe -I
-    M:\github\hashcat_shooter\hashcat.exe --help  # confirm mode 1 says Combination and official mode 12 is present
+    $MsysRoot = 'C:\msys64'
+    $Repo = 'C:\path\to\hashcat_shooter'
+    $env:PATH = "$MsysRoot\mingw64\bin;$env:PATH"
+    Set-Location $Repo
+    .\hashcat.exe --version
+    .\hashcat.exe -I
+    .\hashcat.exe --help  # confirm mode 1 says Combination and official mode 12 is present
 
 Quick tests for multi-file mode 1 are documented in:
-    M:\github\hashcat_shooter\docs\multi-file-combination.md
+    docs\multi-file-combination.md
 
 Whole-candidate rule support for modes 1, 3, 6, 7, and 8 is
 documented in:
-    M:\github\hashcat_shooter\docs\whole-candidate-rules.md
+    docs\whole-candidate-rules.md
 
 Interactive runtime extend/lower controls are documented in:
-    M:\github\hashcat_shooter\docs\runtime-controls.md
+    docs\runtime-controls.md
 
 Legacy yescrypt mode 67000 compatibility is documented in:
-    M:\github\hashcat_shooter\docs\mode-67000.md
+    docs\mode-67000.md
 
 RTX 4090 persisted-autotune behavior, invalidation, and cache reset are
 documented in:
-    M:\github\hashcat_shooter\RTX_4090_AUTOTUNE_CACHE.md
+    RTX_4090_AUTOTUNE_CACHE.md
 
 The automatic 12 x RTX 4090 startup optimizations, candidate-staging memory
 limit, measurements, and environment-variable overrides are documented in:
-    M:\github\hashcat_shooter\docs\startup-optimization.md
+    docs\startup-optimization.md
 
 Multi-GPU checkpoint enable, cancel, and restore behavior is documented in:
-    M:\github\hashcat_shooter\docs\checkpoint-control.md
+    docs\checkpoint-control.md
 
 Resumable --stdout pause, checkpoint, and restore behavior is documented in:
-    M:\github\hashcat_shooter\docs\stdout-sessions.md
+    docs\stdout-sessions.md
 
 The runtime cache is written beside hashcat.exe as:
-    M:\github\hashcat_shooter\hashcat.autotune-cache
+    hashcat.autotune-cache beside hashcat.exe
 
 It is generated automatically and ignored by Git. A rebuilt hashcat.exe gets
 a new build identifier, so old entries are not reused.
@@ -208,8 +227,15 @@ shell. Launching it from MSYS2 bash strips the Windows PATH and it will
 report "No CUDA platform found".
 
 ------------------------------------------------------------------------
- TROUBLESHOOTING
+TROUBLESHOOTING
 ------------------------------------------------------------------------
+- "fatal error: openssl/des.h: No such file or directory" (or another
+  openssl/*.h header):
+    The mdxfind bridge's build dependency is missing from the active MinGW64
+    environment. Open the MSYS2 MINGW64 shell and run:
+        pacman -S --needed mingw-w64-x86_64-openssl
+    Confirm that `command -v gcc` prints /mingw64/bin/gcc, then rerun make.
+
 - "No CUDA platform found" at runtime:
     You launched from MSYS2 bash. Run it from PowerShell instead (see above).
 
@@ -235,4 +261,4 @@ report "No CUDA platform found".
 
 - Spurious ">: empty file." keyspace errors on tiny test wordlists:
     Delete the stale dictionary cache and rerun:
-        Remove-Item M:\github\hashcat_shooter\hashcat.dictstat2 -Force
+        Remove-Item "$Repo\hashcat.dictstat2" -Force

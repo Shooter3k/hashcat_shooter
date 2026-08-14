@@ -1,5 +1,35 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260814.28
+
+Portable Windows build setup for fresh third-party clones.
+
+### Fixed
+
+- Declared the `mingw-w64-x86_64-openssl` build dependency required by the
+  mdxfind bridge in both Windows build guides and the GitHub Actions MSYS2
+  environment. This resolves clean-build failures for missing
+  `openssl/des.h`, `openssl/sha.h`, and the static crypto library.
+- Replaced machine-specific `M:\...` paths with reusable MSYS2 and PowerShell
+  instructions that work with repositories on any drive.
+- Corrected the MSYS2 guide to clone `Shooter3k/hashcat_shooter` instead of
+  upstream hashcat, and corrected the documented MinGW runtime DLL name and
+  location.
+- Documented that OpenSSL is statically linked into the Windows mdxfind
+  bridge, so the development package is required to build but no separate
+  OpenSSL runtime DLL is required by the release package.
+
+### Verified
+
+- Rebuilt the Windows production executable and confirmed it reports
+  `v7.1.2-shooter.20260814.28`.
+- Confirmed the documented MSYS2 OpenSSL package exists and supplies the
+  headers and static archive used by the bridge.
+- Exercised the documented PowerShell-to-MSYS path conversion against a
+  repository on a non-system drive.
+- Confirmed the existing `bridge_mdxfind.dll` target is current and ran
+  `git diff --check` successfully.
+
 ## v7.1.2-shooter.20260813.25
 
 Visible Pure Kernel selection in the interactive status display.

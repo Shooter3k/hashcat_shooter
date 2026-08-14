@@ -304,20 +304,25 @@ preserved in [CHANGELOG.md](CHANGELOG.md).
 
 Download the
 [latest Shooter release](https://github.com/Shooter3k/hashcat_shooter/releases/latest)
-or build it locally using [how_to_compile.txt](how_to_compile.txt). The normal
-Windows production build is:
+or build it locally using [how_to_compile.txt](how_to_compile.txt). After
+installing the documented dependencies, the normal Windows production build
+from an MSYS2 MINGW64 shell is:
 
-```powershell
-$env:MSYSTEM='MINGW64'
-& 'M:\msys64\usr\bin\bash.exe' -lc 'cd /m/github/hashcat_shooter && make PRODUCTION=1 -j'
+```sh
+git clone https://github.com/Shooter3k/hashcat_shooter.git
+cd hashcat_shooter
+make PRODUCTION=1 -j
 ```
 
 Run the resulting executable from PowerShell with the MinGW64 runtime on
-`PATH`:
+`PATH`, adjusting the two paths for your machine:
 
 ```powershell
-$env:PATH = "M:\msys64\mingw64\bin;$env:PATH"
-M:\github\hashcat_shooter\hashcat.exe --version
+$MsysRoot = 'C:\msys64'
+$Repo = 'C:\path\to\hashcat_shooter'
+$env:PATH = "$MsysRoot\mingw64\bin;$env:PATH"
+Set-Location $Repo
+.\hashcat.exe --version
 ```
 
 Use this software only on passwords and systems you own or are explicitly

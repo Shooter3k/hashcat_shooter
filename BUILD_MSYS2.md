@@ -23,8 +23,13 @@ Tested on Windows 11 23H2 x64
 
      ```sh
      export _GW="mingw-w64-x86_64"
-     pacman -S --needed git make gcc libiconv-devel python3 $_GW-clang $_GW-rustup $_GW-toolchain $_GW-llvm $_GW-lld
+     pacman -S --needed git make gcc libiconv-devel python3 \
+       $_GW-clang $_GW-rustup $_GW-toolchain $_GW-llvm $_GW-lld $_GW-openssl
      ```
+
+   `$_GW-openssl` supplies the OpenSSL 3 headers and static crypto library
+   required by the mdxfind bridge. The resulting bridge does not require a
+   separate OpenSSL DLL at runtime.
 
 5. **Ensure MinGW toolchain is first on PATH for this session:**
 
@@ -40,11 +45,11 @@ Tested on Windows 11 23H2 x64
 
 ## Build
 
-1. **Fetch the latest hashcat source code from GitHub:**
+1. **Fetch the latest hashcat_shooter source code from GitHub:**
 
    ```sh
-   git clone https://github.com/hashcat/hashcat.git ~/hashcat
-   cd $_
+   git clone https://github.com/Shooter3k/hashcat_shooter.git
+   cd hashcat_shooter
    ```
 
 2. **Compile:**
@@ -73,12 +78,13 @@ Tested on Windows 11 23H2 x64
 
 ### Running outside the MSYS2 shell (portable setup)
 
-Copy the dependent DLLs next to `hashcat.exe`. Two common ones are:
+If you do not want to add `/mingw64/bin` to `PATH`, copy the dependent DLLs
+reported by the tools below next to `hashcat.exe`. A standard build commonly
+needs:
 
-* `msys-iconv-2.dll`
-* `msys-2.0.dll`
+* `libiconv-2.dll`
 
-(these can be found in `msys64/usr/bin`)
+(this can be found in `msys64/mingw64/bin`)
 
 To verify which dependencies are missing:
 
