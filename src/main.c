@@ -10,6 +10,11 @@
 #include <getopt.h>
 #include <unistd.h>
 
+#if defined (_WIN)
+#include <windows.h>
+#include <shellapi.h>
+#endif
+
 #include "types.h"
 #include "user_options.h"
 #include "usage.h"
@@ -28,6 +33,138 @@
 
 #if defined (__MINGW64__) || defined (__MINGW32__)
 int _dowildcard = -1;
+#endif
+
+#if defined (_WIN)
+
+static int    main_argc_utf8 = 0;
+static char **main_argv_utf8 = NULL;
+
+static void main_argv_utf8_destroy (void)
+{
+  for (int i = 0; i < main_argc_utf8; i++) free (main_argv_utf8[i]);
+
+  free (main_argv_utf8);
+}
+
+static int main_argv_utf8_init (int *argc, char ***argv)
+{
+  int argc_wide = 0;
+
+  LPWSTR *argv_wide = CommandLineToArgvW (GetCommandLineW (), &argc_wide);
+
+  if (argv_wide == NULL) return -1;
+
+  char **argv_utf8 = (char **) calloc (argc_wide + 1, sizeof (char *));
+
+  if (argv_utf8 == NULL)
+  {
+    LocalFree (argv_wide);
+
+    return -1;
+  }
+
+  for (int i = 0; i < argc_wide; i++)
+  {
+    const int utf8_size = WideCharToMultiByte (CP_UTF8, WC_ERR_INVALID_CHARS, argv_wide[i], -1, NULL, 0, NULL, NULL);
+
+    if (utf8_size == 0)
+    {
+      for (int j = 0; j < i; j++) free (argv_utf8[j]);
+
+      free (argv_utf8);
+
+      LocalFree (argv_wide);
+
+      return -1;
+    }
+
+    argv_utf8[i] = (char *) malloc (utf8_size);
+
+    if (argv_utf8[i] == NULL)
+    {
+      for (int j = 0; j < i; j++) free (argv_utf8[j]);
+
+      free (argv_utf8);
+
+      LocalFree (argv_wide);
+
+      return -1;
+    }
+
+    if (WideCharToMultiByte (CP_UTF8, WC_ERR_INVALID_CHARS, argv_wide[i], -1, argv_utf8[i], utf8_size, NULL, NULL) == 0)
+    {
+      for (int j = 0; j <= i; j++) free (argv_utf8[j]);
+
+      free (argv_utf8);
+
+      LocalFree (argv_wide);
+
+      return -1;
+    }
+  }
+
+  // MinGW expands wildcard arguments before main(). CommandLineToArgvW() does
+  // not, so retain the CRT argv when replacing it would undo that expansion.
+  bool keep_crt_argv = (argc_wide != *argc);
+
+  if (keep_crt_argv == false)
+  {
+    for (int i = 0; i < argc_wide; i++)
+    {
+      bool has_wildcard = false;
+
+      for (const wchar_t *ptr = argv_wide[i]; *ptr != 0; ptr++)
+      {
+        if ((*ptr == L'*') || (*ptr == L'?'))
+        {
+          has_wildcard = true;
+
+          break;
+        }
+      }
+
+      if ((has_wildcard == true) && (strcmp (argv_utf8[i], (*argv)[i]) != 0))
+      {
+        keep_crt_argv = true;
+
+        break;
+      }
+    }
+  }
+
+  if (keep_crt_argv == true)
+  {
+    for (int i = 0; i < argc_wide; i++) free (argv_utf8[i]);
+
+    free (argv_utf8);
+
+    LocalFree (argv_wide);
+
+    return 0;
+  }
+
+  LocalFree (argv_wide);
+
+  main_argc_utf8 = argc_wide;
+  main_argv_utf8 = argv_utf8;
+
+  if (atexit (main_argv_utf8_destroy) != 0)
+  {
+    main_argv_utf8_destroy ();
+
+    main_argc_utf8 = 0;
+    main_argv_utf8 = NULL;
+
+    return -1;
+  }
+
+  *argc = argc_wide;
+  *argv = argv_utf8;
+
+  return 0;
+}
+
 #endif
 
 // Most attacks with an interactive prompt read their base candidates through the mask or generic
@@ -1442,6 +1579,15 @@ static void event (const u32 id, hashcat_ctx_t *hashcat_ctx, const void *buf, co
 
 int main (int argc, char **argv)
 {
+#if defined (_WIN)
+  if (main_argv_utf8_init (&argc, &argv) == -1)
+  {
+    fprintf (stderr, "Failed to convert the Windows command line to UTF-8.\n");
+
+    return -1;
+  }
+#endif
+
   // this increases the size on windows dos boxes
 
   setup_console ();

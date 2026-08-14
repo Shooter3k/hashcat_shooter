@@ -1306,12 +1306,30 @@ int _old_apply_rule (const char *rule, int rule_len, char in[RP_PASSWORD_SIZE], 
 
       case RULE_OP_MANGLE_APPEND:
         NEXT_RULEPOS (rule_pos);
-        out_len = mangle_append (out, out_len, rule_new[rule_pos]);
+        {
+          const u32 utf8_len = rule_utf8_char_len ((const u8 *) rule_new, rule_len_new, rule_pos);
+
+          for (u32 j = 0; j < utf8_len; j++)
+          {
+            out_len = mangle_append (out, out_len, rule_new[rule_pos + j]);
+          }
+
+          rule_pos += utf8_len - 1;
+        }
         break;
 
       case RULE_OP_MANGLE_PREPEND:
         NEXT_RULEPOS (rule_pos);
-        out_len = mangle_prepend (out, out_len, rule_new[rule_pos]);
+        {
+          const u32 utf8_len = rule_utf8_char_len ((const u8 *) rule_new, rule_len_new, rule_pos);
+
+          for (u32 j = utf8_len; j > 0; j--)
+          {
+            out_len = mangle_prepend (out, out_len, rule_new[rule_pos + j - 1]);
+          }
+
+          rule_pos += utf8_len - 1;
+        }
         break;
 
       case RULE_OP_MANGLE_DELETE_FIRST:
@@ -1348,21 +1366,48 @@ int _old_apply_rule (const char *rule, int rule_len, char in[RP_PASSWORD_SIZE], 
         NEXT_RULEPOS (rule_pos);
         NEXT_RPTOI (rule_new, rule_pos, upos);
         NEXT_RULEPOS (rule_pos);
-        out_len = mangle_insert (out, out_len, upos, rule_new[rule_pos]);
+        {
+          const u32 utf8_len = rule_utf8_char_len ((const u8 *) rule_new, rule_len_new, rule_pos);
+
+          for (u32 j = utf8_len; j > 0; j--)
+          {
+            out_len = mangle_insert (out, out_len, upos, rule_new[rule_pos + j - 1]);
+          }
+
+          rule_pos += utf8_len - 1;
+        }
         break;
 
       case RULE_OP_MANGLE_INSERT_EVERY:
         NEXT_RULEPOS (rule_pos);
         NEXT_RPTOI (rule_new, rule_pos, upos);
         NEXT_RULEPOS (rule_pos);
-        out_len = mangle_insert_every (out, out_len, upos, rule_new[rule_pos]);
+        {
+          const u32 utf8_len = rule_utf8_char_len ((const u8 *) rule_new, rule_len_new, rule_pos);
+
+          for (u32 j = 0; j < utf8_len; j++)
+          {
+            out_len = mangle_insert_every (out, out_len, upos + j, rule_new[rule_pos + j]);
+          }
+
+          rule_pos += utf8_len - 1;
+        }
         break;
 
       case RULE_OP_MANGLE_OVERSTRIKE:
         NEXT_RULEPOS (rule_pos);
         NEXT_RPTOI (rule_new, rule_pos, upos);
         NEXT_RULEPOS (rule_pos);
-        out_len = mangle_overstrike (out, out_len, upos, rule_new[rule_pos]);
+        {
+          const u32 utf8_len = rule_utf8_char_len ((const u8 *) rule_new, rule_len_new, rule_pos);
+
+          for (u32 j = 0; j < utf8_len; j++)
+          {
+            out_len = mangle_overstrike (out, out_len, upos + j, rule_new[rule_pos + j]);
+          }
+
+          rule_pos += utf8_len - 1;
+        }
         break;
 
       case RULE_OP_MANGLE_TRUNCATE_AT:

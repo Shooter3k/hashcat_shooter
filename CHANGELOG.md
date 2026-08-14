@@ -1,5 +1,48 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260814.31
+
+Native UTF-8 literal rules and reliable Windows loopback induction.
+
+### Added
+
+- Added native UTF-8 literals for the byte-emitting `$`, `^`, `i`, `v`, and
+  `o` rule functions. Two-, three-, and four-byte UTF-8 characters are
+  compiled into the equivalent existing byte instructions on both host and
+  GPU rule paths.
+- Accepted an optional UTF-8 BOM at the start of rule files and converted the
+  native Windows wide command line to UTF-8 so literal `-j` and `-k` rules and
+  Unicode paths reach the parser without ANSI code-page loss.
+- Added `multibyte-test.rule` with 26 ready-to-run examples covering two-,
+  three-, and four-byte UTF-8 operands, each supported emitting function, and
+  chained rules.
+
+### Compatibility
+
+- Existing ASCII and `\xNN` rules are unchanged. Rule positions and all other
+  transforms remain byte-oriented; this does not make case conversion,
+  deletion, replacement, purge, or rejection Unicode-code-point operations.
+
+### Fixed
+
+- Closed per-round wordlist feeds before deleting consumed loopback induction
+  files. Windows previously kept those files memory-mapped, so deletion failed
+  silently and `--loopback` rediscovered the same files indefinitely.
+- Made induction cleanup report and stop on deletion errors, release scan
+  allocations between generations, remove unneeded files when every hash is
+  cracked, and preserve the active induction file on abort or quit.
+
+### Verified
+
+- Completed a full Windows production build and confirmed the executable
+  reports `v7.1.2-shooter.20260814.31`.
+- Confirmed literal two-, three-, and four-byte operands on host and GPU rule
+  paths, UTF-8 BOM input, Windows inline rules, legacy `\xNN` rules, and the
+  existing Windows wildcard expansion behavior.
+- Ran bounded ASCII (`seed` to `seed111`) and UTF-8 (`test` to `testééé`)
+  loopback cascades. Both recovered three generations, exited normally, and
+  left zero files in their induction directories.
+
 ## v7.1.2-shooter.20260814.30
 
 Self-contained Windows build bootstrap for fresh clones.

@@ -1,3 +1,19 @@
+# UTF-8 literal operands (hashcat_shooter)
+#
+# UTF-8 rule files may use a literal multibyte character with the byte-emitting
+# $, ^, i, v, and o functions. The loader expands the encoded bytes into the
+# equivalent legacy byte operations for both host and GPU rule paths. Example:
+#
+#   $ä       is equivalent to:  $\xc3 $\xa4
+#   ^😀      is equivalent to:  ^\x80 ^\x98 ^\x9f ^\xf0
+#
+# An optional UTF-8 BOM is accepted at the beginning of each rule file.
+# Literal UTF-8 operands also work with -j and -k, including on Windows.
+# The repository's multibyte-test.rule contains 26 ready-to-run examples.
+# Positions and all other rule functions remain byte-oriented. In particular,
+# case conversion, deletion, replacement, purge, and rejection do not become
+# Unicode-code-point operations.
+#
 #define RULE_OP_MANGLE_NOOP              ':'  // does nothing
 #define RULE_OP_MANGLE_LREST             'l'  // lower case all chars
 #define RULE_OP_MANGLE_UREST             'u'  // upper case all chars

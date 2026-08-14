@@ -6,7 +6,7 @@ and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
 The current release is
-[`v7.1.2-shooter.20260814.30`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260814.30).
+[`v7.1.2-shooter.20260814.31`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260814.31).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -69,6 +69,18 @@ Shooter mode numbered 12 is not restored; official mode 12 has different
 syntax and behavior. See
 [docs/hashcat-generic-attack-mode.md](docs/hashcat-generic-attack-mode.md) for
 the complete upstream syntax and restrictions.
+
+### UTF-8 literal rule operands
+
+UTF-8 rule files can use literal multibyte characters with the byte-emitting
+`$`, `^`, `i`, `v`, and `o` functions. Shooter compiles those literals into
+the equivalent per-byte instructions for both host and GPU rule paths, and
+accepts an optional UTF-8 BOM at the beginning of a rule file. Positions and
+other transformations remain byte-oriented. Inline `-j` and `-k` literals
+work on Windows too because Shooter converts the native wide command line to
+UTF-8 before option parsing. See [docs/rules.txt](docs/rules.txt) for examples
+and the exact scope. A ready-to-run set of 26 two-, three-, and four-byte test
+rules is included in [multibyte-test.rule](multibyte-test.rule).
 
 ### Multi-file mode 1 and whole-candidate rules
 
@@ -188,6 +200,7 @@ share stdin with the interactive menu. Full behavior and limitations are in
 | Transient Windows outfile recovery | When `-o` is temporarily denied or locked, startup validation and result-time append opens retry every 250 ms for up to 5 seconds. After an exhausted window, a 30-second cooldown prevents repeated five-second stalls while later results still get an immediate open attempt. The successful path remains a single open with no retry delay. |
 | Buffered stdout outfile recovery | The same outfile-open helper is used for normal recovered results and buffered `--stdout` output directed through `-o`. |
 | Resumable stdout output | `--stdout -o` checkpoints bind the candidate position to an exact outfile byte boundary and roll back any partial tail before restore. Interactive controls and messages use stderr. |
+| Reliable Windows loopback induction | Per-round wordlist feeds release their mappings before consumed loopback files are deleted. A deletion failure is reported and stops the run instead of silently rediscovering the same induction dictionary forever; successful and fully cracked runs remove their consumed loopback files, while abort and quit states preserve the active file for recovery. |
 | Visible quit progress | Pressing `q` or `Q` reports candidate-dispatch and GPU-kernel drain, GPU-worker completion, session-service shutdown, GPU-resource release, and final restore/session-file finalization instead of leaving the console apparently idle. |
 | Accurate combinator status | Two-wordlist `-a 1` runs with whole-candidate `-r`/`-g` rules report the actual left and right wordlist paths instead of a `(null)` feed label. |
 | Total elapsed time | The final summary now prints `Total Time` calculated from the displayed `Started` and `Stopped` timestamps. |
@@ -296,6 +309,11 @@ includes:
 - Exact two-wordlist `-a 1 -r` status reproduction using the reported input
   files, plus deterministic candidate-output checks for ruled two- and
   three-wordlist attacks and the unchanged native two-wordlist path.
+- UTF-8 literal rule tests covering two-, three-, and four-byte operands on
+  host and GPU rule paths, BOM-prefixed rule files, Windows inline `-j`/`-k`,
+  legacy `\xNN` syntax, and Windows wildcard argument compatibility.
+- Bounded ASCII and UTF-8 loopback cascades that each recovered three
+  generations, exited normally, and left no consumed induction files behind.
 
 These numbers describe the recorded hardware, driver state, and workloads;
 they are not universal performance guarantees. The test-by-test evidence is

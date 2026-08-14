@@ -442,6 +442,15 @@ int generic_ctx_base_round (hashcat_ctx_t *hashcat_ctx, const char *path)
   return rc;
 }
 
+// Release a per-round base feed before its induction dictionary is removed.
+// POSIX permits unlinking a mapped file, but Windows does not permit deleting
+// the file until the wordlist feed has unmapped it and closed its handle.
+
+void generic_ctx_base_round_close (hashcat_ctx_t *hashcat_ctx)
+{
+  generic_instance_destroy (hashcat_ctx, &hashcat_ctx->generic_ctx[GENERIC_ROLE_BASE]);
+}
+
 // Read and throw away the first count base words, so that a source which cannot be seeked still
 // starts where --skip or --restore says.
 //

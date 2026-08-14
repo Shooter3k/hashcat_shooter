@@ -662,19 +662,59 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
 
     while (induct_ctx->induction_dictionaries_cnt)
     {
+      bool stop_induction = false;
+
       for (induct_ctx->induction_dictionaries_pos = 0; induct_ctx->induction_dictionaries_pos < induct_ctx->induction_dictionaries_cnt; induct_ctx->induction_dictionaries_pos++)
       {
         if (status_ctx->devices_status == STATUS_EXHAUSTED)
         {
-          if (inner2_loop (hashcat_ctx) == -1) myabort (hashcat_ctx);
+          const int rc_inner2 = inner2_loop (hashcat_ctx);
 
-          if (status_ctx->run_main_level3 == false) break;
+          // A per-round wordlist feed still has this induction dictionary
+          // mapped here. Close it before unlinking, which is required on
+          // Windows and harmless on platforms that allow unlink-while-open.
+
+          generic_ctx_base_round_close (hashcat_ctx);
+
+          straight_ctx->dict = NULL;
+
+          if (rc_inner2 == -1)
+          {
+            induct_ctx_scan_free (hashcat_ctx);
+
+            return -1;
+          }
+
+          // A fully cracked hash list no longer needs either the consumed
+          // input or any loopback output it produced. Abort and quit states,
+          // however, preserve the current induction file for recovery.
+
+          if ((status_ctx->run_main_level3 == false) && (status_ctx->devices_status != STATUS_CRACKED))
+          {
+            stop_induction = true;
+
+            break;
+          }
         }
 
-        unlink (induct_ctx->induction_dictionaries[induct_ctx->induction_dictionaries_pos]);
+        const char *induction_dictionary = induct_ctx->induction_dictionaries[induct_ctx->induction_dictionaries_pos];
+
+        if (unlink (induction_dictionary) == -1)
+        {
+          event_log_error (hashcat_ctx, "Failed to remove consumed induction dictionary %s: %s", induction_dictionary, strerror (errno));
+
+          induct_ctx_scan_free (hashcat_ctx);
+
+          return -1;
+        }
       }
 
-      hcfree (induct_ctx->induction_dictionaries);
+      if (stop_induction == true)
+      {
+        induct_ctx_scan_free (hashcat_ctx);
+
+        break;
+      }
 
       induct_ctx_scan (hashcat_ctx);
     }

@@ -124,6 +124,8 @@ void induct_ctx_scan (hashcat_ctx_t *hashcat_ctx)
 
   if (induct_ctx->enabled == false) return;
 
+  induct_ctx_scan_free (hashcat_ctx);
+
   induct_ctx->induction_dictionaries = scan_directory (induct_ctx->root_directory);
 
   induct_ctx->induction_dictionaries_cnt = count_dictionaries (induct_ctx->induction_dictionaries);
@@ -131,11 +133,32 @@ void induct_ctx_scan (hashcat_ctx_t *hashcat_ctx)
   qsort (induct_ctx->induction_dictionaries, (size_t) induct_ctx->induction_dictionaries_cnt, sizeof (char *), sort_by_mtime);
 }
 
+void induct_ctx_scan_free (hashcat_ctx_t *hashcat_ctx)
+{
+  induct_ctx_t *induct_ctx = hashcat_ctx->induct_ctx;
+
+  if (induct_ctx->induction_dictionaries != NULL)
+  {
+    for (int i = 0; i < induct_ctx->induction_dictionaries_cnt; i++)
+    {
+      hcfree (induct_ctx->induction_dictionaries[i]);
+    }
+
+    hcfree (induct_ctx->induction_dictionaries);
+  }
+
+  induct_ctx->induction_dictionaries     = NULL;
+  induct_ctx->induction_dictionaries_cnt = 0;
+  induct_ctx->induction_dictionaries_pos = 0;
+}
+
 void induct_ctx_destroy (hashcat_ctx_t *hashcat_ctx)
 {
   induct_ctx_t *induct_ctx = hashcat_ctx->induct_ctx;
 
   if (induct_ctx->enabled == false) return;
+
+  induct_ctx_scan_free (hashcat_ctx);
 
   if (rmdir (induct_ctx->root_directory) == -1)
   {

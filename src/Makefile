@@ -7,7 +7,7 @@ SHARED                  ?= 0
 DEBUG                   := 0
 PRODUCTION              := 0
 SHOOTER_BUILD_DATE      ?= $(shell date +%Y%m%d)
-SHOOTER_BUILD_REVISION  ?= 30
+SHOOTER_BUILD_REVISION  ?= 31
 PRODUCTION_VERSION      := v7.1.2-shooter.$(SHOOTER_BUILD_DATE).$(SHOOTER_BUILD_REVISION)
 MACOS_UNIVERSAL_BINARY  ?= 0
 ENABLE_LTO              ?= 0
@@ -601,6 +601,7 @@ LFLAGS_NATIVE           += -lpsapi
 LFLAGS_NATIVE           += -liconv
 LFLAGS_NATIVE           += -lws2_32
 LFLAGS_NATIVE           += -lpowrprof
+LFLAGS_NATIVE           += -lshell32
 endif # MSYS2
 
 # CCFLAGS only for C compiler
@@ -1181,7 +1182,7 @@ LFLAGS_CROSS_WIN        += -static-libgcc
 ifeq ($(CC_WIN_CLANG),0)
 LFLAGS_CROSS_WIN        += -static-libstdc++
 endif
-LFLAGS_CROSS_WIN        += -lole32 -loleaut32 -lwbemuuid
+LFLAGS_CROSS_WIN        += -lole32 -loleaut32 -lwbemuuid -lshell32
 
 ifeq ($(ENABLE_LTO),1)
 ifeq ($(CC_WIN_CLANG),1)

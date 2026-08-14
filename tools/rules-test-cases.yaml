@@ -914,3 +914,53 @@ e-:
     A-Bc
     Ab-C
     Abc
+
+$é:
+  input: |
+    test
+
+  expected_cpu: |
+    testé
+
+  expected_opencl: |
+    testé
+
+^😀:
+  input: |
+    test
+
+  expected_cpu: |
+    😀test
+
+  expected_opencl: |
+    😀test
+
+i2€:
+  input: |
+    test
+
+  expected_cpu: |
+    te€st
+
+  expected_opencl: |
+    te€st
+
+v2é:
+  input: |
+    test
+
+  expected_cpu: |
+    teésté
+
+  expected_opencl: |
+    teésté
+
+o1é:
+  input: |
+    t__t
+
+  expected_cpu: |
+    tét
+
+  expected_opencl: |
+    tét

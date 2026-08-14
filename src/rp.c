@@ -267,6 +267,60 @@ bool is_hex_notation (const char *rule_buf, u32 rule_len, u32 rule_pos)
   return true;
 }
 
+u32 rule_utf8_char_len (const u8 *rule_buf, const u32 rule_len, const u32 rule_pos)
+{
+  if (rule_pos >= rule_len) return 0;
+
+  const u8 c0 = rule_buf[rule_pos];
+
+  if (c0 < 0x80) return 1;
+
+  if ((c0 >= 0xc2) && (c0 <= 0xdf))
+  {
+    if ((rule_pos + 2) > rule_len) return 1;
+
+    const u8 c1 = rule_buf[rule_pos + 1];
+
+    if ((c1 >= 0x80) && (c1 <= 0xbf)) return 2;
+
+    return 1;
+  }
+
+  if ((c0 >= 0xe0) && (c0 <= 0xef))
+  {
+    if ((rule_pos + 3) > rule_len) return 1;
+
+    const u8 c1 = rule_buf[rule_pos + 1];
+    const u8 c2 = rule_buf[rule_pos + 2];
+
+    if ((c2 < 0x80) || (c2 > 0xbf)) return 1;
+
+    if (c0 == 0xe0) return ((c1 >= 0xa0) && (c1 <= 0xbf)) ? 3 : 1;
+    if (c0 == 0xed) return ((c1 >= 0x80) && (c1 <= 0x9f)) ? 3 : 1;
+
+    return ((c1 >= 0x80) && (c1 <= 0xbf)) ? 3 : 1;
+  }
+
+  if ((c0 >= 0xf0) && (c0 <= 0xf4))
+  {
+    if ((rule_pos + 4) > rule_len) return 1;
+
+    const u8 c1 = rule_buf[rule_pos + 1];
+    const u8 c2 = rule_buf[rule_pos + 2];
+    const u8 c3 = rule_buf[rule_pos + 3];
+
+    if ((c2 < 0x80) || (c2 > 0xbf)) return 1;
+    if ((c3 < 0x80) || (c3 > 0xbf)) return 1;
+
+    if (c0 == 0xf0) return ((c1 >= 0x90) && (c1 <= 0xbf)) ? 4 : 1;
+    if (c0 == 0xf4) return ((c1 >= 0x80) && (c1 <= 0x8f)) ? 4 : 1;
+
+    return ((c1 >= 0x80) && (c1 <= 0xbf)) ? 4 : 1;
+  }
+
+  return 1;
+}
+
 int cpu_rule_to_kernel_rule (char *rule_buf, u32 rule_len, kernel_rule_t *rule)
 {
   u32 rule_pos;
@@ -339,14 +393,52 @@ int cpu_rule_to_kernel_rule (char *rule_buf, u32 rule_len, kernel_rule_t *rule)
         break;
 
       case RULE_OP_MANGLE_APPEND:
-        SET_NAME (rule, rule_buf[rule_pos]);
-        SET_P0   (rule, rule_buf[rule_pos]);
+      {
+        const u32 utf8_len = rule_utf8_char_len ((const u8 *) rule_buf, rule_len, rule_pos + 1);
+
+        if (utf8_len > 1)
+        {
+          if ((rule_cnt + utf8_len) > MAX_KERNEL_RULES) return -1;
+
+          for (u32 j = 0; j < utf8_len; j++)
+          {
+            rule->cmds[rule_cnt + j] = RULE_OP_MANGLE_APPEND | ((rule_buf[rule_pos + 1 + j] & 0xff) << 8);
+          }
+
+          rule_pos += utf8_len;
+          rule_cnt += utf8_len - 1;
+        }
+        else
+        {
+          SET_NAME (rule, rule_buf[rule_pos]);
+          SET_P0   (rule, rule_buf[rule_pos]);
+        }
         break;
+      }
 
       case RULE_OP_MANGLE_PREPEND:
-        SET_NAME (rule, rule_buf[rule_pos]);
-        SET_P0   (rule, rule_buf[rule_pos]);
+      {
+        const u32 utf8_len = rule_utf8_char_len ((const u8 *) rule_buf, rule_len, rule_pos + 1);
+
+        if (utf8_len > 1)
+        {
+          if ((rule_cnt + utf8_len) > MAX_KERNEL_RULES) return -1;
+
+          for (u32 j = 0; j < utf8_len; j++)
+          {
+            rule->cmds[rule_cnt + j] = RULE_OP_MANGLE_PREPEND | ((rule_buf[rule_pos + utf8_len - j] & 0xff) << 8);
+          }
+
+          rule_pos += utf8_len;
+          rule_cnt += utf8_len - 1;
+        }
+        else
+        {
+          SET_NAME (rule, rule_buf[rule_pos]);
+          SET_P0   (rule, rule_buf[rule_pos]);
+        }
         break;
+      }
 
       case RULE_OP_MANGLE_DELETE_FIRST:
         SET_NAME (rule, rule_buf[rule_pos]);
@@ -374,22 +466,103 @@ int cpu_rule_to_kernel_rule (char *rule_buf, u32 rule_len, kernel_rule_t *rule)
         break;
 
       case RULE_OP_MANGLE_INSERT:
-        SET_NAME    (rule, rule_buf[rule_pos]);
-        SET_P0_CONV (rule, rule_buf[rule_pos]);
-        SET_P1      (rule, rule_buf[rule_pos]);
+      {
+        if ((rule_pos + 1) >= rule_len) return -1;
+
+        const int insert_pos = conv_ctoi (rule_buf[rule_pos + 1]);
+
+        if (insert_pos < 0) return -1;
+
+        const u32 utf8_len = rule_utf8_char_len ((const u8 *) rule_buf, rule_len, rule_pos + 2);
+
+        if (utf8_len > 1)
+        {
+          if ((rule_cnt + utf8_len) > MAX_KERNEL_RULES) return -1;
+
+          for (u32 j = 0; j < utf8_len; j++)
+          {
+            rule->cmds[rule_cnt + j] = RULE_OP_MANGLE_INSERT
+                                     | ((insert_pos & 0xff) << 8)
+                                     | ((rule_buf[rule_pos + 1 + utf8_len - j] & 0xff) << 16);
+          }
+
+          rule_pos += utf8_len + 1;
+          rule_cnt += utf8_len - 1;
+        }
+        else
+        {
+          SET_NAME    (rule, rule_buf[rule_pos]);
+          SET_P0_CONV (rule, rule_buf[rule_pos]);
+          SET_P1      (rule, rule_buf[rule_pos]);
+        }
         break;
+      }
 
       case RULE_OP_MANGLE_INSERT_EVERY:
-        SET_NAME    (rule, rule_buf[rule_pos]);
-        SET_P0_CONV (rule, rule_buf[rule_pos]);
-        SET_P1      (rule, rule_buf[rule_pos]);
+      {
+        if ((rule_pos + 1) >= rule_len) return -1;
+
+        const int insert_pos = conv_ctoi (rule_buf[rule_pos + 1]);
+
+        if (insert_pos < 0) return -1;
+
+        const u32 utf8_len = rule_utf8_char_len ((const u8 *) rule_buf, rule_len, rule_pos + 2);
+
+        if (utf8_len > 1)
+        {
+          if ((rule_cnt + utf8_len) > MAX_KERNEL_RULES) return -1;
+
+          for (u32 j = 0; j < utf8_len; j++)
+          {
+            rule->cmds[rule_cnt + j] = RULE_OP_MANGLE_INSERT_EVERY
+                                     | (((insert_pos + j) & 0xff) << 8)
+                                     | ((rule_buf[rule_pos + 2 + j] & 0xff) << 16);
+          }
+
+          rule_pos += utf8_len + 1;
+          rule_cnt += utf8_len - 1;
+        }
+        else
+        {
+          SET_NAME    (rule, rule_buf[rule_pos]);
+          SET_P0_CONV (rule, rule_buf[rule_pos]);
+          SET_P1      (rule, rule_buf[rule_pos]);
+        }
         break;
+      }
 
       case RULE_OP_MANGLE_OVERSTRIKE:
-        SET_NAME    (rule, rule_buf[rule_pos]);
-        SET_P0_CONV (rule, rule_buf[rule_pos]);
-        SET_P1      (rule, rule_buf[rule_pos]);
+      {
+        if ((rule_pos + 1) >= rule_len) return -1;
+
+        const int overstrike_pos = conv_ctoi (rule_buf[rule_pos + 1]);
+
+        if (overstrike_pos < 0) return -1;
+
+        const u32 utf8_len = rule_utf8_char_len ((const u8 *) rule_buf, rule_len, rule_pos + 2);
+
+        if (utf8_len > 1)
+        {
+          if ((rule_cnt + utf8_len) > MAX_KERNEL_RULES) return -1;
+
+          for (u32 j = 0; j < utf8_len; j++)
+          {
+            rule->cmds[rule_cnt + j] = RULE_OP_MANGLE_OVERSTRIKE
+                                     | (((overstrike_pos + j) & 0xff) << 8)
+                                     | ((rule_buf[rule_pos + 2 + j] & 0xff) << 16);
+          }
+
+          rule_pos += utf8_len + 1;
+          rule_cnt += utf8_len - 1;
+        }
+        else
+        {
+          SET_NAME    (rule, rule_buf[rule_pos]);
+          SET_P0_CONV (rule, rule_buf[rule_pos]);
+          SET_P1      (rule, rule_buf[rule_pos]);
+        }
         break;
+      }
 
       case RULE_OP_MANGLE_TRUNCATE_AT:
         SET_NAME    (rule, rule_buf[rule_pos]);
@@ -935,6 +1108,20 @@ int kernel_rules_load (hashcat_ctx_t *hashcat_ctx, kernel_rule_t **out_buf, u32 
     while (!hc_feof (&fp))
     {
       rule_len = (u32) fgetl (&fp, rule_buf, HCBUFSIZ_LARGE);
+
+      if ((rule_line == 0) && (rule_len >= 3))
+      {
+        const u8 *rule_ptr = (const u8 *) rule_buf;
+
+        if ((rule_ptr[0] == 0xef) && (rule_ptr[1] == 0xbb) && (rule_ptr[2] == 0xbf))
+        {
+          rule_len -= 3;
+
+          memmove (rule_buf, rule_buf + 3, rule_len);
+
+          rule_buf[rule_len] = 0;
+        }
+      }
 
       if (rule_line == (u32) -1)
       {
