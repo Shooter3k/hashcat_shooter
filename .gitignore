@@ -38,6 +38,13 @@ include/CL
 tools/luks_tests
 tools/luks2_tests
 .vscode
+.build-tools/
+
+# MinGW runtime DLLs copied beside hashcat.exe by build-windows.ps1
+/libgcc_s_seh-1.dll
+/libiconv-2.dll
+/libstdc++-6.dll
+/libwinpthread-1.dll
 test_edge*
 
 # tools/test.sh names its working directory test_<unix timestamp> and leaves it in the repository

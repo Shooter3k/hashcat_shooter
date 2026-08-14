@@ -1,5 +1,45 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260814.30
+
+Self-contained Windows build bootstrap for fresh clones.
+
+### Added
+
+- Added `build-windows.ps1`, a one-command PowerShell build entry point that
+  downloads a checksum-verified official MSYS2 base into the repository's
+  ignored `.build-tools` cache and performs the required full MSYS2 upgrade.
+- Installed the complete repo-local Windows dependency set: GCC, Clang/LLVM,
+  LLD, Rust, Make, Git, OpenSSL, and iconv. Nothing is installed into Windows
+  and the system `PATH` is not changed.
+- Added `Build`, `Rebuild`, and `Clean` actions, configurable parallel jobs,
+  and an explicit toolchain-update option.
+
+### Fixed
+
+- Selected Rust's `x86_64-pc-windows-gnu` toolchain explicitly and kept its
+  Cargo and rustup state inside the local MSYS2 tree. This avoids accidentally
+  selecting the incompatible MSVC ABI or relying on a developer's global Rust
+  installation.
+- Invoked the stable Cargo toolchain directly and ordered MinGW ahead of Rust
+  runtime DLLs so bindgen can load the repo-local `libclang.dll` and build the
+  Rust bridges reliably.
+- Copied the required MinGW runtime DLLs beside `hashcat.exe` after a build and
+  made that operation safe when an identical DLL is temporarily locked by an
+  endpoint-security product or another process.
+- Updated the manual MSYS2 dependency list to match the wrapper and documented
+  disk-space, execution-policy, and endpoint-security considerations.
+
+### Verified
+
+- Bootstrapped the toolchain from an absent `.build-tools` directory using
+  only the files and commands documented in the repository.
+- Completed a clean Windows production rebuild of the C core, modules,
+  mdxfind bridge, Rust bridge DLLs, and Rust feed using the target-local
+  toolchain.
+- Confirmed the resulting executable reports
+  `v7.1.2-shooter.20260814.30`.
+
 ## v7.1.2-shooter.20260814.29
 
 High-throughput cracked-result streaming for very large result sets.

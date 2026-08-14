@@ -7,7 +7,45 @@ beta improvements ported forward. It is compiled on Windows using the MSYS2
 MinGW64 toolchain. The steps below work with a fresh clone in any directory.
 
 ------------------------------------------------------------------------
- PREREQUISITES (one-time)
+ RECOMMENDED: REPO-LOCAL WINDOWS BUILD
+------------------------------------------------------------------------
+From PowerShell in the repository directory, run:
+
+    .\build-windows.ps1
+
+If the machine's execution policy blocks local scripts, use a process-only
+bypass. This does not change the machine or user policy:
+
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-windows.ps1
+
+The first run downloads a checksum-pinned official MSYS2 base and installs GCC,
+Clang/LLVM, Rust, Make, Git, OpenSSL, and iconv under .build-tools inside this
+checkout. It does not run an installer, change the system PATH, or install
+packages into Windows. The cache is ignored by Git and can be deleted when it
+is no longer needed. Allow at least 5 GB of disk space for it.
+
+Some endpoint-security products inspect or quarantine compiler toolchains. If
+the download, extraction, or build is blocked, review the product's alert and,
+if your policy permits, allow this checkout's .build-tools directory. Do not
+disable protection system-wide. The MSYS2 base download is verified against the
+SHA-256 checksum recorded in build-windows.ps1 before it is extracted.
+
+The wrapper builds a Windows production binary, puts the required MinGW runtime
+DLLs beside hashcat.exe, and verifies the result with hashcat.exe --version.
+Later builds reuse the local toolchain.
+
+Useful variants:
+
+    .\build-windows.ps1 -Action Rebuild
+    .\build-windows.ps1 -Jobs 4
+    .\build-windows.ps1 -UpdateToolchain
+    .\build-windows.ps1 -Action Clean
+
+Rebuild and Clean invoke the repository's make clean target. Read the warning
+in the CLEAN REBUILD section before using either action.
+
+------------------------------------------------------------------------
+ MANUAL PREREQUISITES (one-time, system-wide alternative)
 ------------------------------------------------------------------------
 - Install MSYS2 from https://www.msys2.org/ and finish its initial update.
 - Open the "MSYS2 MINGW64" shell. Do not use the plain MSYS, UCRT64, MINGW32,
@@ -17,14 +55,26 @@ MinGW64 toolchain. The steps below work with a fresh clone in any directory.
 
     pacman -Syu
 
-- Install the compiler, build tools, and the OpenSSL 3 development files used
-  by the mdxfind bridge:
+- Install the compiler, Clang/LLVM (used by Rust bindgen), Rust, build tools,
+  and the OpenSSL 3 development files used by the mdxfind bridge:
 
     pacman -S --needed \
+      mingw-w64-x86_64-clang \
       mingw-w64-x86_64-gcc \
+      mingw-w64-x86_64-lld \
+      mingw-w64-x86_64-llvm \
       mingw-w64-x86_64-make \
       mingw-w64-x86_64-openssl \
+      mingw-w64-x86_64-libiconv \
+      mingw-w64-x86_64-rustup \
       make git
+
+- Select Rust's MinGW-compatible GNU toolchain explicitly. Plain
+  "rustup default stable" can select the incompatible MSVC toolchain:
+
+    rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal
+    rustup default stable-x86_64-pc-windows-gnu
+    rustup target add x86_64-pc-windows-gnu
 
 - Clone this repository, not the upstream hashcat repository:
 
@@ -143,6 +193,9 @@ The portable third-party Windows build release reports:
 
 The high-throughput cracked-result streaming release reports:
     v7.1.2-shooter.20260814.29
+
+The self-contained repo-local Windows build release reports:
+    v7.1.2-shooter.20260814.30
 
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published

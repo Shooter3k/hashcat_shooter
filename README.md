@@ -6,7 +6,7 @@ and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
 The current release is
-[`v7.1.2-shooter.20260814.29`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260814.29).
+[`v7.1.2-shooter.20260814.30`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260814.30).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -305,26 +305,40 @@ preserved in [CHANGELOG.md](CHANGELOG.md).
 
 Download the
 [latest Shooter release](https://github.com/Shooter3k/hashcat_shooter/releases/latest)
-or build it locally using [how_to_compile.txt](how_to_compile.txt). After
-installing the documented dependencies, the normal Windows production build
-from an MSYS2 MINGW64 shell is:
-
-```sh
-git clone https://github.com/Shooter3k/hashcat_shooter.git
-cd hashcat_shooter
-make PRODUCTION=1 -j
-```
-
-Run the resulting executable from PowerShell with the MinGW64 runtime on
-`PATH`, adjusting the two paths for your machine:
+or build it locally. On Windows, the recommended build uses a disposable
+toolchain stored inside the checkout:
 
 ```powershell
-$MsysRoot = 'C:\msys64'
-$Repo = 'C:\path\to\hashcat_shooter'
-$env:PATH = "$MsysRoot\mingw64\bin;$env:PATH"
-Set-Location $Repo
-.\hashcat.exe --version
+git clone https://github.com/Shooter3k/hashcat_shooter.git
+cd hashcat_shooter
+.\build-windows.ps1
 ```
+
+If local script execution is restricted, use a process-only bypass (it does
+not change the machine or user execution policy):
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-windows.ps1
+```
+
+The first run downloads a checksum-pinned official MSYS2 base and the required
+packages into `.build-tools`. Allow at least 5 GB of free disk space. It does
+not install anything into Windows or change the system `PATH`. The cache is
+ignored by Git and can be deleted after the build. The wrapper also copies the
+required runtime DLLs beside the executable and checks its version.
+
+For a clean rebuild:
+
+```powershell
+.\build-windows.ps1 -Action Rebuild
+```
+
+The traditional system-wide MSYS2 MINGW64 workflow remains supported. See
+[how_to_compile.txt](how_to_compile.txt) for both approaches, dependency
+details, cache location, and clean-build warnings.
+
+The resulting `hashcat.exe` can be run directly from the repository because
+its MinGW runtime DLLs are copied beside it.
 
 Use this software only on passwords and systems you own or are explicitly
 authorized to audit.
