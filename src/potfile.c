@@ -249,6 +249,35 @@ void potfile_write_close (hashcat_ctx_t *hashcat_ctx)
   hc_fclose (&potfile_ctx->fp);
 }
 
+void potfile_write_batch_start (hashcat_ctx_t *hashcat_ctx)
+{
+  const hashconfig_t *hashconfig  = hashcat_ctx->hashconfig;
+  potfile_ctx_t      *potfile_ctx = hashcat_ctx->potfile_ctx;
+
+  if (potfile_ctx->enabled == false) return;
+
+  if (hashconfig->potfile_disable == true) return;
+
+  hc_lockfile (&potfile_ctx->fp);
+}
+
+void potfile_write_batch_stop (hashcat_ctx_t *hashcat_ctx)
+{
+  const hashconfig_t *hashconfig  = hashcat_ctx->hashconfig;
+  potfile_ctx_t      *potfile_ctx = hashcat_ctx->potfile_ctx;
+
+  if (potfile_ctx->enabled == false) return;
+
+  if (hashconfig->potfile_disable == true) return;
+
+  hc_fflush (&potfile_ctx->fp);
+
+  if (hc_unlockfile (&potfile_ctx->fp))
+  {
+    event_log_error (hashcat_ctx, "%s: Failed to unlock file.", potfile_ctx->filename);
+  }
+}
+
 void potfile_write_append (hashcat_ctx_t *hashcat_ctx, const char *out_buf, const int out_len, u8 *plain_ptr, unsigned int plain_len)
 {
   const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
@@ -299,18 +328,8 @@ void potfile_write_append (hashcat_ctx_t *hashcat_ctx, const char *out_buf, cons
     }
   }
 
-  tmp_buf[tmp_len] = 0;
-
-  hc_lockfile (&potfile_ctx->fp);
-
-  hc_fprintf (&potfile_ctx->fp, "%s" EOL, tmp_buf);
-
-  hc_fflush (&potfile_ctx->fp);
-
-  if (hc_unlockfile (&potfile_ctx->fp))
-  {
-    event_log_error (hashcat_ctx, "%s: Failed to unlock file.", potfile_ctx->filename);
-  }
+  hc_fwrite (tmp_buf, tmp_len, 1, &potfile_ctx->fp);
+  hc_fwrite (EOL, strlen (EOL), 1, &potfile_ctx->fp);
 }
 
 void potfile_update_hash (hashcat_ctx_t *hashcat_ctx, hash_t *found, char *line_pw_buf, int line_pw_len)

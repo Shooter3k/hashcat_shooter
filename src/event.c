@@ -38,9 +38,12 @@ void event_call (const u32 id, hashcat_ctx_t *hashcat_ctx, const void *buf, cons
     hc_thread_mutex_unlock (event_ctx->mux_event);
   }
 
-  // add more back logs in case user wants to access them
+  // add more back logs in case user wants to access them. Cracked-result
+  // events are deliberately excluded: callers still receive every callback,
+  // but retaining and shifting ten prior results for every crack adds a hot
+  // O(MAX_OLD_EVENTS) memory path to very large result sets.
 
-  if (is_log == false)
+  if (is_log == false && id != EVENT_CRACKER_HASH_CRACKED)
   {
     for (int i = MAX_OLD_EVENTS - 1; i >= 1; i--)
     {

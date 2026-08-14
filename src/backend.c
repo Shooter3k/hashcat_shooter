@@ -1032,44 +1032,61 @@ int gidd_to_pw_t (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, c
   pw_idx.cnt = 0;
   pw_idx.len = 0;
 
-  if (device_param->is_cuda == true)
+  // The candidate pipeline keeps the batch being launched checked out until
+  // run_cracker() (including check_cracked()) returns. pws_idx and pws_comp
+  // are therefore the exact host buffers uploaded for this gid. Use them
+  // when available instead of doing two tiny device copies and two stream
+  // synchronizations for every cracked result.
+
+  const bool host_batch_available = (device_param->pws_idx  != NULL)
+                                 && (device_param->pws_comp != NULL)
+                                 && (gidd < device_param->pws_cnt);
+
+  if (host_batch_available == true)
   {
-    if (hc_cuCtxPushCurrent (hashcat_ctx, device_param->cuda_context) == -1) return -1;
-
-    if (hc_cuMemcpyDtoH (hashcat_ctx, &pw_idx, device_param->cuda_d_pws_idx + (gidd * sizeof (pw_idx_t)), sizeof (pw_idx_t)) == -1) return -1;
-
-    if (hc_cuStreamSynchronize (hashcat_ctx, device_param->cuda_stream) == -1) return -1;
+    pw_idx = device_param->pws_idx[gidd];
   }
-
-  if (device_param->is_hip == true)
+  else
   {
-    if (hc_hipSetDevice (hashcat_ctx, device_param->hip_device) == -1) return -1;
+    if (device_param->is_cuda == true)
+    {
+      if (hc_cuCtxPushCurrent (hashcat_ctx, device_param->cuda_context) == -1) return -1;
 
-    if (hc_hipMemcpyDtoH (hashcat_ctx, &pw_idx, device_param->hip_d_pws_idx + (gidd * sizeof (pw_idx_t)), sizeof (pw_idx_t)) == -1) return -1;
+      if (hc_cuMemcpyDtoH (hashcat_ctx, &pw_idx, device_param->cuda_d_pws_idx + (gidd * sizeof (pw_idx_t)), sizeof (pw_idx_t)) == -1) return -1;
 
-    if (hc_hipStreamSynchronize (hashcat_ctx, device_param->hip_stream) == -1) return -1;
-  }
+      if (hc_cuStreamSynchronize (hashcat_ctx, device_param->cuda_stream) == -1) return -1;
+    }
 
-  #if defined (__APPLE__)
-  if (device_param->is_metal == true)
-  {
-    if (hc_mtlMemcpyDtoH (hashcat_ctx, device_param->metal_device, device_param->metal_command_queue, &pw_idx, device_param->metal_d_pws_idx, gidd * sizeof (pw_idx_t), sizeof (pw_idx_t)) == -1) return -1;
-  }
-  #endif
+    if (device_param->is_hip == true)
+    {
+      if (hc_hipSetDevice (hashcat_ctx, device_param->hip_device) == -1) return -1;
 
-  if (device_param->is_opencl == true)
-  {
-    /* blocking */
-    if (hc_clEnqueueReadBuffer (hashcat_ctx, device_param->opencl_command_queue, device_param->opencl_d_pws_idx, CL_TRUE, gidd * sizeof (pw_idx_t), sizeof (pw_idx_t), &pw_idx, 0, NULL, NULL) == -1) return -1;
+      if (hc_hipMemcpyDtoH (hashcat_ctx, &pw_idx, device_param->hip_d_pws_idx + (gidd * sizeof (pw_idx_t)), sizeof (pw_idx_t)) == -1) return -1;
+
+      if (hc_hipStreamSynchronize (hashcat_ctx, device_param->hip_stream) == -1) return -1;
+    }
+
+    #if defined (__APPLE__)
+    if (device_param->is_metal == true)
+    {
+      if (hc_mtlMemcpyDtoH (hashcat_ctx, device_param->metal_device, device_param->metal_command_queue, &pw_idx, device_param->metal_d_pws_idx, gidd * sizeof (pw_idx_t), sizeof (pw_idx_t)) == -1) return -1;
+    }
+    #endif
+
+    if (device_param->is_opencl == true)
+    {
+      /* blocking */
+      if (hc_clEnqueueReadBuffer (hashcat_ctx, device_param->opencl_command_queue, device_param->opencl_d_pws_idx, CL_TRUE, gidd * sizeof (pw_idx_t), sizeof (pw_idx_t), &pw_idx, 0, NULL, NULL) == -1) return -1;
+    }
   }
 
   const u32 off = pw_idx.off;
   const u32 cnt = pw_idx.cnt;
   const u32 len = pw_idx.len;
 
-  // Everything above came out of device memory, and cnt is about to be used as the length of a copy
-  // INTO pw->i, which holds exactly 64 words. Nothing guarantees what was read is a candidate this
-  // run put there: the status display asks for one from its own thread while the cracking thread is
+  // cnt is about to be used as the length of a copy INTO pw->i, which holds exactly 64 words. On the
+  // fallback path nothing guarantees what was read from device memory is a candidate this run put
+  // there: the status display asks for one from its own thread while the cracking thread may be
   // uploading the next batch over the top of it, and a torn read gives an arbitrary cnt.
   //
   // Unbounded, that is not a wrong candidate on the status line, it is a DMA write of cnt * 4 bytes
@@ -1090,31 +1107,38 @@ int gidd_to_pw_t (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, c
 
   if (cnt > 0)
   {
-    if (device_param->is_cuda == true)
+    if (host_batch_available == true)
     {
-      if (hc_cuMemcpyDtoH (hashcat_ctx, pw->i, device_param->cuda_d_pws_comp_buf + (off * sizeof (u32)), cnt * sizeof (u32)) == -1) return -1;
-
-      if (hc_cuStreamSynchronize (hashcat_ctx, device_param->cuda_stream) == -1) return -1;
+      memcpy (pw->i, device_param->pws_comp + off, cnt * sizeof (u32));
     }
-
-    if (device_param->is_hip == true)
+    else
     {
-      if (hc_hipMemcpyDtoH (hashcat_ctx, pw->i, device_param->hip_d_pws_comp_buf + (off * sizeof (u32)), cnt * sizeof (u32)) == -1) return -1;
+      if (device_param->is_cuda == true)
+      {
+        if (hc_cuMemcpyDtoH (hashcat_ctx, pw->i, device_param->cuda_d_pws_comp_buf + (off * sizeof (u32)), cnt * sizeof (u32)) == -1) return -1;
 
-      if (hc_hipStreamSynchronize (hashcat_ctx, device_param->hip_stream) == -1) return -1;
-    }
+        if (hc_cuStreamSynchronize (hashcat_ctx, device_param->cuda_stream) == -1) return -1;
+      }
 
-    #if defined (__APPLE__)
-    if (device_param->is_metal == true)
-    {
-      if (hc_mtlMemcpyDtoH (hashcat_ctx, device_param->metal_device, device_param->metal_command_queue, pw->i, device_param->metal_d_pws_comp_buf, off * sizeof (u32), cnt * sizeof (u32)) == -1) return -1;
-    }
-    #endif
+      if (device_param->is_hip == true)
+      {
+        if (hc_hipMemcpyDtoH (hashcat_ctx, pw->i, device_param->hip_d_pws_comp_buf + (off * sizeof (u32)), cnt * sizeof (u32)) == -1) return -1;
 
-    if (device_param->is_opencl == true)
-    {
-      /* blocking */
-      if (hc_clEnqueueReadBuffer (hashcat_ctx, device_param->opencl_command_queue, device_param->opencl_d_pws_comp_buf, CL_TRUE, off * sizeof (u32), cnt * sizeof (u32), pw->i, 0, NULL, NULL) == -1) return -1;
+        if (hc_hipStreamSynchronize (hashcat_ctx, device_param->hip_stream) == -1) return -1;
+      }
+
+      #if defined (__APPLE__)
+      if (device_param->is_metal == true)
+      {
+        if (hc_mtlMemcpyDtoH (hashcat_ctx, device_param->metal_device, device_param->metal_command_queue, pw->i, device_param->metal_d_pws_comp_buf, off * sizeof (u32), cnt * sizeof (u32)) == -1) return -1;
+      }
+      #endif
+
+      if (device_param->is_opencl == true)
+      {
+        /* blocking */
+        if (hc_clEnqueueReadBuffer (hashcat_ctx, device_param->opencl_command_queue, device_param->opencl_d_pws_comp_buf, CL_TRUE, off * sizeof (u32), cnt * sizeof (u32), pw->i, 0, NULL, NULL) == -1) return -1;
+      }
     }
   }
 
@@ -1125,7 +1149,7 @@ int gidd_to_pw_t (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, c
 
   pw->pw_len = len;
 
-  if (device_param->is_cuda == true)
+  if (host_batch_available == false && device_param->is_cuda == true)
   {
     if (hc_cuCtxPopCurrent (hashcat_ctx, &device_param->cuda_context) == -1) return -1;
   }

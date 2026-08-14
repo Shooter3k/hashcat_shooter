@@ -1,5 +1,42 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260814.29
+
+High-throughput cracked-result streaming for very large result sets.
+
+### Optimized
+
+- Changed cracked-result outfile handling from one Windows
+  open/lock/write/close cycle per result to bounded batches of 4,096 results.
+  Full stdio buffers continue to reach `-o` while a batch is active, and each
+  bounded batch is explicitly flushed and closed so the outfile remains a
+  live stream and can still be moved or rotated during a run.
+- Batched potfile locking and flushing over the same result windows and
+  replaced formatted string output with length-aware writes. The potfile is
+  still flushed at every batch boundary.
+- Reconstructed cracked plaintexts from the retained host candidate batch
+  that was uploaded for the active launch. This removes two device-to-host
+  copies and two backend stream synchronizations per cracked result while
+  preserving the device fallback used outside an active pipeline batch.
+- Stopped shifting the ten-entry general event history for every cracked
+  result. Event consumers still receive every cracked-result callback.
+
+### Verified
+
+- Rebuilt the Windows production executable and confirmed it reports
+  `v7.1.2-shooter.20260814.29`.
+- On one RTX 4090, a controlled mode-0 workload where all 100,000 candidates
+  crack completed in 7.447 seconds and streamed all 100,000 lines to both the
+  outfile and potfile. The previous executable produced only 1,757 lines in
+  roughly 47 seconds before the baseline was stopped, an observed result-rate
+  improvement of about 360x on this I/O-bound case.
+- Recomputed MD5 for every emitted pair and confirmed 100,000 valid, unique
+  lines with no missing, duplicate, or invalid results. Outfile and potfile
+  content were byte-identical within the run.
+- Confirmed plaintext reconstruction with straight rules, combinator,
+  hybrid, and `--slow-candidates` attacks, and confirmed output with
+  `--outfile-check-dir` enabled.
+
 ## v7.1.2-shooter.20260814.28
 
 Portable Windows build setup for fresh third-party clones.

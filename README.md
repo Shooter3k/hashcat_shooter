@@ -6,7 +6,7 @@ and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
 The current release is
-[`v7.1.2-shooter.20260813.25`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260813.25).
+[`v7.1.2-shooter.20260814.29`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260814.29).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -34,6 +34,7 @@ mode 12 from
 | Faster candidate staging | Initializes the large per-GPU host candidate buffers concurrently, avoids zero-filling data that is overwritten before use, and resets only required metadata between sessions. |
 | Lower startup memory commitment | On the exact Windows 12 x RTX 4090 configuration, the two candidate-pipeline slots are limited to 3072 MiB per GPU by default. This reduced the tested fast-hash host allocation from about 97.7 GB to 36.7 GB. Set `HASHCAT_SHOOTER_HOST_STAGING_MB` to another MiB value, or to `0` for upstream's generic limit. |
 | Parallel large-hashlist sorting | Unsalted lists containing at least 4,194,304 hashes use a stable parallel radix sort instead of the single-threaded comparison sort. It uses up to 64 CPU workers and preserves hashcat's exact digest ordering and duplicate-removal behavior. Smaller and salted lists retain the upstream sorter. |
+| Batched cracked-result streaming | Streams very large crack sets to `-o` and the potfile in bounded 4,096-result batches instead of opening, locking, flushing, and closing files per crack. Cracked plaintexts are rebuilt from the retained host launch batch, avoiding per-result GPU round trips. Outfiles continue to publish full stdio buffers during a batch and are explicitly flushed and closed at every boundary. |
 | Persisted RTX 4090 autotune profiles | Saves successful accel, loops, threads, and timing selections in `hashcat.autotune-cache`; validates them with initialized test launches on later runs; and lets identical 4090s share one profile. This avoids repeating the full tuning search for matching jobs. |
 | Multi-GPU-safe autotune logging | Serializes concurrent cache messages so output from twelve tuning threads retains the correct device number and does not become duplicated or interleaved. |
 | Blowfish compiled-kernel cache | Removes upstream's forced JIT-cache disable for Blowfish-based modes `3200`, `25600`, `25800`, `28400`, `30600`, `30601`, `33800`, and `35500`, allowing their compiled kernels to be cached and reused. |

@@ -718,9 +718,8 @@ int check_hash (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, pla
 
   // outfile, can be either to file or stdout
   // if an error occurs opening the file, send to stdout as fallback
-  // the fp gets opened for each cracked hash so that the user can modify (move) the outfile while hashcat runs
-
-  outfile_write_open (hashcat_ctx);
+  // check_cracked() owns the surrounding output batch so file open, lock,
+  // flush and close are amortized across many cracked hashes.
 
   u8 *tmp_buf = hashes->tmp_buf;
 
@@ -729,8 +728,6 @@ int check_hash (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, pla
   const int tmp_len = outfile_write (hashcat_ctx, (char *) out_buf, out_len, plain_ptr, plain_len, crackpos, NULL, 0, true, (char *) tmp_buf);
 
   EVENT_DATA (EVENT_CRACKER_HASH_CRACKED, tmp_buf, tmp_len);
-
-  outfile_write_close (hashcat_ctx);
 
   // potfile
   // we can have either used-defined hooks or reuse the same format as input format
@@ -949,6 +946,16 @@ int check_cracked (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
 
   u32 cpt_cracked = 0;
 
+  // Keep each batch bounded so -o remains a live stream and users still get
+  // regular opportunities to move or rotate the outfile. The previous path
+  // opened, locked, flushed and closed both result files for every crack,
+  // which dominates fast modes when one launch returns a large result set.
+
+  const u32 write_batch_size = 4096;
+
+  u32  write_batch_cnt  = 0;
+  bool write_batch_open = false;
+
   hc_thread_mutex_lock (status_ctx->mux_display);
 
   for (u32 i = 0; i < num_cracked; i++)
@@ -982,11 +989,32 @@ int check_cracked (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
 
     if (hashes->salts_done == hashes->salts_cnt) mycracked (hashcat_ctx);
 
+    if (write_batch_open == false)
+    {
+      outfile_write_open (hashcat_ctx);
+
+      potfile_write_batch_start (hashcat_ctx);
+
+      write_batch_open = true;
+    }
+
     rc = check_hash (hashcat_ctx, device_param, &cracked[i]);
 
     if (rc == -1)
     {
       break;
+    }
+
+    write_batch_cnt++;
+
+    if (write_batch_cnt == write_batch_size)
+    {
+      potfile_write_batch_stop (hashcat_ctx);
+
+      outfile_write_close (hashcat_ctx);
+
+      write_batch_cnt  = 0;
+      write_batch_open = false;
     }
 
     if (hashconfig->opts_type & OPTS_TYPE_PT_NEVERCRACK)
@@ -1038,6 +1066,13 @@ int check_cracked (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
         }
       }
     }
+  }
+
+  if (write_batch_open == true)
+  {
+    potfile_write_batch_stop (hashcat_ctx);
+
+    outfile_write_close (hashcat_ctx);
   }
 
   hc_thread_mutex_unlock (status_ctx->mux_display);

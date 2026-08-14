@@ -652,7 +652,7 @@ int outfile_open_file (hashcat_ctx_t *hashcat_ctx, HCFILE *fp)
 
   if (outfile_error_retryable (last_error) == true)
   {
-    // Log once per retry window. During the cooldown every cracked result
+    // Log once per retry window. During the cooldown every later output batch
     // still gets one immediate open attempt, but repeated failures neither
     // sleep nor flood the terminal.
 
@@ -660,7 +660,7 @@ int outfile_open_file (hashcat_ctx_t *hashcat_ctx, HCFILE *fp)
     {
       outfile_ctx->retry_after = time (NULL) + OUTFILE_RETRY_COOLDOWN_SEC;
 
-      event_log_error (hashcat_ctx, "%s: %s after %d seconds; continuing without repeated delays and retrying immediately for each later result.", outfile_ctx->filename, strerror (last_error), (OUTFILE_RETRY_COUNT * OUTFILE_RETRY_DELAY_USEC) / 1000000);
+      event_log_error (hashcat_ctx, "%s: %s after %d seconds; continuing without repeated delays and retrying immediately for each later output batch.", outfile_ctx->filename, strerror (last_error), (OUTFILE_RETRY_COUNT * OUTFILE_RETRY_DELAY_USEC) / 1000000);
     }
   }
   else

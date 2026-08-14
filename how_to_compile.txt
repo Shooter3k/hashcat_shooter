@@ -141,6 +141,9 @@ The outfile-check-dir status distinction release reports:
 The portable third-party Windows build release reports:
     v7.1.2-shooter.20260814.28
 
+The high-throughput cracked-result streaming release reports:
+    v7.1.2-shooter.20260814.29
+
 The date is generated automatically when make starts. Increment
 SHOOTER_BUILD_REVISION in src\Makefile when producing another published
 revision on the same date. For a one-off build, it can also be overridden:
