@@ -3874,6 +3874,18 @@ int run_copy (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, const
   }
   #endif
 
+  // Straight --stdout consumes the compressed base-word buffers directly on
+  // the host. Uploading them, running gpu_decompress and copying them back in
+  // process_stdout() only adds a device round trip; there is no kernel launch
+  // that needs the device-side copy.
+
+  if ((user_options->stdout_flag == true)
+   && (user_options->attack_mode == ATTACK_MODE_STRAIGHT)
+   && (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT))
+  {
+    return 0;
+  }
+
   if (user_options->slow_candidates == true)
   {
     if (device_param->is_cuda == true)
@@ -4957,12 +4969,27 @@ static int run_cracker_salt_major (hashcat_ctx_t *hashcat_ctx, hc_device_param_t
         //if ((mask_ctx->bfs_cnt >> 32) != 0) return -1;
       }
 
-      if   (hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL) innerloop_step = device_param->kernel_loops;
-      else                                                        innerloop_step = 1;
-
       if      (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)  innerloop_cnt = straight_ctx->kernel_rules_cnt;
       else if (user_options_extra->attack_kern == ATTACK_KERN_COMBI)     innerloop_cnt = combinator_ctx->combs_cnt;
       else if (user_options_extra->attack_kern == ATTACK_KERN_BF)        innerloop_cnt = mask_ctx->bfs_cnt;
+
+      // --stdout applies straight rules on the host from kernel_rules_buf. There is no device rule
+      // buffer to fill and no kernel launch to protect, so splitting the rules into kernel-sized
+      // chunks only repeats device-to-host word copies, locking and flushes. Process the resident
+      // rule array in one pass instead.
+
+      if ((user_options->stdout_flag == true) && (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT))
+      {
+        innerloop_step = innerloop_cnt;
+      }
+      else if (hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL)
+      {
+        innerloop_step = device_param->kernel_loops;
+      }
+      else
+      {
+        innerloop_step = 1;
+      }
     }
 
     // innerloops
@@ -5009,6 +5036,7 @@ static int run_cracker_salt_major (hashcat_ctx_t *hashcat_ctx, hc_device_param_t
 
       // initialize and copy amplifiers
 
+      if ((user_options->stdout_flag == false) || (user_options_extra->attack_kern != ATTACK_KERN_STRAIGHT))
       {
         u64 amp_rejects = 0;
 
