@@ -1,5 +1,31 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260813.25
+
+Visible Pure Kernel selection in the interactive status display.
+
+### Added
+
+- The complete `Kernel.Feature...: Pure Kernel (password length ... bytes)`
+  status line is now rendered in bright yellow in interactive Windows
+  consoles and ANSI-capable terminals.
+- Optimized Kernel lines retain the normal status color, so the highlight
+  specifically identifies use of a Pure Kernel.
+- Color is applied only by the interactive renderer. Redirected output,
+  logs, API event text, and machine-readable consumers receive the original
+  plain status line without escape sequences or a changed event severity.
+
+### Verified
+
+- Rebuilt the Windows production executable as
+  `v7.1.2-shooter.20260813.25`.
+- Confirmed a CUDA `e355` run selects and reports the Pure Kernel path and
+  cracks its known-answer vector.
+- Confirmed an optimized CUDA MD5 control run selects and reports the
+  Optimized Kernel path and cracks its known-answer vector.
+- Captured the Pure Kernel status through redirected output and confirmed it
+  contains zero escape bytes.
+
 ## v7.1.2-shooter.20260813.24
 
 Documentation and release packaging for the completed mdxfind module

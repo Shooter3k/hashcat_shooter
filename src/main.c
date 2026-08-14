@@ -67,6 +67,17 @@ static void main_log_clear_line (MAYBE_UNUSED const size_t prev_len, MAYBE_UNUSE
   #endif
 }
 
+static bool main_log_is_pure_kernel_feature (const char *msg_buf, const size_t msg_len)
+{
+  static const char pure_kernel_prefix[] = "Kernel.Feature...: Pure Kernel ";
+
+  const size_t prefix_len = sizeof (pure_kernel_prefix) - 1;
+
+  if (msg_len < prefix_len) return false;
+
+  return (memcmp (msg_buf, pure_kernel_prefix, prefix_len) == 0);
+}
+
 static void main_log (hashcat_ctx_t *hashcat_ctx, FILE *fp, const int loglevel)
 {
   event_ctx_t *event_ctx = hashcat_ctx->event_ctx;
@@ -102,11 +113,16 @@ static void main_log (hashcat_ctx_t *hashcat_ctx, FILE *fp, const int loglevel)
 
   // color stuff pre
   const bool is_terminal = (fp == stderr) ? is_stderr_terminal () : is_stdout_terminal ();
+  const bool highlight_pure_kernel = main_log_is_pure_kernel_feature (msg_buf, msg_len);
 
   if (is_terminal == true)
   {
   #if defined (_WIN)
-    switch (loglevel)
+    if (highlight_pure_kernel == true)
+    {
+      SetConsoleTextAttribute (hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+    }
+    else switch (loglevel)
     {
       case LOGLEVEL_INFO:
         break;
@@ -119,7 +135,11 @@ static void main_log (hashcat_ctx_t *hashcat_ctx, FILE *fp, const int loglevel)
     }
 
   #else
-    switch (loglevel)
+    if (highlight_pure_kernel == true)
+    {
+      fwrite ("\033[1;33m", 7, 1, fp);
+    }
+    else switch (loglevel)
     {
       case LOGLEVEL_INFO:                                   break;
       case LOGLEVEL_WARNING: fwrite ("\033[33m", 5, 1, fp); break;
@@ -137,7 +157,11 @@ static void main_log (hashcat_ctx_t *hashcat_ctx, FILE *fp, const int loglevel)
   if (is_terminal == true)
   {
   #if defined (_WIN)
-    switch (loglevel)
+    if (highlight_pure_kernel == true)
+    {
+      SetConsoleTextAttribute (hConsole, orig);
+    }
+    else switch (loglevel)
     {
       case LOGLEVEL_INFO:                                              break;
       case LOGLEVEL_WARNING: SetConsoleTextAttribute (hConsole, orig); break;
@@ -145,7 +169,11 @@ static void main_log (hashcat_ctx_t *hashcat_ctx, FILE *fp, const int loglevel)
       case LOGLEVEL_ADVICE:  SetConsoleTextAttribute (hConsole, orig); break;
     }
   #else
-    switch (loglevel)
+    if (highlight_pure_kernel == true)
+    {
+      fwrite ("\033[0m", 4, 1, fp);
+    }
+    else switch (loglevel)
     {
       case LOGLEVEL_INFO:                                  break;
       case LOGLEVEL_WARNING: fwrite ("\033[0m", 4, 1, fp); break;

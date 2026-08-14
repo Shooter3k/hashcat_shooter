@@ -6,7 +6,7 @@ and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
 The current release is
-[`v7.1.2-shooter.20260813.24`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260813.24).
+[`v7.1.2-shooter.20260813.25`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260813.25).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -190,6 +190,7 @@ share stdin with the interactive menu. Full behavior and limitations are in
 | Visible quit progress | Pressing `q` or `Q` reports candidate-dispatch and GPU-kernel drain, GPU-worker completion, session-service shutdown, GPU-resource release, and final restore/session-file finalization instead of leaving the console apparently idle. |
 | Accurate combinator status | Two-wordlist `-a 1` runs with whole-candidate `-r`/`-g` rules report the actual left and right wordlist paths instead of a `(null)` feed label. |
 | Total elapsed time | The final summary now prints `Total Time` calculated from the displayed `Started` and `Stopped` timestamps. |
+| Visible Pure Kernel selection | Interactive terminals display the `Kernel.Feature...: Pure Kernel` status line in bright yellow, making an unoptimized kernel choice immediately visible. Optimized-kernel lines retain the normal color, and redirected or machine-consumed output remains plain text without ANSI escape codes. |
 | Dated build identity | Production builds report `v7.1.2-shooter.YYYYMMDD.REVISION`, making the binary's source/release generation visible in `hashcat.exe --version`. |
 
 ### Added and compatibility hash modes
