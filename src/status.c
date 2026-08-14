@@ -26,6 +26,7 @@ static const char *const  ST_0003 = "Running";
 static const char *const  ST_0004 = "Paused";
 static const char *const  ST_0005 = "Exhausted";
 static const char *const  ST_0006 = "Cracked";
+static const char *const  ST_0006_OUTCHECK = "cracked from outfile-check-dir";
 static const char *const  ST_0007 = "Aborted";
 static const char *const  ST_0008 = "Quit";
 static const char *const  ST_0009 = "Bypass";
@@ -301,7 +302,9 @@ int status_get_brain_attack (const hashcat_ctx_t *hashcat_ctx)
 
 const char *status_get_status_string (const hashcat_ctx_t *hashcat_ctx)
 {
-  const status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+  const hashes_t       *hashes       = hashcat_ctx->hashes;
+  const outcheck_ctx_t *outcheck_ctx = hashcat_ctx->outcheck_ctx;
+  const status_ctx_t   *status_ctx   = hashcat_ctx->status_ctx;
 
   const int devices_status = status_ctx->devices_status;
 
@@ -338,7 +341,12 @@ const char *status_get_status_string (const hashcat_ctx_t *hashcat_ctx)
     case STATUS_RUNNING:            return ST_0003;
     case STATUS_PAUSED:             return ST_0004;
     case STATUS_EXHAUSTED:          return ST_0005;
-    case STATUS_CRACKED:            return ST_0006;
+    case STATUS_CRACKED:
+      if ((outcheck_ctx->digests_done > 0)
+       && (outcheck_ctx->digests_done == hashes->digests_done)
+       && (hashes->digests_done_new == 0)) return ST_0006_OUTCHECK;
+
+      return ST_0006;
     case STATUS_ABORTED:            return ST_0007;
     case STATUS_QUIT:               return ST_0008;
     case STATUS_BYPASS:             return ST_0009;

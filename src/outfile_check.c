@@ -335,6 +335,8 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
 
             hashes->digests_done++;
 
+            outcheck_ctx->digests_done++;
+
             salt_buf->digests_done++;
 
             if (salt_buf->digests_done == salt_buf->digests_cnt)
@@ -411,6 +413,7 @@ int outcheck_ctx_init (hashcat_ctx_t *hashcat_ctx)
 
   outcheck_ctx->enabled = false;
   outcheck_ctx->keep_going = false;
+  outcheck_ctx->digests_done = 0;
   outcheck_ctx->root_directory = NULL;
 
   if (user_options->backend_info   > 0)    return 0;
@@ -482,5 +485,6 @@ void outcheck_ctx_destroy (hashcat_ctx_t *hashcat_ctx)
 
   outcheck_ctx->enabled = false;
   outcheck_ctx->keep_going = false;
+  outcheck_ctx->digests_done = 0;
   outcheck_ctx->root_directory = NULL;
 }

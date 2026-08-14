@@ -2938,6 +2938,8 @@ typedef struct outcheck_ctx
   bool enabled;
   bool keep_going;
 
+  u32 digests_done;
+
   char *root_directory;
 
   hc_thread_mutex_t mux_keep_going;
