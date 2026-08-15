@@ -1,5 +1,30 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260814.36
+
+Reproducible complete Windows release versioning.
+
+### Fixed
+
+- Pinned the source tree's default production date and revision instead of
+  deriving the release date from the build machine's local clock. Tagged
+  builds, later source rebuilds, `hashcat.exe --version`, the package folder,
+  and the archive filename now retain one identical version across time zones.
+- Added an expected-version gate to `package-windows.ps1`. The release
+  workflow passes its tag to this gate and refuses to upload or publish an
+  archive whose executable version does not exactly match the tag.
+- Superseded `.35`, whose first GitHub-hosted build crossed midnight UTC and
+  consequently stamped its asset as `20260815.35` despite the `20260814.35`
+  tag.
+
+### Verified
+
+- Repeated a clean source build and complete package validation with the
+  pinned `.36` version before publication.
+- The tag-triggered Windows workflow independently clean-builds all binaries,
+  verifies the internal manifest and 7-Zip archive, and publishes exactly one
+  `.7z` release asset.
+
 ## v7.1.2-shooter.20260814.35
 
 Complete source and prebuilt Windows release archives.

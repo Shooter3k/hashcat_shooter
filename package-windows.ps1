@@ -12,6 +12,8 @@ param(
 
   [string] $SevenZipPath = '',
 
+  [string] $ExpectedVersion = '',
+
   [switch] $Force
 )
 
@@ -165,6 +167,10 @@ try {
 
   if (($LASTEXITCODE -ne 0) -or ($Version -notmatch '^v[0-9].+')) {
     throw "The built executable returned an invalid version: $Version"
+  }
+
+  if ((-not [string]::IsNullOrWhiteSpace($ExpectedVersion)) -and ($Version -cne $ExpectedVersion)) {
+    throw "The built executable version '$Version' does not match the expected release version '$ExpectedVersion'."
   }
 
   $Commit = (& $GitPath rev-parse HEAD).Trim()

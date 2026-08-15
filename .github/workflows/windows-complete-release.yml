@@ -21,7 +21,9 @@ jobs:
 
       - name: Build and package the complete Windows distribution
         shell: pwsh
-        run: .\package-windows.ps1 -BuildAction Rebuild -OutputDirectory dist
+        run: |
+          $ExpectedVersion = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME } else { '' }
+          .\package-windows.ps1 -BuildAction Rebuild -OutputDirectory dist -ExpectedVersion $ExpectedVersion
 
       - name: Upload the workflow artifact
         uses: actions/upload-artifact@v4
