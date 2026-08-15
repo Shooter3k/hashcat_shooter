@@ -7636,7 +7636,7 @@
   {
     "mode": "e1001",
     "id": 1001,
-    "name": "CMIYC",
+    "name": "Private retained mode",
     "implementation": "hashcat-29970",
     "hashcat_candidates": [
       29970

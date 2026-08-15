@@ -27,6 +27,9 @@ EXAMPLE_HASH_REPLACEMENTS = {
     "29543": "https://hashcat.net/misc/example_hashes/hashcat_luks_ripemd160_twofish_cbc-plain64_128.txt",
 }
 
+# Retained private modes are intentionally omitted from the published index.
+EXCLUDED_PUBLIC_MODES = {"29960", "29970", "29990", "e1001"}
+
 OPENCL_DIR = "../../OpenCL"
 MODULES_DIR = "../../src/modules"
 TESTS_DIR = "../../tools/test_modules"
@@ -205,8 +208,9 @@ def main():
         name = md_remove_backticks_and_pipes(name)
         example_hash = md_remove_backticks_and_pipes(example_hash)
 
-        row = f"| [`{key}`](/src/modules/module_{zfilled_key}.c) | `{name}`{footnote} | <sup> {opencl_links} </sup> | {test_link} | `{example_hash}` |"
-        table_rows.append(row)
+        if key not in EXCLUDED_PUBLIC_MODES:
+            row = f"| [`{key}`](/src/modules/module_{zfilled_key}.c) | `{name}`{footnote} | <sup> {opencl_links} </sup> | {test_link} | `{example_hash}` |"
+            table_rows.append(row)
 
     # Print the table
     print("\n".join(table_rows))

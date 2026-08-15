@@ -14,8 +14,8 @@ authorized to audit.
 
 ## Improvements at a glance
 
-This is the complete user-visible feature inventory on the current branch.
-Items 14 and 43 came from newer official hashcat work included after the fork;
+This is the public feature inventory for the current branch.
+Items 14 and 39 came from newer official hashcat work included after the fork;
 the other items are Shooter changes. Every item links to a plain-language
 explanation.
 
@@ -50,23 +50,19 @@ explanation.
 29. **[mdxfind names appear consistently throughout hashcat](docs/shooter-enhancements.md#29-public-mdxfind-mode-names)** — help, status, benchmarks, and logs show public `eN` names.
 30. **[mdxfind `e987` accepts Magento Argon2 input](docs/shooter-enhancements.md#30-magento-argon2-input)** — original Magento lines remain intact in output and potfiles.
 31. **[Modes 29950 and 29951 handle phpBB3 legacy rehashes](docs/shooter-enhancements.md#31-phpbb3-bcrypt-over-phpass-modes)** — the complete two-stage hashes run on the GPU.
-32. **[Mode 29960 adds CMIYC 2026 SHA-512](docs/shooter-enhancements.md#32-mode-29960)** — a custom GPU implementation.
-33. **[Mode 29970 adds CMIYC 2026 memory-hard SHA-512](docs/shooter-enhancements.md#33-mode-29970)** — a retained known-good GPU implementation.
-34. **[Mode 29980 adds the supported gost-yescrypt profile](docs/shooter-enhancements.md#34-mode-29980)** — handles libxcrypt-style `$gy$j9T$` hashes.
-35. **[Mode 29990 adds the private CMIYC 2026 mode](docs/shooter-enhancements.md#35-mode-29990)** — a retained memory-hard SHA-512 GPU implementation.
-36. **[Mode 67000 restores legacy yescrypt numbering](docs/shooter-enhancements.md#36-mode-67000)** — old jobs use the maintained mode-36100 implementation.
-37. **[One `.7z` contains both source and a ready-to-run build](docs/shooter-enhancements.md#37-complete-windows-release-archive)** — download one file to run or rebuild Shooter.
-38. **[Release contents can be verified locally](docs/shooter-enhancements.md#38-package-integrity-verification)** — an included script checks the complete SHA-256 manifest.
-39. **[Windows builds bootstrap with one command](docs/shooter-enhancements.md#39-self-bootstrapping-windows-build)** — the compiler toolchain stays inside the repository.
-40. **[Fresh clones build from any drive](docs/shooter-enhancements.md#40-portable-windows-build-instructions)** — no machine-specific `M:\` paths are required.
-41. **[Release versions are reproducible](docs/shooter-enhancements.md#41-reproducible-release-versioning)** — tags, packages, rebuilds, and `--version` stay identical.
-42. **[CMIYC workloads can be split across GPUs](docs/shooter-enhancements.md#42-cmiyc-multi-gpu-sharding)** — the included launcher creates and combines independent shards.
-43. **[Newer official hashcat fixes are included](docs/shooter-enhancements.md#43-newer-upstream-correctness-fixes)** — upstream fixes after the fork are preserved and clearly credited.
-44. **[Huge rule files load across CPU cores](docs/shooter-enhancements.md#44-parallel-rule-file-loading)** — all rule-capable algorithms spend less time waiting at `Loading rules`.
-45. **[`Restore.Sub` status lines are optional](docs/shooter-enhancements.md#45-optional-restoresub-status-lines)** — they stay hidden unless `--status-restore-sub` is requested.
-46. **[Prebuilt releases run on standard x64 CPUs](docs/shooter-enhancements.md#46-portable-prebuilt-windows-binaries)** — release binaries do not inherit the GitHub runner's CPU-only instructions.
-47. **[`--show` and `--left` finish faster on huge lists](docs/shooter-enhancements.md#47-faster-show-and-left)** — large potfiles use narrower lookups, and `-o` jobs skip a redundant full-result copy and sort.
-48. **[Linux builds complete successfully](docs/shooter-enhancements.md#48-working-linux-builds)** — Shooter's mdxfind bridge now links in both static and shared Linux builds.
+32. **[Mode 29980 adds the supported gost-yescrypt profile](docs/shooter-enhancements.md#32-mode-29980)** — handles libxcrypt-style `$gy$j9T$` hashes.
+33. **[Mode 67000 restores legacy yescrypt numbering](docs/shooter-enhancements.md#33-mode-67000)** — old jobs use the maintained mode-36100 implementation.
+34. **[One `.7z` contains both source and a ready-to-run build](docs/shooter-enhancements.md#34-complete-windows-release-archive)** — download one file to run or rebuild Shooter.
+35. **[Release contents can be verified locally](docs/shooter-enhancements.md#35-package-integrity-verification)** — an included script checks the complete SHA-256 manifest.
+36. **[Windows builds bootstrap with one command](docs/shooter-enhancements.md#36-self-bootstrapping-windows-build)** — the compiler toolchain stays inside the repository.
+37. **[Fresh clones build from any drive](docs/shooter-enhancements.md#37-portable-windows-build-instructions)** — no machine-specific `M:\` paths are required.
+38. **[Release versions are reproducible](docs/shooter-enhancements.md#38-reproducible-release-versioning)** — tags, packages, rebuilds, and `--version` stay identical.
+39. **[Newer official hashcat fixes are included](docs/shooter-enhancements.md#39-newer-upstream-correctness-fixes)** — upstream fixes after the fork are preserved and clearly credited.
+40. **[Huge rule files load across CPU cores](docs/shooter-enhancements.md#40-parallel-rule-file-loading)** — all rule-capable algorithms spend less time waiting at `Loading rules`.
+41. **[`Restore.Sub` status lines are optional](docs/shooter-enhancements.md#41-optional-restoresub-status-lines)** — they stay hidden unless `--status-restore-sub` is requested.
+42. **[Prebuilt releases run on standard x64 CPUs](docs/shooter-enhancements.md#42-portable-prebuilt-windows-binaries)** — release binaries do not inherit the GitHub runner's CPU-only instructions.
+43. **[`--show` and `--left` finish faster on huge lists](docs/shooter-enhancements.md#43-faster-show-and-left)** — large potfiles use narrower lookups, and `-o` jobs skip a redundant full-result copy and sort.
+44. **[Linux builds complete successfully](docs/shooter-enhancements.md#44-working-linux-builds)** — Shooter's mdxfind bridge now links in both static and shared Linux builds.
 
 ## Download and run
 

@@ -21,7 +21,11 @@ MANUAL_HASHCAT_MODES = {
     998: 36200,  # Shooter gost-yescrypt mode (mdxfind calls it 46100)
     999: 15100,  # sha1crypt
     1000: 11600, # 7-Zip
-    1001: 29970, # Shooter CMIYC 2026 GPU implementation
+    1001: 29970, # Retained private GPU implementation
+}
+
+PUBLIC_CATALOG_NAMES = {
+    1001: "Private retained mode",
 }
 
 MDXFIND_HASH_MODE_BASE = 90000
@@ -227,7 +231,7 @@ def main() -> int:
             {
                 "mode": f"e{mdxfind_id}",
                 "id": mdxfind_id,
-                "name": name,
+                "name": PUBLIC_CATALOG_NAMES.get(mdxfind_id, name),
                 "implementation": implementation,
                 "hashcat_candidates": candidates,
             }

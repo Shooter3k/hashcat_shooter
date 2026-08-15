@@ -36,7 +36,7 @@ dedicated log mutex so all device numbers remain correct on multi-GPU systems.
 The cache never overrides explicit `-n`, `-u`, or `-T` values or `--force`.
 It covers every GPU cracking attack mode, including modes 11 through 14 and
 `--slow-candidates`; each distinct configuration receives its own key. It is
-disabled for bridges, the non-cracking stdout mode, and the CMIYC modes
+disabled for bridges, the non-cracking stdout mode, and private modes
 29960/29970/29990. A configuration whose accel, loops, and threads are already
 fully fixed is not written because it has no tuning search to avoid.
 

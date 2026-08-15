@@ -14,7 +14,7 @@ The hashcat brain feature uses a client/server architecture. That means that the
 
 It's a network server for a reason. This way we can run multiple hashcat clients ... all using the same hashcat brain. This is great for collaboration with many people involved - plus it stays alive after the client shuts down. (Note, however, that even if you want to only use brain functionality locally, you must run two separate instances of hashcat - one to be the brain server, and one to be the client and perform attacks).
 
-That's it from the technical perspective. It's hard to explain how much potential there is in this, and I'm wondering why I didn't invent this sooner. Maybe it took the Crack Me If You Can password-cracking challenge to realize that we need a feature like this.
+That's it from the technical perspective. It's hard to explain how much potential there is in this, and I'm wondering why I didn't invent this sooner. Maybe it took a large password-cracking challenge to realize that we need a feature like this.
 
 ## Examples
 
@@ -173,7 +173,7 @@ Rejected.........: 82093/100000 (82.09%)
 
 This alone gives `-g` a new role in password cracking. If you've ever attended a password cracking contest, you know how important it is to find the patterns that were used to generate the password candidates. Because finding new patterns using the combination of random-rules and debug-rules is a very efficient way to find new attack vectors.
 
-For example, __Team Hashcat__ managed to crack 188k/300k of the SSHA hashlist from the __2018 CMIYC contest__ - a strong showing. But with random rules, there's a really good chance that you'll discover what you missed. Here's an example of an attack I ran for only few minutes while writing this document:
+For example, __Team Hashcat__ managed to crack 188k/300k of an SSHA challenge hashlist in 2018 - a strong showing. But with random rules, there's a really good chance that you'll discover what you missed. Here's an example of an attack I ran for only few minutes while writing this document:
 
 ```
 $ ./hashcat -z -m 111 c0_111.list.txt wordlist.txt -g 100000 --debug-mode 4
@@ -279,7 +279,7 @@ This was the speed that was the maximum performance of the hashcat brain after t
 Now there's good and bad news about this:
 
 * __Bad:__ This is the total number. Which means, the entire network of all GPUs participating as clients cannot create more than 50kH/s before the bottleneck effect kicks in.
-* __Good:__ Salts come to the rescue. If you have a large salted hashlist - with, for example 300,000 SSHA1 hashes (as in the last Crack Me If You Can) - this means that the real maximum performance that the brain can handle jumps to 15 GH/s. (You can simply multiply the 50kH/s with the number of unique salts of your hashlist.)
+* __Good:__ Salts come to the rescue. If you have a large salted hashlist - with, for example, 300,000 SSHA1 hashes - this means that the real maximum performance that the brain can handle jumps to 15 GH/s. (You can simply multiply the 50kH/s with the number of unique salts of your hashlist.)
 
 Then there's another bottleneck: the network bandwidth required. For those of you who plan to use the brain inside a local network with 100Mbit, you can skip this section entirely. But for those who plan to use the brain in a large group, over VPN or in general over the Internet, keep in mind that a single GPU can create around 5Mbit/s of upstream before bandwidth becomes a bottleneck. That doesn't mean that a hashcat client will stop working - it will just reduce your theoretical maximum cracking performance.
 

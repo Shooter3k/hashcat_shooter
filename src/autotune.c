@@ -95,7 +95,7 @@ static bool autotune_cache_allowed (const hashcat_ctx_t *hashcat_ctx, const hc_d
   if (device_param->device_name == NULL) return false;
   if (strstr (device_param->device_name, "GeForce RTX 4090") == NULL) return false;
 
-  // The CMIYC modes are deliberately outside this general-purpose cache.
+  // These private modes are deliberately outside this general-purpose cache.
 
   if (hashconfig->hash_mode == 29960) return false;
   if (hashconfig->hash_mode == 29970) return false;

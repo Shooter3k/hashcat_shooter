@@ -1,9 +1,9 @@
 # Shooter enhancement details
 
-This page explains every user-visible difference summarized at the beginning
-of the main README. The comparison baseline is upstream hashcat commit
+This page explains every publicly documented difference summarized at the
+beginning of the main README. The comparison baseline is upstream hashcat commit
 [`fdad9f2f7`](https://github.com/hashcat/hashcat/commit/fdad9f2f7bd7ec7f53056727e39331a17514db7c).
-Items 14 and 43 are newer official hashcat work included after that baseline;
+Items 14 and 39 are newer official hashcat work included after that baseline;
 they are not claimed as Shooter-authored features. Release-by-release evidence
 and test results are preserved in [CHANGELOG.md](../CHANGELOG.md).
 
@@ -232,29 +232,13 @@ the rarer `bcrypt(phpass(md5($pass)))` construction. Both accept the original
 phpBB3 record and run both stages through hashcat's GPU scheduler. See the
 [mode 29950 guide](mode-29950.md).
 
-### 32. Mode 29960
-
-Mode `29960` is the CMIYC 2026 SHA-512 GPU implementation. See
-[CMIYC GPU optimization notes](../CMIYC_GPU_OPTIMIZED.md).
-
-### 33. Mode 29970
-
-Mode `29970` retains the known-good CMIYC 2026 memory-hard SHA-512 GPU
-implementation. See [CMIYC GPU notes](../CMIYC_GPU.md).
-
-### 34. Mode 29980
+### 32. Mode 29980
 
 Mode `29980` implements the supported libxcrypt-style gost-yescrypt
 `$gy$j9T$` profile on the GPU. See the
 [gost-yescrypt notes](../GOST_YESCRYPT_GPU.md).
 
-### 35. Mode 29990
-
-Mode `29990` retains the private CMIYC 2026 memory-hard SHA-512 GPU mode from
-the Shooter beta tree. See the
-[first dated release notes](../CHANGELOG.md#v712-shooter202608111).
-
-### 36. Mode 67000
+### 33. Mode 67000
 
 Mode `67000` is a compatibility number for older yescrypt jobs and uses the
 maintained implementation behind current mode `36100`. New jobs should use
@@ -262,49 +246,43 @@ maintained implementation behind current mode `36100`. New jobs should use
 
 ## Downloads and builds
 
-### 37. Complete Windows release archive
+### 34. Complete Windows release archive
 
 Each release publishes one `shooter_hashcat-<version>-windows-x64-complete.7z`
 containing the complete
 tagged source, the ready-to-run Windows x64 executable, module and bridge DLLs,
 required runtime DLLs, build metadata, and rebuild tools.
 
-### 38. Package integrity verification
+### 35. Package integrity verification
 
 The archive includes `SHA256SUMS` covering its source and binary contents plus
 `verify-windows-package.ps1`, which checks every manifest entry after
 extraction.
 
-### 39. Self-bootstrapping Windows build
+### 36. Self-bootstrapping Windows build
 
 `build-windows.ps1` downloads a checksum-pinned MSYS2 toolchain into the local
 `.build-tools` directory and builds Shooter without installing system-wide
 software or changing the user or system `PATH`. See
 [how_to_compile.txt](../how_to_compile.txt).
 
-### 40. Portable Windows build instructions
+### 37. Portable Windows build instructions
 
 Build commands work with a fresh clone on any drive and include all required
 GCC, Clang, Rust, OpenSSL, iconv, bridge, feed, and runtime dependencies. No
 developer-specific `M:\` paths are required. See
 [how_to_compile.txt](../how_to_compile.txt).
 
-### 41. Reproducible release versioning
+### 38. Reproducible release versioning
 
 Production source pins its release date and revision so later rebuilds retain
 the same version across machines and time zones. Packaging and release
 automation refuse to publish an executable that does not exactly match the
 requested tag.
 
-### 42. CMIYC multi-GPU sharding
-
-`CMIYC_SHARDED_LAUNCH.ps1` splits a small CMIYC workload into independent GPU
-jobs, assigns sessions and output files, and safely combines their results.
-See [CMIYC GPU optimization notes](../CMIYC_GPU_OPTIMIZED.md).
-
 ## Newer official work included after the fork
 
-### 43. Newer upstream correctness fixes
+### 39. Newer upstream correctness fixes
 
 Shooter synchronized with official hashcat through commit
 [`9c735bade`](https://github.com/hashcat/hashcat/commit/9c735badebda0792b78010a5b94e3c8733bc1825).
@@ -316,7 +294,7 @@ included but not claimed as Shooter-authored work. See the
 
 ## Rule loading
 
-### 44. Parallel rule-file loading
+### 40. Parallel rule-file loading
 
 Plain rule files of at least 16 MiB are read once and validated with up to 64
 CPU workers. This is part of the shared rule loader, so it benefits every hash
@@ -335,7 +313,7 @@ for controls, memory behavior, and verification details.
 
 ## Optional status detail
 
-### 45. Optional Restore.Sub status lines
+### 41. Optional Restore.Sub status lines
 
 The per-device `Restore.Sub` rows are hidden from normal human-readable status
 output by default, keeping a 12-GPU status screen twelve lines shorter. Add
@@ -354,7 +332,7 @@ did not emit these human-readable rows.
 
 ## Portable release binaries
 
-### 46. Portable prebuilt Windows binaries
+### 42. Portable prebuilt Windows binaries
 
 The one-file Windows release is compiled for the standard x64 baseline instead
 of the particular CPU model used by GitHub Actions. This prevents a downloaded
@@ -365,7 +343,7 @@ directly when they intentionally want machine-specific optimization.
 
 ## Potfile reporting
 
-### 47. Faster show and left
+### 43. Faster show and left
 
 `--show` and `--left` use narrower searches when comparing a potfile with a
 large hash list. Unsalted lists use a small 16-bit prefix index over the
@@ -385,7 +363,7 @@ for measured results, scope, and verification details.
 
 ## Linux builds
 
-### 48. Working Linux builds
+### 44. Working Linux builds
 
 Shooter's bundled mdxfind libraries are compiled as position-independent code
 before they are linked into `bridge_mdxfind.so`. This fixes the Linux linker
