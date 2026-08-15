@@ -1,0 +1,313 @@
+# Shooter enhancement details
+
+This page explains every user-visible difference summarized at the beginning
+of the main README. The comparison baseline is upstream hashcat commit
+[`fdad9f2f7`](https://github.com/hashcat/hashcat/commit/fdad9f2f7bd7ec7f53056727e39331a17514db7c).
+Items 14 and 43 are newer official hashcat work included after that baseline;
+they are not claimed as Shooter-authored features. Release-by-release evidence
+and test results are preserved in [CHANGELOG.md](../CHANGELOG.md).
+
+## Performance and startup
+
+### 1. Parallel hash-list parsing
+
+Compatible native-text inputs containing at least 4,194,304 nonempty hashes
+are memory-mapped and decoded with up to 64 CPU workers. Unsupported or
+malformed inputs automatically use hashcat's original parser. On the measured
+84,381,739-hash MD5 list, parsing plus sorting fell from 33.56 to 6.41 seconds.
+See [startup optimization](startup-optimization.md).
+
+### 2. Parallel hash-list sorting
+
+Unsalted lists containing at least 4,194,304 hashes can use a stable parallel
+radix sort with up to 64 CPU workers. Smaller, salted, or allocation-limited
+jobs retain the original comparison sorter. See
+[startup optimization](startup-optimization.md).
+
+### 3. Automatic CUDA-only fast start
+
+Normal Windows cracking sessions skip redundant HIP and OpenCL discovery when
+CUDA confirms the intended system has exactly twelve RTX 4090 GPUs. Backend
+diagnostics still inspect every backend, and an environment variable disables
+the shortcut. See [startup optimization](startup-optimization.md).
+
+### 4. Concurrent GPU setup and shutdown
+
+CUDA contexts, memory queries, candidate-buffer preparation, and device
+teardown can run concurrently on multi-GPU sessions instead of processing each
+GPU one at a time. See [startup optimization](startup-optimization.md).
+
+### 5. Lower host memory use
+
+On the exact Windows 12 x RTX 4090 configuration, Shooter limits the two host
+candidate-staging slots to 3072 MiB per GPU and avoids unnecessary buffer
+initialization. The measured fast-hash host commitment fell from about 97.7 GB
+to 36.7 GB. See [startup optimization](startup-optimization.md).
+
+### 6. Reusable RTX 4090 autotuning
+
+Shooter saves successful RTX 4090 workload settings, validates them before
+reuse, and shares matching settings across identical cards. Explicit tuning
+options still win, and unsupported jobs bypass the cache. See the
+[RTX 4090 autotune-cache guide](../RTX_4090_AUTOTUNE_CACHE.md).
+
+### 7. Blowfish kernel caching
+
+Compiled kernels can be reused for Blowfish-based modes that would otherwise
+be rebuilt. This covers modes 3200, 25600, 25800, 28400, 30600, 30601, 33800,
+and 35500.
+
+### 8. High-volume result streaming
+
+Recovered plaintexts can be reconstructed from retained host candidates
+instead of copied back from the GPU for every result. Outfile and potfile
+writes are processed in bounded groups of 4,096 results while remaining live
+and flushed. A controlled all-cracked workload improved by about 360 times;
+that I/O-bound result is not a universal speed guarantee. See the
+[release notes](../CHANGELOG.md#v712-shooter2026081429).
+
+## Candidate generation
+
+### 9. Multi-file combination attacks
+
+Attack mode 1 accepts two or more wordlists and joins one entry from every
+file in command-line order. This replaces the earlier fixed private modes for
+three through six files and also permits additional files. See the
+[multi-file combination guide](multi-file-combination.md).
+
+### 10. Efficient multi-GPU combination starts
+
+For three-or-more-file combination attacks, each GPU converts its assigned
+Cartesian offset directly into wordlist positions. A later GPU does not replay
+all combinations assigned to earlier devices. See the
+[multi-file combination guide](multi-file-combination.md).
+
+### 11. Whole-candidate rules
+
+`-r` and `-g` can transform the fully assembled candidate in attack modes 1,
+3, 6, and 7. Existing `-j` and `-k` side rules still run before concatenation.
+See the [whole-candidate rule guide](whole-candidate-rules.md).
+
+### 12. Parallel stdout rule generation
+
+High-volume straight wordlist-and-rule `--stdout` jobs use a reusable CPU
+worker pool with up to 64 workers. Output remains deterministic, and the path
+avoids GPU transfers that do not contribute to candidate generation.
+
+### 13. Resumable stdout sessions
+
+Mask- and file-driven `--stdout` sessions support pause, resume, checkpoint,
+and quit. With a regular `-o` file, restore data binds the candidate position
+to an exact byte boundary and removes an uncommitted tail before continuing.
+See the [stdout session guide](stdout-sessions.md).
+
+### 14. Official attack mode 12
+
+Shooter includes official hashcat attack mode 12, added upstream after the
+fork. Its mask can place one or two wordlist entries at arbitrary positions
+using `?w` and `?q`. This is included functionality, not a Shooter-authored
+feature. See the [integration release notes](../CHANGELOG.md#v712-shooter2026081218).
+
+## Multibyte input
+
+### 15. Multibyte masks work on Windows
+
+Literal two-, three-, and four-byte UTF-8 characters work beside normal mask
+tokens in every mask-capable hash mode. For example,
+`?d?d№?d?d№?d?d№` reaches the mask engine without Windows replacing `№`.
+See the [release notes](../CHANGELOG.md#v712-shooter2026081434).
+
+### 16. Multibyte rules work on Windows
+
+Rule files can use UTF-8 literals with the byte-emitting `$`, `^`, `i`, `v`,
+and `o` operations. UTF-8 BOM-prefixed files, Unicode paths, and literal
+Windows inline `-j` and `-k` rules are also supported. Existing rule positions
+and non-emitting transforms remain byte-oriented. See the
+[release notes](../CHANGELOG.md#v712-shooter2026081431).
+
+## Long-job control and recovery
+
+### 17. Interactive runtime controls
+
+The interactive menu can extend a `--runtime` countdown or make it decrease at
+twice normal speed. A running job can switch directly between the two modes.
+See the [runtime-control guide](runtime-controls.md).
+
+### 18. Coordinated multi-GPU checkpoints
+
+A checkpoint request parks active GPUs at safe restore positions until every
+participating device reaches the barrier. Cancelling the checkpoint releases
+all parked devices and preserves prefetched candidate work. See the
+[checkpoint-control guide](checkpoint-control.md).
+
+### 19. Atomic CUDA startup retry
+
+If context creation fails on any selected CUDA GPU, Shooter releases the
+partial attempt and retries the complete session instead of continuing with a
+subset of devices. Stream and event creation failures retry on the affected
+context. Retries are bounded and end with an explicit error.
+
+### 20. Windows outfile lock recovery
+
+Startup validation and result-time append operations retry temporary Windows
+outfile access failures every 250 milliseconds for up to five seconds. A
+cooldown prevents persistent locks from adding the same long delay for every
+later result. See the [release notes](../CHANGELOG.md#v712-shooter202608127).
+
+### 21. Interactive outfile-check bypass
+
+When `--outfile-check-dir` is active, `[k]eep-going` stops further directory
+checking for the current process without deleting or changing files. Hashes
+already processed remain recovered. See the
+[release notes](../CHANGELOG.md#v712-shooter202608129-local-source-build).
+
+### 22. Clear outfile-check completion status
+
+When every recovered hash came from `--outfile-check-dir` rather than the
+current attack, the final status says `cracked from outfile-check-dir`.
+
+### 23. Reliable loopback cleanup
+
+Windows loopback feeds release their file mappings before consumed induction
+files are deleted. Cleanup failures are reported instead of letting the same
+file be rediscovered indefinitely, and active files are preserved on abort or
+quit. See the [release notes](../CHANGELOG.md#v712-shooter2026081431).
+
+## Clearer status information
+
+### 24. Visible quit progress
+
+After `q` or `Q`, Shooter reports candidate and GPU drain, worker completion,
+session-service shutdown, GPU-resource release, and final session-file work so
+the console does not appear frozen. See the
+[release notes](../CHANGELOG.md#v712-shooter2026081213-local-source-build).
+
+### 25. Total elapsed time
+
+The final summary prints `Total Time`, calculated from the displayed `Started`
+and `Stopped` timestamps. See the
+[release notes](../CHANGELOG.md#v712-shooter202608125).
+
+### 26. Correct combination status
+
+A two-wordlist mode-1 attack using whole-candidate rules reports the real left
+and right wordlist paths instead of a `(null)` feed label. See the
+[release notes](../CHANGELOG.md#v712-shooter2026081215).
+
+### 27. Visible Pure Kernel warning
+
+Interactive terminals display the complete Pure Kernel status line in bright
+yellow. Redirected, logged, and machine-readable output remains plain text.
+See the [release notes](../CHANGELOG.md#v712-shooter2026081325).
+
+## Hash formats and compatibility
+
+### 28. Complete mdxfind namespace
+
+Shooter exposes every name in mdxfind's live registry as `e1` through `e1001`.
+Of those 1,001 entries, 999 are self-contained algorithms with passing test
+vectors. `e426` is a scheduler pseudo-entry, and `e535` requires external
+mdxfind custom-user/salt state. See the
+[mdxfind compatibility guide](mdxfind-modules.md) and
+[complete registry](mdxfind-modules.json).
+
+### 29. Public mdxfind mode names
+
+Help, hash information, examples, runtime status, benchmarks, autodetection,
+diagnostics, and session logs show public `eN` names instead of private numeric
+plugin identifiers. Existing standard numeric modes remain unchanged.
+
+### 30. Magento Argon2 input
+
+Mode `e987` accepts standard Argon2 PHC strings and mdxfind's Magento
+`hex_digest:salt:2` and extended `:3_...` forms. The original Magento line is
+retained for potfiles, `--show`, `--left`, and cracked output. See the
+[release notes](../CHANGELOG.md#v712-shooter2026081322).
+
+### 31. phpBB3 bcrypt-over-phpass modes
+
+Mode `29950` handles `bcrypt(phpass($pass))`; mode `29951` explicitly handles
+the rarer `bcrypt(phpass(md5($pass)))` construction. Both accept the original
+phpBB3 record and run both stages through hashcat's GPU scheduler. See the
+[mode 29950 guide](mode-29950.md).
+
+### 32. Mode 29960
+
+Mode `29960` is the CMIYC 2026 SHA-512 GPU implementation. See
+[CMIYC GPU optimization notes](../CMIYC_GPU_OPTIMIZED.md).
+
+### 33. Mode 29970
+
+Mode `29970` retains the known-good CMIYC 2026 memory-hard SHA-512 GPU
+implementation. See [CMIYC GPU notes](../CMIYC_GPU.md).
+
+### 34. Mode 29980
+
+Mode `29980` implements the supported libxcrypt-style gost-yescrypt
+`$gy$j9T$` profile on the GPU. See the
+[gost-yescrypt notes](../GOST_YESCRYPT_GPU.md).
+
+### 35. Mode 29990
+
+Mode `29990` retains the private CMIYC 2026 memory-hard SHA-512 GPU mode from
+the Shooter beta tree. See the
+[first dated release notes](../CHANGELOG.md#v712-shooter202608111).
+
+### 36. Mode 67000
+
+Mode `67000` is a compatibility number for older yescrypt jobs and uses the
+maintained implementation behind current mode `36100`. New jobs should use
+`36100`. See the [mode 67000 guide](mode-67000.md).
+
+## Downloads and builds
+
+### 37. Complete Windows release archive
+
+Each release publishes one `windows-x64-complete.7z` containing the complete
+tagged source, the ready-to-run Windows x64 executable, module and bridge DLLs,
+required runtime DLLs, build metadata, and rebuild tools.
+
+### 38. Package integrity verification
+
+The archive includes `SHA256SUMS` covering its source and binary contents plus
+`verify-windows-package.ps1`, which checks every manifest entry after
+extraction.
+
+### 39. Self-bootstrapping Windows build
+
+`build-windows.ps1` downloads a checksum-pinned MSYS2 toolchain into the local
+`.build-tools` directory and builds Shooter without installing system-wide
+software or changing the user or system `PATH`. See
+[how_to_compile.txt](../how_to_compile.txt).
+
+### 40. Portable Windows build instructions
+
+Build commands work with a fresh clone on any drive and include all required
+GCC, Clang, Rust, OpenSSL, iconv, bridge, feed, and runtime dependencies. No
+developer-specific `M:\` paths are required. See
+[how_to_compile.txt](../how_to_compile.txt).
+
+### 41. Reproducible release versioning
+
+Production source pins its release date and revision so later rebuilds retain
+the same version across machines and time zones. Packaging and release
+automation refuse to publish an executable that does not exactly match the
+requested tag.
+
+### 42. CMIYC multi-GPU sharding
+
+`CMIYC_SHARDED_LAUNCH.ps1` splits a small CMIYC workload into independent GPU
+jobs, assigns sessions and output files, and safely combines their results.
+See [CMIYC GPU optimization notes](../CMIYC_GPU_OPTIMIZED.md).
+
+## Newer official work included after the fork
+
+### 43. Newer upstream correctness fixes
+
+Shooter synchronized with official hashcat through commit
+[`9c735bade`](https://github.com/hashcat/hashcat/commit/9c735badebda0792b78010a5b94e3c8733bc1825).
+That range includes feed-to-device mapping, yescrypt layout and address-space
+fixes, PDF mode-10500 empty-ID support, full-length combinator buffers, and
+several overflow, double-free, and out-of-bounds corrections. These fixes are
+included but not claimed as Shooter-authored work. See the
+[integration release notes](../CHANGELOG.md#v712-shooter2026081218).

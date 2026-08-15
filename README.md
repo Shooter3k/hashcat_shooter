@@ -14,25 +14,54 @@ authorized to audit.
 
 ## Improvements at a glance
 
-- **[Huge hash lists open faster](docs/startup-optimization.md)** — parallel
-  CPU parsing and sorting reduce the wait at `Parsing Hashes`.
-- **[Large GPU systems start faster and use less memory](docs/startup-optimization.md)**
-  — especially the intended Windows system with 12 RTX 4090 GPUs.
-- **[RTX 4090 tuning can be reused](RTX_4090_AUTOTUNE_CACHE.md)** — matching
-  jobs can skip repeating the complete GPU tuning search.
-- **[More password-candidate options](#3-more-ways-to-generate-password-candidates)**
-  — join three or more wordlists, apply rules more broadly, and generate
-  candidates faster.
-- **[Multibyte masks and rules work on Windows](#4-multibyte-masks-and-rules-work-on-windows)**
-  — literal characters such as `№` are preserved.
-- **[Long jobs are easier to control and recover](#5-reliability-and-clearer-status-information)**
-  — coordinated checkpoints, retries, safer loopback files, and clearer
-  shutdown progress.
-- **[More hash-type compatibility](#additional-hash-types)** — the complete
-  mdxfind `e1`-`e1001` namespace plus seven Shooter numeric or compatibility
-  modes.
-- **[One complete Windows download](#download-and-run)** — the `.7z` includes
-  both a ready-to-run build and everything needed to rebuild it.
+This is the complete user-visible feature inventory through release `.36`.
+Items 14 and 43 came from newer official hashcat work included after the fork;
+the other items are Shooter changes. Every item links to a plain-language
+explanation.
+
+1. **[Huge hash lists parse across CPU cores](docs/shooter-enhancements.md#1-parallel-hash-list-parsing)** — less time waiting at `Parsing Hashes`.
+2. **[Huge unsalted hash lists sort across CPU cores](docs/shooter-enhancements.md#2-parallel-hash-list-sorting)** — preprocessing finishes sooner.
+3. **[The 12-GPU system skips unnecessary backend scans](docs/shooter-enhancements.md#3-automatic-cuda-only-fast-start)** — short jobs begin faster.
+4. **[Multiple GPUs start and stop concurrently](docs/shooter-enhancements.md#4-concurrent-gpu-setup-and-shutdown)** — devices no longer wait on one-at-a-time setup.
+5. **[The 12-GPU system uses much less host memory](docs/shooter-enhancements.md#5-lower-host-memory-use)** — measured staging fell from about 97.7 GB to 36.7 GB.
+6. **[RTX 4090 tuning is saved and reused](docs/shooter-enhancements.md#6-reusable-rtx-4090-autotuning)** — matching jobs can skip repeated tuning.
+7. **[Blowfish kernels can be reused](docs/shooter-enhancements.md#7-blowfish-kernel-caching)** — supported Blowfish modes avoid needless recompilation.
+8. **[Large cracked-result sets write much faster](docs/shooter-enhancements.md#8-high-volume-result-streaming)** — outfile and potfile results are batched safely.
+9. **[Attack mode 1 joins three or more wordlists](docs/shooter-enhancements.md#9-multi-file-combination-attacks)** — no fixed three-to-six-file attack modes are needed.
+10. **[Multi-GPU combination attacks seek directly to each GPU's work](docs/shooter-enhancements.md#10-efficient-multi-gpu-combination-starts)** — later GPUs do not replay earlier combinations.
+11. **[Rules can modify the complete candidate](docs/shooter-enhancements.md#11-whole-candidate-rules)** — supported in attack modes 1, 3, 6, and 7.
+12. **[`--stdout` rule generation uses multiple CPU cores](docs/shooter-enhancements.md#12-parallel-stdout-rule-generation)** — up to 64 workers retain deterministic order.
+13. **[`--stdout` jobs can pause, checkpoint, and restore](docs/shooter-enhancements.md#13-resumable-stdout-sessions)** — file output resumes at the exact byte boundary.
+14. **[Official attack mode 12 is included](docs/shooter-enhancements.md#14-official-attack-mode-12)** — place one or two wordlist entries anywhere inside a mask.
+15. **[Multibyte masks work on Windows](docs/shooter-enhancements.md#15-multibyte-masks-work-on-windows)** — literals such as `№` survive the command line.
+16. **[Multibyte rules work on Windows](docs/shooter-enhancements.md#16-multibyte-rules-work-on-windows)** — rule files and inline rules accept UTF-8 literals.
+17. **[A running time limit can be extended or shortened](docs/shooter-enhancements.md#17-interactive-runtime-controls)** — adjust `--runtime` without restarting.
+18. **[Multi-GPU checkpoints keep every GPU coordinated](docs/shooter-enhancements.md#18-coordinated-multi-gpu-checkpoints)** — checkpoint cancellation safely resumes all devices.
+19. **[CUDA startup failures retry without dropping GPUs](docs/shooter-enhancements.md#19-atomic-cuda-startup-retry)** — a failed device cannot silently produce a partial-GPU run.
+20. **[Temporarily locked output files are retried](docs/shooter-enhancements.md#20-windows-outfile-lock-recovery)** — brief Windows locks do not immediately lose results.
+21. **[`[k]eep-going` can stop outfile-directory checking](docs/shooter-enhancements.md#21-interactive-outfile-check-bypass)** — disable it for the current run without changing the directory.
+22. **[Outfile-check-only cracks are labeled clearly](docs/shooter-enhancements.md#22-clear-outfile-check-completion-status)** — the final status identifies where the result came from.
+23. **[Loopback induction files clean up safely on Windows](docs/shooter-enhancements.md#23-reliable-loopback-cleanup)** — consumed files are not rediscovered forever.
+24. **[Quit shows shutdown progress](docs/shooter-enhancements.md#24-visible-quit-progress)** — the console explains what hashcat is still finishing.
+25. **[The final summary shows total elapsed time](docs/shooter-enhancements.md#25-total-elapsed-time)** — `Total Time` is calculated from start and stop timestamps.
+26. **[Combination status shows the correct wordlist paths](docs/shooter-enhancements.md#26-correct-combination-status)** — ruled mode-1 jobs no longer show `(null)`.
+27. **[Pure Kernel selection is highlighted](docs/shooter-enhancements.md#27-visible-pure-kernel-warning)** — interactive status displays the line in yellow.
+28. **[The complete mdxfind `e1`-`e1001` namespace is available](docs/shooter-enhancements.md#28-complete-mdxfind-namespace)** — 999 standalone algorithms plus two documented special entries.
+29. **[mdxfind names appear consistently throughout hashcat](docs/shooter-enhancements.md#29-public-mdxfind-mode-names)** — help, status, benchmarks, and logs show public `eN` names.
+30. **[mdxfind `e987` accepts Magento Argon2 input](docs/shooter-enhancements.md#30-magento-argon2-input)** — original Magento lines remain intact in output and potfiles.
+31. **[Modes 29950 and 29951 handle phpBB3 legacy rehashes](docs/shooter-enhancements.md#31-phpbb3-bcrypt-over-phpass-modes)** — the complete two-stage hashes run on the GPU.
+32. **[Mode 29960 adds CMIYC 2026 SHA-512](docs/shooter-enhancements.md#32-mode-29960)** — a custom GPU implementation.
+33. **[Mode 29970 adds CMIYC 2026 memory-hard SHA-512](docs/shooter-enhancements.md#33-mode-29970)** — a retained known-good GPU implementation.
+34. **[Mode 29980 adds the supported gost-yescrypt profile](docs/shooter-enhancements.md#34-mode-29980)** — handles libxcrypt-style `$gy$j9T$` hashes.
+35. **[Mode 29990 adds the private CMIYC 2026 mode](docs/shooter-enhancements.md#35-mode-29990)** — a retained memory-hard SHA-512 GPU implementation.
+36. **[Mode 67000 restores legacy yescrypt numbering](docs/shooter-enhancements.md#36-mode-67000)** — old jobs use the maintained mode-36100 implementation.
+37. **[One `.7z` contains both source and a ready-to-run build](docs/shooter-enhancements.md#37-complete-windows-release-archive)** — download one file to run or rebuild Shooter.
+38. **[Release contents can be verified locally](docs/shooter-enhancements.md#38-package-integrity-verification)** — an included script checks the complete SHA-256 manifest.
+39. **[Windows builds bootstrap with one command](docs/shooter-enhancements.md#39-self-bootstrapping-windows-build)** — the compiler toolchain stays inside the repository.
+40. **[Fresh clones build from any drive](docs/shooter-enhancements.md#40-portable-windows-build-instructions)** — no machine-specific `M:\` paths are required.
+41. **[Release versions are reproducible](docs/shooter-enhancements.md#41-reproducible-release-versioning)** — tags, packages, rebuilds, and `--version` stay identical.
+42. **[CMIYC workloads can be split across GPUs](docs/shooter-enhancements.md#42-cmiyc-multi-gpu-sharding)** — the included launcher creates and combines independent shards.
+43. **[Newer official hashcat fixes are included](docs/shooter-enhancements.md#43-newer-upstream-correctness-fixes)** — upstream fixes after the fork are preserved and clearly credited.
 
 ## Shooter compared with the original hashcat baseline
 
@@ -46,78 +75,6 @@ authorized to audit.
 | Recovering from problems | Provides standard restore and session support. | Coordinates checkpoints across GPUs, retries temporary CUDA and outfile failures, protects loopback files, and shows progress during slow shutdowns. |
 | Hash types | Provides the standard hashcat modes. | Adds the complete mdxfind `e1`-`e1001` namespace plus seven Shooter-specific or compatibility mode numbers. |
 | Downloading and building | Normally requires obtaining the source or a suitable platform package. | Publishes one Windows `.7z` containing the complete tagged source, a ready-to-run build, verification tools, and a self-bootstrapping build script. |
-
-## The main improvements
-
-### 1. Very large hash lists start much faster
-
-- Compatible text lists containing at least 4,194,304 hashes can be parsed in
-  parallel with up to 64 CPU workers.
-- Large unsalted lists can use a stable parallel radix sort.
-- Unsupported or malformed inputs automatically fall back to hashcat's
-  original path.
-- On the development system, an 84,381,739-hash MD5 list improved from 33.56
-  seconds to 6.41 seconds for parsing plus sorting. Total preprocessing through
-  duplicate removal improved from 48.12 seconds to 11.28 seconds.
-
-### 2. Multi-GPU jobs start and recover more cleanly
-
-- CUDA contexts, memory checks, candidate-buffer setup, and GPU shutdown can
-  run concurrently.
-- The exact 12 x RTX 4090 setup automatically avoids duplicate backend probing
-  and lowers host staging memory from about 97.7 GB to 36.7 GB in the measured
-  fast-hash workload.
-- RTX 4090 autotune results are saved and safely validated before reuse.
-- A failed CUDA startup is retried as one complete session instead of silently
-  continuing with only some GPUs.
-- Checkpoints wait for all active GPUs at safe restore positions and can be
-  cancelled without stranding an early GPU.
-
-### 3. More ways to generate password candidates
-
-- Combination attack mode 1 can join three or more wordlists:
-
-  ```powershell
-  hashcat.exe -m 0 -a 1 hashes.txt words1.txt words2.txt words3.txt
-  ```
-
-- Rules can transform the complete candidate in attack modes 1, 3, 6, and 7.
-- High-volume wordlist-and-rule `--stdout` jobs can use up to 64 CPU workers
-  while keeping deterministic output order.
-- `--stdout` sessions support pause, checkpoint, quit, and exact file rollback
-  when candidates are written with `-o`.
-- The repository also includes newer official hashcat attack mode 12, which
-  places one or two wordlist entries at chosen positions inside a mask.
-
-### 4. Multibyte masks and rules work on Windows
-
-- Literal two-, three-, and four-byte UTF-8 characters work beside normal mask
-  tokens in every mask-capable hash mode:
-
-  ```powershell
-  hashcat.exe -m 0 -a 3 hashes.txt "?d?d№?d?d№?d?d№"
-  ```
-
-- UTF-8 rule files can use literal characters with `$`, `^`, `i`, `v`, and
-  `o` operations.
-- UTF-8 BOM-prefixed rule files and Windows inline `-j`/`-k` rules are
-  supported.
-
-### 5. Reliability and clearer status information
-
-- Temporary Windows outfile locks are retried instead of immediately losing
-  output.
-- `[k]eep-going` can disable `--outfile-check-dir` checking for the rest of a
-  running session without changing files in that directory.
-- A result found entirely through `--outfile-check-dir` is clearly reported as
-  `cracked from outfile-check-dir`.
-- Loopback induction files are released and removed safely instead of being
-  rediscovered forever after a failed deletion.
-- Interactive controls can extend or shorten a `--runtime` limit.
-- Quit progress, total elapsed time, correct combinator filenames, and a yellow
-  Pure Kernel warning make the current state easier to understand.
-- Large recovered-result sets are written in batches and avoid unnecessary GPU
-  round trips.
 
 ## Additional hash types
 
@@ -187,6 +144,7 @@ their detailed documentation says otherwise.
 
 | Topic | Documentation |
 | --- | --- |
+| Complete Shooter feature inventory | [docs/shooter-enhancements.md](docs/shooter-enhancements.md) |
 | Startup, memory, parsing, and sorting | [docs/startup-optimization.md](docs/startup-optimization.md) |
 | RTX 4090 autotune cache | [RTX_4090_AUTOTUNE_CACHE.md](RTX_4090_AUTOTUNE_CACHE.md) |
 | Multi-file combinations and complete-candidate rules | [docs/multi-file-combination.md](docs/multi-file-combination.md) and [docs/whole-candidate-rules.md](docs/whole-candidate-rules.md) |
