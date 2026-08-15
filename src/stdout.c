@@ -13,6 +13,8 @@
 #include "backend.h"
 #include "memory.h"
 #include "shared.h"
+#include "system.h"
+#include "filehandling.h"
 #include "thread.h"
 #include "outfile.h"
 #include "stdout.h"

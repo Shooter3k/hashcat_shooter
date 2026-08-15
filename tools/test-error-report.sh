@@ -14,7 +14,7 @@ if [[ ! -x "$binary" ]]; then
   exit 1
 fi
 
-test_dir="$(mktemp -d)"
+test_dir="$(mktemp -d "${TMPDIR:-/tmp}/shooter-error-test.XXXXXXXXXX")"
 
 cleanup ()
 {

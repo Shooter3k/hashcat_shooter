@@ -24,6 +24,7 @@
 #include "thread.h"
 #include "status.h"
 #include "shared.h"
+#include "system.h"
 #include "event.h"
 #include "hwmon.h"
 

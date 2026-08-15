@@ -85,6 +85,19 @@ bridges and feeds.
 
 ## Reporting runtime errors
 
+## Shared core and package check
+
+The default Linux build places the versioned shared core beside the executable.
+Use `make SHARED=0` for the legacy arrangement where each plugin contains its
+own core copy. After either build, verify the assembled directory without
+requiring a compute device:
+
+```bash
+bash tools/test_package.sh . --no-device
+```
+
+## Reporting runtime errors
+
 When a normal Hashcat error occurs, Shooter creates one file named like
 `shooter_hashcat-error-YYYYMMDD-HHMMSS-PID.log` in the directory where it was
 started and prints the exact path. Review the file before sharing it because

@@ -1,18 +1,40 @@
 name: Build
 
+##
+## What is built, and what is run.
+##
+## The user base is Linux and Windows, so those two are built in both arrangements. Every build is
+## followed by the checks in tools/test_package.sh, because a build that links is not a build that
+## works: a plugin whose imports do not resolve, a package missing a directory and a core the loader
+## finds somewhere else all pass a compile and fail a user.
+##
+## Those checks ask nothing of a backend device, because a runner has none. Anything that needs one
+## says so and is left out here.
+##
+## macOS is built in the arrangement it ships in. FreeBSD stands in for the BSDs here, the other
+## three are built weekly by .github/workflows/bsd.yml.
+##
+## The cross compiled binaries are the ones that ship, so they are checked too, in the job that
+## builds them and before they are uploaded.
+##
+
 env:
   include_paths: |
+    bridges/
     charsets/
     docs/
     extra/
+    feeds/
     layouts/
     masks/
     modules/
     OpenCL/
     rules/
+    tunings/
     example*
     hashcat*
     libhashcat*
+    !**/*.debug
 
 on:
   push:
@@ -106,6 +128,7 @@ jobs:
           WIN_PYTHON: ""
         run: |
           make ENABLE_LTO=0 CC=clang CXX=clang++
+          bash tools/test_package.sh . --no-device
 
       - name: Build (Linux)
         if: matrix.os_name_lowercase == 'linux'
@@ -114,6 +137,7 @@ jobs:
           TERM: xterm
         run: |
           make ENABLE_LTO=0 CC=clang CXX=clang++
+          bash tools/test_package.sh . --no-device
 
       - name: Verify automatic error reports (Windows)
         if: matrix.os_name_lowercase == 'windows' && matrix.shared == 0

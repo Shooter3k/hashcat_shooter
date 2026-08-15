@@ -12,6 +12,8 @@
 #include "interface.h"
 #include "shared.h"
 #include "mdxfind_modes.h"
+#include "path.h"
+#include "filehandling.h"
 #include "usage.h"
 #include "backend.h"
 #include "user_options.h"
@@ -19,10 +21,11 @@
 #include "rp.h"
 #include "rp_cpu.h"
 
-#ifdef WITH_BRAIN
-#include "brain.h"
 #include "generic.h"
 #include "mpsp.h"
+
+#ifdef WITH_BRAIN
+#include "brain.h"
 #endif
 
 #ifdef WITH_BRAIN

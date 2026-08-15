@@ -13,6 +13,7 @@
 #include "event.h"
 #include "memory.h"
 #include "shared.h"
+#include "system.h"
 #include "mdxfind_modes.h"
 
 #include "mdxfind/hx_vm.h"

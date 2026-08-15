@@ -12,6 +12,8 @@
 #include "thread.h"
 #include "user_options.h"
 #include "shared.h"
+#include "filehandling.h"
+#include "path.h"
 #include "pidfile.h"
 #include "folder.h"
 #include "restore.h"
