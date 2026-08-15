@@ -18,10 +18,62 @@
 
 static const char MASKED_PLAIN[] = "[notfound]";
 
+#define POTFILE_HASH_PREFIX_BITS    16
+#define POTFILE_HASH_PREFIX_BUCKETS (1U << POTFILE_HASH_PREFIX_BITS)
+#define POTFILE_HASH_PREFIX_MINIMUM (1U << 16)
+
 // get rid of this later
 int sort_by_hash         (const void *v1, const void *v2, void *v3);
 int sort_by_hash_no_salt (const void *v1, const void *v2, void *v3);
 // get rid of this later
+
+static int sort_by_salt_r (const void *v1, const void *v2, MAYBE_UNUSED void *v3)
+{
+  return sort_by_salt (v1, v2);
+}
+
+static u32 potfile_hash_prefix_lower_bound (const hash_t *hashes_buf, const u32 hashes_cnt, const hashconfig_t *hashconfig, const u32 prefix)
+{
+  const u32 target = prefix << (32 - POTFILE_HASH_PREFIX_BITS);
+
+  u32 left  = 0;
+  u32 right = hashes_cnt;
+
+  while (left < right)
+  {
+    const u32 middle = left + ((right - left) / 2);
+
+    const u32 *digest = (const u32 *) hashes_buf[middle].digest;
+
+    if (digest[hashconfig->dgst_pos3] < target)
+    {
+      left = middle + 1;
+    }
+    else
+    {
+      right = middle;
+    }
+  }
+
+  return left;
+}
+
+static u32 *potfile_hash_prefix_build (const hash_t *hashes_buf, const u32 hashes_cnt, const hashconfig_t *hashconfig)
+{
+  if (hashconfig->is_salted == true) return NULL;
+  if (hashes_cnt < POTFILE_HASH_PREFIX_MINIMUM) return NULL;
+
+  u32 *prefix_bounds = (u32 *) hccalloc (POTFILE_HASH_PREFIX_BUCKETS + 1, sizeof (u32));
+
+  for (u32 bucket = 0; bucket < POTFILE_HASH_PREFIX_BUCKETS; bucket++)
+  {
+    prefix_bounds[bucket] = potfile_hash_prefix_lower_bound (hashes_buf, hashes_cnt, hashconfig, bucket);
+  }
+
+  prefix_bounds[POTFILE_HASH_PREFIX_BUCKETS] = hashes_cnt;
+
+  return prefix_bounds;
+}
 
 // this function is for potfile comparison where the potfile does not contain all the
 // information requires to do a true sort_by_hash() bsearch
@@ -418,6 +470,14 @@ int potfile_remove_parse (hashcat_ctx_t *hashcat_ctx)
   hash_t *hashes_buf = hashes->hashes_buf;
   u32     hashes_cnt = hashes->hashes_cnt;
 
+  u32 *hash_prefix_bounds = NULL;
+
+  if ((module_ctx->module_hash_decode_potfile == MODULE_DEFAULT)
+   && (hashconfig->potfile_keep_all_hashes == false))
+  {
+    hash_prefix_bounds = potfile_hash_prefix_build (hashes_buf, hashes_cnt, hashconfig);
+  }
+
   // no solution for these special hash types (for instance because they use hashfile in output etc)
 
   hash_t hash_buf;
@@ -610,7 +670,32 @@ int potfile_remove_parse (hashcat_ctx_t *hashcat_ctx)
         continue;
       }
 
-      hash_t *found = (hash_t *) hc_bsearch_r (&hash_buf, hashes_buf, hashes_cnt, sizeof (hash_t), sort_by_hash, (void *) hashconfig);
+      hash_t *found = NULL;
+
+      if (hash_prefix_bounds != NULL)
+      {
+        const u32 *digest = (const u32 *) hash_buf.digest;
+
+        const u32 bucket = digest[hashconfig->dgst_pos3] >> (32 - POTFILE_HASH_PREFIX_BITS);
+
+        const u32 hashes_offset = hash_prefix_bounds[bucket];
+        const u32 hashes_count  = hash_prefix_bounds[bucket + 1] - hashes_offset;
+
+        found = (hash_t *) hc_bsearch_r (&hash_buf, hashes_buf + hashes_offset, hashes_count, sizeof (hash_t), sort_by_hash_no_salt, (void *) hashconfig);
+      }
+      else if (hashconfig->is_salted == true)
+      {
+        salt_t *salt = (salt_t *) hc_bsearch_r (hash_buf.salt, hashes->salts_buf, hashes->salts_cnt, sizeof (salt_t), sort_by_salt_r, NULL);
+
+        if (salt != NULL)
+        {
+          found = (hash_t *) hc_bsearch_r (&hash_buf, hashes_buf + salt->digests_offset, salt->digests_cnt, sizeof (hash_t), sort_by_hash_no_salt, (void *) hashconfig);
+        }
+      }
+      else
+      {
+        found = (hash_t *) hc_bsearch_r (&hash_buf, hashes_buf, hashes_cnt, sizeof (hash_t), sort_by_hash_no_salt, (void *) hashconfig);
+      }
 
       potfile_update_hash (hashcat_ctx, found, line_pw_buf, (u32) line_pw_len);
     }
@@ -624,6 +709,8 @@ int potfile_remove_parse (hashcat_ctx_t *hashcat_ctx)
   }
 
   potfile_read_close (hashcat_ctx);
+
+  hcfree (hash_prefix_bounds);
 
   if (hashconfig->potfile_keep_all_hashes == true)
   {
@@ -657,6 +744,7 @@ int potfile_handle_show (hashcat_ctx_t *hashcat_ctx)
 {
   hashconfig_t  *hashconfig  = hashcat_ctx->hashconfig;
   hashes_t      *hashes      = hashcat_ctx->hashes;
+  outfile_ctx_t *outfile_ctx = hashcat_ctx->outfile_ctx;
   potfile_ctx_t *potfile_ctx = hashcat_ctx->potfile_ctx;
 
   u32     salts_cnt  = hashes->salts_cnt;
@@ -664,7 +752,18 @@ int potfile_handle_show (hashcat_ctx_t *hashcat_ctx)
 
   hash_t *hashes_buf = hashes->hashes_buf;
 
-  pot_orig_line_entry_t *final_buf = (pot_orig_line_entry_t *) hccalloc (hashes->hashes_cnt, sizeof (pot_orig_line_entry_t));
+  const bool collect_for_stdout = (outfile_ctx->fp.pfp == NULL);
+
+  pot_orig_line_entry_t *final_buf = NULL;
+
+  // outfile_write() has already written each line when an outfile is open.
+  // The ordered copy is only consumed by the stdout event handler.
+
+  if (collect_for_stdout == true)
+  {
+    final_buf = (pot_orig_line_entry_t *) hccalloc (hashes->hashes_cnt, sizeof (pot_orig_line_entry_t));
+  }
+
   u32                    final_cnt = 0;
 
   if (hashconfig->opts_type & OPTS_TYPE_HASH_SPLIT)
@@ -794,6 +893,8 @@ int potfile_handle_show (hashcat_ctx_t *hashcat_ctx)
 
         //EVENT_DATA (EVENT_POTFILE_HASH_SHOW, tmp_buf, tmp_len);
 
+        if (collect_for_stdout == false) continue;
+
         final_buf[final_cnt].hash_buf = (u8 *) hcmalloc (tmp_len);
 
         memcpy (final_buf[final_cnt].hash_buf, tmp_buf, tmp_len);
@@ -902,6 +1003,8 @@ int potfile_handle_show (hashcat_ctx_t *hashcat_ctx)
 
         //EVENT_DATA (EVENT_POTFILE_HASH_SHOW, tmp_buf, tmp_len);
 
+        if (collect_for_stdout == false) continue;
+
         final_buf[final_cnt].hash_buf = (u8 *) hcmalloc (tmp_len);
 
         memcpy (final_buf[final_cnt].hash_buf, tmp_buf, tmp_len);
@@ -915,13 +1018,16 @@ int potfile_handle_show (hashcat_ctx_t *hashcat_ctx)
     }
   }
 
-  qsort (final_buf, final_cnt, sizeof (pot_orig_line_entry_t), sort_pot_orig_line);
-
-  for (u32 final_pos = 0; final_pos < final_cnt; final_pos++)
+  if (collect_for_stdout == true)
   {
-    EVENT_DATA (EVENT_POTFILE_HASH_SHOW, final_buf[final_pos].hash_buf, final_buf[final_pos].hash_len);
+    qsort (final_buf, final_cnt, sizeof (pot_orig_line_entry_t), sort_pot_orig_line);
 
-    hcfree (final_buf[final_pos].hash_buf);
+    for (u32 final_pos = 0; final_pos < final_cnt; final_pos++)
+    {
+      EVENT_DATA (EVENT_POTFILE_HASH_SHOW, final_buf[final_pos].hash_buf, final_buf[final_pos].hash_len);
+
+      hcfree (final_buf[final_pos].hash_buf);
+    }
   }
 
   hcfree (final_buf);
@@ -934,6 +1040,7 @@ int potfile_handle_left (hashcat_ctx_t *hashcat_ctx)
   hashconfig_t  *hashconfig  = hashcat_ctx->hashconfig;
   hashes_t      *hashes      = hashcat_ctx->hashes;
   module_ctx_t  *module_ctx  = hashcat_ctx->module_ctx;
+  outfile_ctx_t *outfile_ctx = hashcat_ctx->outfile_ctx;
   potfile_ctx_t *potfile_ctx = hashcat_ctx->potfile_ctx;
 
   u32     salts_cnt  = hashes->salts_cnt;
@@ -941,7 +1048,18 @@ int potfile_handle_left (hashcat_ctx_t *hashcat_ctx)
 
   hash_t *hashes_buf = hashes->hashes_buf;
 
-  pot_orig_line_entry_t *final_buf = (pot_orig_line_entry_t *) hccalloc (hashes->hashes_cnt, sizeof (pot_orig_line_entry_t));
+  const bool collect_for_stdout = (outfile_ctx->fp.pfp == NULL);
+
+  pot_orig_line_entry_t *final_buf = NULL;
+
+  // outfile_write() has already written each line when an outfile is open.
+  // The ordered copy is only consumed by the stdout event handler.
+
+  if (collect_for_stdout == true)
+  {
+    final_buf = (pot_orig_line_entry_t *) hccalloc (hashes->hashes_cnt, sizeof (pot_orig_line_entry_t));
+  }
+
   u32                    final_cnt = 0;
 
   if (hashconfig->opts_type & OPTS_TYPE_HASH_SPLIT)
@@ -1037,6 +1155,8 @@ int potfile_handle_left (hashcat_ctx_t *hashcat_ctx)
         const int tmp_len = outfile_write (hashcat_ctx, (char *) out_buf, out_len, NULL, 0, 0, username, user_len, true, (char *) tmp_buf);
 
         //EVENT_DATA (EVENT_POTFILE_HASH_LEFT, tmp_buf, tmp_len);
+
+        if (collect_for_stdout == false) continue;
 
         final_buf[final_cnt].hash_buf = (u8 *) hcmalloc (tmp_len);
 
@@ -1144,6 +1264,8 @@ int potfile_handle_left (hashcat_ctx_t *hashcat_ctx)
 
         //EVENT_DATA (EVENT_POTFILE_HASH_LEFT, tmp_buf, tmp_len);
 
+        if (collect_for_stdout == false) continue;
+
         final_buf[final_cnt].hash_buf = (u8 *) hcmalloc (tmp_len);
 
         memcpy (final_buf[final_cnt].hash_buf, tmp_buf, tmp_len);
@@ -1157,49 +1279,52 @@ int potfile_handle_left (hashcat_ctx_t *hashcat_ctx)
     }
   }
 
-  qsort (final_buf, final_cnt, sizeof (pot_orig_line_entry_t), sort_pot_orig_line);
-
-  for (u32 final_pos = 0; final_pos < final_cnt; final_pos++)
+  if (collect_for_stdout == true)
   {
-    u8 *event_data = NULL;
+    qsort (final_buf, final_cnt, sizeof (pot_orig_line_entry_t), sort_pot_orig_line);
 
-    int event_len = 0;
-
-    // add EOL after hash, but only if NOT binary:
-
-    if ((hashconfig->opts_type & OPTS_TYPE_BINARY_HASHFILE) == 0)
+    for (u32 final_pos = 0; final_pos < final_cnt; final_pos++)
     {
-      u8 *eol_chars = (u8 *) EOL;
+      u8 *event_data = NULL;
 
-      int eol_len = (int) strlen (EOL);
+      int event_len = 0;
 
-      event_len = final_buf[final_pos].hash_len + eol_len;
+      // add EOL after hash, but only if NOT binary:
 
-      event_data = (u8 *) hcmalloc (event_len);
-
-      memcpy (event_data, final_buf[final_pos].hash_buf, final_buf[final_pos].hash_len);
-
-      // only difference (add EOL to the buffer):
-
-      for (int i = 0, j = event_len - eol_len; i < eol_len; i++, j++)
+      if ((hashconfig->opts_type & OPTS_TYPE_BINARY_HASHFILE) == 0)
       {
-        event_data[j] = eol_chars[i];
+        u8 *eol_chars = (u8 *) EOL;
+
+        int eol_len = (int) strlen (EOL);
+
+        event_len = final_buf[final_pos].hash_len + eol_len;
+
+        event_data = (u8 *) hcmalloc (event_len);
+
+        memcpy (event_data, final_buf[final_pos].hash_buf, final_buf[final_pos].hash_len);
+
+        // only difference (add EOL to the buffer):
+
+        for (int i = 0, j = event_len - eol_len; i < eol_len; i++, j++)
+        {
+          event_data[j] = eol_chars[i];
+        }
       }
+      else
+      {
+        event_len = final_buf[final_pos].hash_len;
+
+        event_data = (u8 *) hcmalloc (event_len);
+
+        memcpy (event_data, final_buf[final_pos].hash_buf, final_buf[final_pos].hash_len);
+      }
+
+      EVENT_DATA (EVENT_POTFILE_HASH_LEFT, event_data, event_len);
+
+      hcfree (event_data);
+
+      hcfree (final_buf[final_pos].hash_buf);
     }
-    else
-    {
-      event_len = final_buf[final_pos].hash_len;
-
-      event_data = (u8 *) hcmalloc (event_len);
-
-      memcpy (event_data, final_buf[final_pos].hash_buf, final_buf[final_pos].hash_len);
-    }
-
-    EVENT_DATA (EVENT_POTFILE_HASH_LEFT, event_data, event_len);
-
-    hcfree (event_data);
-
-    hcfree (final_buf[final_pos].hash_buf);
   }
 
   hcfree (final_buf);

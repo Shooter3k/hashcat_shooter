@@ -1,142 +1,84 @@
+# Build hashcat_shooter on Linux
 
-# Hashcat – Build Documentation
+These instructions build the current Shooter source natively on 64-bit Linux.
+They were verified on Ubuntu 24.04 with Clang 18 and stable Rust.
 
-**Revision**: 1.7  
-**Author**: See `docs/credits.txt`
+## Ubuntu prerequisites
 
----
-
-## ✅ Requirements
-
-- **Python 3.12** or higher
-
-Check your Python version:
+Install the C/C++ compiler, build tools, OpenSSL headers, and Python headers:
 
 ```bash
-$ python3 --version
-# Expected output: Python 3.13.3
+sudo apt update
+sudo apt install --no-install-recommends \
+  build-essential clang curl git libssl-dev make pkg-config python3-dev
 ```
 
-If you can't install Python ≥ 3.12 globally, you can use **pyenv**.
-
-> If you're using `pyenv`, follow **all steps** below. Otherwise, follow only **steps 3 and 5**.
-
----
-
-## 🛠️ Building Hashcat – Step-by-Step
-
-### 🔹 Step 1: Install dependencies and pyenv
-
-#### On Linux
-
-Install required libraries to build Python:
+Shooter includes Rust bridges and feeds that use Rust edition 2024. Install a
+current stable toolchain with `rustup`; an older distribution-provided Cargo
+may be unable to read their manifests:
 
 ```bash
-$ sudo apt install libbz2-dev libssl-dev libncurses5-dev libffi-dev libreadline-dev libsqlite3-dev liblzma-dev
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- \
+  -y --profile minimal --default-toolchain stable
+source "$HOME/.cargo/env"
 ```
 
-Install `pyenv`:
+GPU drivers and their CUDA, HIP, or OpenCL runtime are needed to run attacks,
+but they are not needed merely to compile the program.
+
+## Clone and build
+
+Clone this repository, not the original Hashcat repository:
 
 ```bash
-$ curl https://pyenv.run | bash
+git clone https://github.com/Shooter3k/hashcat_shooter.git
+cd hashcat_shooter
+make -j"$(nproc)" ENABLE_LTO=0 CC=clang CXX=clang++
 ```
 
-> Follow the instructions shown after installation to set up your shell correctly.
-
-#### On macOS
-
-Install `pyenv` via Homebrew:
+The executable is `hashcat` in the repository root. Confirm it starts:
 
 ```bash
-$ brew install pyenv
+./hashcat --version
 ```
 
----
+Warnings about deprecated OpenSSL functions do not make the build fail. If
+Python development headers are omitted, Hashcat can also warn that Python
+plugin modes 72000 or 73000 were skipped.
 
-### 🔹 Step 2: Install Python using pyenv
+## Shared-library build
 
-Install Python 3.12 (or newer):
+To build Hashcat with `libhashcat.so`, clean the previous objects and set
+`SHARED=1`:
 
 ```bash
-$ pyenv install 3.12
+make clean
+SHARED=1 make -j"$(nproc)" ENABLE_LTO=0 CC=clang CXX=clang++
 ```
 
-Check installed versions:
+Shooter compiles every bundled mdxfind static library with `-fPIC`, so both
+normal and shared Linux builds can link `bridges/bridge_mdxfind.so`.
+
+## Install
+
+Installation is optional:
 
 ```bash
-$ pyenv versions
-# Example:
-# * system
-#   3.12.11
+sudo make install
 ```
 
----
+Without custom XDG variables, session files are stored under
+`$HOME/.local/share/hashcat/sessions`, cached kernels under
+`$HOME/.cache/hashcat`, and the potfile under `$HOME/.local/share/hashcat`.
 
-### 🔹 Step 3: Clone the Hashcat repository
+## Other targets
 
-```bash
-$ git clone https://github.com/hashcat/hashcat.git
-$ cd hashcat
-```
+- Windows: follow [how_to_compile.txt](how_to_compile.txt) or use the complete
+  Windows release archive.
+- Windows from WSL: see [BUILD_WSL.md](BUILD_WSL.md).
+- Android: see [BUILD_Android.md](BUILD_Android.md).
+- Docker: see [BUILD_Docker.md](BUILD_Docker.md).
 
----
-
-### 🔹 Step 4: Set the local Python version
-
-```bash
-$ pyenv local 3.12.11
-```
-
----
-
-### 🔹 Step 5: Build Hashcat
-
-```bash
-$ make clean && make
-```
-
----
-
-### 🔹 Step 6 (Optional): Install Hashcat (Linux only)
-
-```bash
-$ make install
-```
-
-Hashcat will use the following locations depending on your environment:
-
-| Condition                                   | Session Files                          | Kernel Cache                          | Potfiles                              |
-|--------------------------------------------|----------------------------------------|---------------------------------------|----------------------------------------|
-| `$XDG_DATA_HOME` and `$XDG_CACHE_HOME` set | `$XDG_DATA_HOME/hashcat/sessions/`     | `$XDG_CACHE_HOME/hashcat/kernels/`    | `$XDG_DATA_HOME/hashcat/`              |
-| Only `$XDG_DATA_HOME` set                  | `$XDG_DATA_HOME/hashcat/sessions/`     | `$HOME/.cache/hashcat/`               | `$XDG_DATA_HOME/hashcat/`              |
-| Only `$XDG_CACHE_HOME` set                 | `$HOME/.local/share/hashcat/sessions/` | `$XDG_CACHE_HOME/hashcat/kernels/`    | `$HOME/.local/share/hashcat/`          |
-| None of the above                          | `$HOME/.local/share/hashcat/sessions/` | `$HOME/.cache/hashcat/`               | `$HOME/.local/share/hashcat/`          |
-
----
-## 🔥 Building Hashcat for Android
-
-See: [BUILD_Android.md](BUILD_Android.md)
-
----
-
-## 🐳 Building Hashcat with Docker
-
-See: [BUILD_Docker.md](BUILD_Docker.md)
-
----
-
-## 🪟 Building Hashcat for Windows
-
-| Method                                 | Documentation                        |
-|----------------------------------------|--------------------------------------|
-| From macOS                             | [BUILD_macOS.md](BUILD_macOS.md)     |
-| Using Windows Subsystem for Linux (WSL)| [BUILD_WSL.md](BUILD_WSL.md)         |
-| Using Cygwin                           | [BUILD_CYGWIN.md](BUILD_CYGWIN.md)   |
-| Using MSYS2                            | [BUILD_MSYS2.md](BUILD_MSYS2.md)     |
-| From Linux                             | Run: `make win`                      |
-
----
-
-## 🎉 Done
-
-Enjoy your fresh **Hashcat** binaries! 😎
+Shooter currently validates native Linux and Windows targets in CI. macOS and
+BSD are not currently claimed as supported targets for Shooter's additional
+bridges and feeds.

@@ -59,31 +59,31 @@ $(eval $(call MDXFIND_OBJECT_LISTS,WIN))
 define MDXFIND_COMPILE_RULES
 obj/hashpipe.$(1)/sph/%.o: $(MDXFIND_HASHPIPE_3P)/sphlib/%.c
 	@mkdir -p $$(dir $$@)
-	$(2) $(CCFLAGS) $(3) -O2 -w -fno-strict-aliasing -I$(MDXFIND_HASHPIPE_3P)/sphlib -c $$< -o $$@
+	$(2) $(CCFLAGS) $(3) -O2 -w -fPIC -fno-strict-aliasing -I$(MDXFIND_HASHPIPE_3P)/sphlib -c $$< -o $$@
 obj/hashpipe.$(1)/mhash/%.o: $(MDXFIND_HASHPIPE_3P)/mhash/lib/%.c
 	@mkdir -p $$(dir $$@)
-	$(2) $(CCFLAGS) $(3) -std=gnu89 -O2 -w -I$(MDXFIND_HASHPIPE_3P)/mhash/include -I$(MDXFIND_HASHPIPE_3P)/mhash/include/mutils -I$(MDXFIND_HASHPIPE_3P)/mhash/lib -c $$< -o $$@
+	$(2) $(CCFLAGS) $(3) -std=gnu89 -O2 -w -fPIC -I$(MDXFIND_HASHPIPE_3P)/mhash/include -I$(MDXFIND_HASHPIPE_3P)/mhash/include/mutils -I$(MDXFIND_HASHPIPE_3P)/mhash/lib -c $$< -o $$@
 obj/hashpipe.$(1)/rhash/%.o: $(MDXFIND_HASHPIPE_3P)/rhash/%.c
 	@mkdir -p $$(dir $$@)
-	$(2) $(CCFLAGS) $(3) -O2 -w -DRHASH_XVERSION=0x01040600 -I$(MDXFIND_HASHPIPE_3P)/rhash -c $$< -o $$@
+	$(2) $(CCFLAGS) $(3) -O2 -w -fPIC -DRHASH_XVERSION=0x01040600 -I$(MDXFIND_HASHPIPE_3P)/rhash -c $$< -o $$@
 obj/hashpipe.$(1)/md6/%.o: $(MDXFIND_HASHPIPE_3P)/md6/%.c
 	@mkdir -p $$(dir $$@)
-	$(2) $(CCFLAGS) $(3) -O2 -w -fcommon -I$(MDXFIND_HASHPIPE_3P)/md6 -c $$< -o $$@
+	$(2) $(CCFLAGS) $(3) -O2 -w -fPIC -fcommon -I$(MDXFIND_HASHPIPE_3P)/md6 -c $$< -o $$@
 obj/hashpipe.$(1)/gost/%.o: $(MDXFIND_HASHPIPE_3P)/gost2012/%.c
 	@mkdir -p $$(dir $$@)
-	$(2) $(CCFLAGS) $(3) -O2 -w -I$(MDXFIND_HASHPIPE_3P)/gost2012 -c $$< -o $$@
+	$(2) $(CCFLAGS) $(3) -O2 -w -fPIC -I$(MDXFIND_HASHPIPE_3P)/gost2012 -c $$< -o $$@
 obj/hashpipe.$(1)/bcrypt/%.o: $(MDXFIND_HASHPIPE_3P)/crypt_blowfish/%.c
 	@mkdir -p $$(dir $$@)
-	$(2) $(CCFLAGS) $(3) -O2 -w -I$(MDXFIND_HASHPIPE_3P)/crypt_blowfish -c $$< -o $$@
+	$(2) $(CCFLAGS) $(3) -O2 -w -fPIC -I$(MDXFIND_HASHPIPE_3P)/crypt_blowfish -c $$< -o $$@
 obj/hashpipe.$(1)/argon2/%.o: $(MDXFIND_HASHPIPE_3P)/argon2/%.c
 	@mkdir -p $$(dir $$@)
-	$(2) $(CCFLAGS) $(3) -O2 -w -I$(MDXFIND_HASHPIPE_3P)/argon2 -c $$< -o $$@
+	$(2) $(CCFLAGS) $(3) -O2 -w -fPIC -I$(MDXFIND_HASHPIPE_3P)/argon2 -c $$< -o $$@
 obj/hashpipe.$(1)/argon2/blake2b.o: $(MDXFIND_HASHPIPE_3P)/argon2/blake2/blake2b.c
 	@mkdir -p $$(dir $$@)
-	$(2) $(CCFLAGS) $(3) -O2 -w -I$(MDXFIND_HASHPIPE_3P)/argon2 -c $$< -o $$@
+	$(2) $(CCFLAGS) $(3) -O2 -w -fPIC -I$(MDXFIND_HASHPIPE_3P)/argon2 -c $$< -o $$@
 obj/hashpipe.$(1)/yescrypt/%.o: $(MDXFIND_HASHPIPE_3P)/yescrypt/%.c
 	@mkdir -p $$(dir $$@)
-	$(2) $(CCFLAGS) $(3) -O2 -w -DSKIP_MEMZERO -I$(MDXFIND_HASHPIPE_3P)/yescrypt -c $$< -o $$@
+	$(2) $(CCFLAGS) $(3) -O2 -w -fPIC -DSKIP_MEMZERO -I$(MDXFIND_HASHPIPE_3P)/yescrypt -c $$< -o $$@
 obj/hashpipe.$(1)/libsph.a: $$(MDXFIND_SPH_OBJS_$(1))
 	$(4) rcs $$@ $$^
 obj/hashpipe.$(1)/libmhash.a: $$(MDXFIND_MHASH_OBJS_$(1))

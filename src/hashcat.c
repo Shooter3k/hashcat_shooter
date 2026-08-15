@@ -1473,7 +1473,7 @@ int hashcat_init (hashcat_ctx_t *hashcat_ctx, void (*event) (const u32, struct h
   hashcat_ctx->backend_ctx        = (backend_ctx_t *)         hcmalloc (sizeof (backend_ctx_t));
   hashcat_ctx->outcheck_ctx       = (outcheck_ctx_t *)        hcmalloc (sizeof (outcheck_ctx_t));
 
-  hc_thread_mutex_init (hashcat_ctx->outcheck_ctx->mux_keep_going);
+  hc_thread_mutex_init (hashcat_ctx->outcheck_ctx->mux_ignore);
 
   hashcat_ctx->outfile_ctx        = (outfile_ctx_t *)         hcmalloc (sizeof (outfile_ctx_t));
   hashcat_ctx->pidfile_ctx        = (pidfile_ctx_t *)         hcmalloc (sizeof (pidfile_ctx_t));
@@ -1513,7 +1513,7 @@ void hashcat_destroy (hashcat_ctx_t *hashcat_ctx)
   hcfree (hashcat_ctx->module_ctx);
   hcfree (hashcat_ctx->backend_ctx);
 
-  hc_thread_mutex_delete (hashcat_ctx->outcheck_ctx->mux_keep_going);
+  hc_thread_mutex_delete (hashcat_ctx->outcheck_ctx->mux_ignore);
 
   hcfree (hashcat_ctx->outcheck_ctx);
   hcfree (hashcat_ctx->outfile_ctx);

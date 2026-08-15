@@ -154,11 +154,12 @@ outfile access failures every 250 milliseconds for up to five seconds. A
 cooldown prevents persistent locks from adding the same long delay for every
 later result. See the [release notes](../CHANGELOG.md#v712-shooter202608127).
 
-### 21. Interactive outfile-check bypass
+### 21. Ignore outfile-check-dir
 
-When `--outfile-check-dir` is active, `[k]eep-going` stops further directory
-checking for the current process without deleting or changing files. Hashes
-already processed remain recovered. See the
+When `--outfile-check-dir` is active, `[i]gnore outfile-check-dir` stops further
+directory checking for the current process without deleting or changing
+files. Press `i` to activate it; the command then disappears from the prompt.
+Hashes already processed remain recovered. See the
 [release notes](../CHANGELOG.md#v712-shooter202608129-local-source-build).
 
 ### 22. Clear outfile-check completion status
@@ -360,3 +361,35 @@ of the particular CPU model used by GitHub Actions. This prevents a downloaded
 error on an older x64 processor. The repo-local `build-windows.ps1` wrapper
 uses the same portable setting, while developers can still invoke make
 directly when they intentionally want machine-specific optimization.
+
+## Potfile reporting
+
+### 47. Faster show and left
+
+`--show` and `--left` use narrower searches when comparing a potfile with a
+large hash list. Unsalted lists use a small 16-bit prefix index over the
+already-sorted hashes. Salted lists first locate the matching salt group and
+then search only that group's digests. Custom potfile validators and the
+special keep-all-hashes path retain their original matching behavior.
+
+When `-o` is supplied, each selected line is already written by Hashcat's
+outfile writer. Shooter no longer makes a second heap-allocated copy of every
+line, sorts all of those unused copies, and frees them one at a time. This is
+especially important for `--left`, where nearly the complete input list may
+need to be emitted. Standard-output mode retains original input ordering.
+
+No new option is required. See
+[startup optimization](startup-optimization.md#large-show-and-left-workloads)
+for measured results, scope, and verification details.
+
+## Linux builds
+
+### 48. Working Linux builds
+
+Shooter's bundled mdxfind libraries are compiled as position-independent code
+before they are linked into `bridge_mdxfind.so`. This fixes the Linux linker
+failure that previously reported an `R_X86_64_PC32` relocation in
+`librhash.a` and requested a rebuild with `-fPIC`.
+
+Both the normal `SHARED=0` build and the `SHARED=1` library build are covered.
+See [BUILD.md](../BUILD.md) for the tested Ubuntu prerequisites and commands.

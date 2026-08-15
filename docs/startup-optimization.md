@@ -220,6 +220,38 @@ Separate fixtures confirmed matching diagnostics and output for invalid
 rules, BOM and CRLF input, comments, blank lines, a missing final newline, and
 two-file rule chaining.
 
+## Large `--show` and `--left` workloads
+
+Normal potfile formats use a narrower lookup path after the hash list has been
+sorted. Large unsalted lists build a 16-bit range index from the first digest
+word used by Hashcat's comparator, reducing each potfile search to one small
+contiguous range. Salted modes locate the salt group first and compare the
+digest only within that group. Module-specific custom potfile checks and the
+keep-all-hashes path used for special username/dynamic output retain their
+original behavior.
+
+With `-o`, `outfile_write()` writes each selected line immediately. The old
+code nevertheless allocated a second copy of every result, sorted those
+copies for a stdout event handler that ignores them when an outfile is open,
+and then freed the copies one by one. Shooter skips that unused work. This is
+most visible for `--left`, which may select nearly every loaded hash. Runs
+without `-o` retain the existing original-input-order stdout behavior.
+
+On the supplied 84,381,739-entry (2.87 GB) mode-0 list and 41,948,260-byte
+potfile, output directed to the Windows null device measured:
+
+- `--left`: 105.501 seconds before and 18.637 seconds after, a 5.66-times
+  speedup and an 82.3% reduction in total process time.
+- Alternating warm-cache `--show` runs: 13.02 and 14.90 seconds before versus
+  12.74 and 14.47 seconds after. Hash parsing dominates this smaller result,
+  so the end-to-end improvement is modest even though each potfile lookup
+  searches a much narrower range.
+
+The real 296,078-byte `--show` output was byte-identical before and after the
+change. Separate mixed cracked/uncracked fixtures produced byte-identical
+`--show` and `--left` files for unsalted MD5 and salted mode 10. Actual
+outfile time also depends on storage speed and the amount of selected output.
+
 The original v7.1.2-shooter.20260811.4 CUDA-only probe measurement is retained
 below for reference.
 

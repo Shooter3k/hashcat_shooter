@@ -39,7 +39,7 @@ explanation.
 18. **[Multi-GPU checkpoints keep every GPU coordinated](docs/shooter-enhancements.md#18-coordinated-multi-gpu-checkpoints)** — checkpoint cancellation safely resumes all devices.
 19. **[CUDA startup failures retry without dropping GPUs](docs/shooter-enhancements.md#19-atomic-cuda-startup-retry)** — a failed device cannot silently produce a partial-GPU run.
 20. **[Temporarily locked output files are retried](docs/shooter-enhancements.md#20-windows-outfile-lock-recovery)** — brief Windows locks do not immediately lose results.
-21. **[`[k]eep-going` can stop outfile-directory checking](docs/shooter-enhancements.md#21-interactive-outfile-check-bypass)** — disable it for the current run without changing the directory.
+21. **[`[i]gnore outfile-check-dir` stops directory checking](docs/shooter-enhancements.md#21-ignore-outfile-check-dir)** — stop checking it for the current run without changing the directory.
 22. **[Outfile-check-only cracks are labeled clearly](docs/shooter-enhancements.md#22-clear-outfile-check-completion-status)** — the final status identifies where the result came from.
 23. **[Loopback induction files clean up safely on Windows](docs/shooter-enhancements.md#23-reliable-loopback-cleanup)** — consumed files are not rediscovered forever.
 24. **[Quit shows shutdown progress](docs/shooter-enhancements.md#24-visible-quit-progress)** — the console explains what hashcat is still finishing.
@@ -65,6 +65,8 @@ explanation.
 44. **[Huge rule files load across CPU cores](docs/shooter-enhancements.md#44-parallel-rule-file-loading)** — all rule-capable algorithms spend less time waiting at `Loading rules`.
 45. **[`Restore.Sub` status lines are optional](docs/shooter-enhancements.md#45-optional-restoresub-status-lines)** — they stay hidden unless `--status-restore-sub` is requested.
 46. **[Prebuilt releases run on standard x64 CPUs](docs/shooter-enhancements.md#46-portable-prebuilt-windows-binaries)** — release binaries do not inherit the GitHub runner's CPU-only instructions.
+47. **[`--show` and `--left` finish faster on huge lists](docs/shooter-enhancements.md#47-faster-show-and-left)** — large potfiles use narrower lookups, and `-o` jobs skip a redundant full-result copy and sort.
+48. **[Linux builds complete successfully](docs/shooter-enhancements.md#48-working-linux-builds)** — Shooter's mdxfind bridge now links in both static and shared Linux builds.
 
 ## Download and run
 
@@ -103,6 +105,7 @@ free disk space. Nothing is installed system-wide, and the system or user
 | Resumable candidate output | [docs/stdout-sessions.md](docs/stdout-sessions.md) |
 | mdxfind modes | [docs/mdxfind-modules.md](docs/mdxfind-modules.md) and the [complete JSON registry](docs/mdxfind-modules.json) |
 | Windows builds | [how_to_compile.txt](how_to_compile.txt) |
+| Linux builds | [BUILD.md](BUILD.md) |
 | Every release and verification result | [CHANGELOG.md](CHANGELOG.md) |
 | Source comparison | [Feature origins](docs/shooter-enhancements.md) and the [complete comparison with the upstream baseline](https://github.com/Shooter3k/hashcat_shooter/compare/fdad9f2f7bd7ec7f53056727e39331a17514db7c...master) |
 

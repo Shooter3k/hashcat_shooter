@@ -2939,13 +2939,13 @@ typedef struct induct_ctx
 typedef struct outcheck_ctx
 {
   bool enabled;
-  bool keep_going;
+  bool ignore;
 
   u32 digests_done;
 
   char *root_directory;
 
-  hc_thread_mutex_t mux_keep_going;
+  hc_thread_mutex_t mux_ignore;
 
 } outcheck_ctx_t;
 

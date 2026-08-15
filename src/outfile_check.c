@@ -19,43 +19,43 @@ static int sort_by_salt_buf (const void *v1, const void *v2, MAYBE_UNUSED void *
   return sort_by_salt (v1, v2);
 }
 
-static bool outfile_check_keep_going_requested (hashcat_ctx_t *hashcat_ctx)
+static bool outfile_check_ignore_requested (hashcat_ctx_t *hashcat_ctx)
 {
   outcheck_ctx_t *outcheck_ctx = hashcat_ctx->outcheck_ctx;
 
-  hc_thread_mutex_lock (outcheck_ctx->mux_keep_going);
+  hc_thread_mutex_lock (outcheck_ctx->mux_ignore);
 
-  const bool keep_going = outcheck_ctx->keep_going;
+  const bool ignore = outcheck_ctx->ignore;
 
-  hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+  hc_thread_mutex_unlock (outcheck_ctx->mux_ignore);
 
-  return keep_going;
+  return ignore;
 }
 
-bool outfile_check_keep_going_available (hashcat_ctx_t *hashcat_ctx)
+bool outfile_check_ignore_available (hashcat_ctx_t *hashcat_ctx)
 {
   outcheck_ctx_t *outcheck_ctx = hashcat_ctx->outcheck_ctx;
 
-  hc_thread_mutex_lock (outcheck_ctx->mux_keep_going);
+  hc_thread_mutex_lock (outcheck_ctx->mux_ignore);
 
-  const bool available = (outcheck_ctx->enabled == true) && (outcheck_ctx->keep_going == false);
+  const bool available = (outcheck_ctx->enabled == true) && (outcheck_ctx->ignore == false);
 
-  hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+  hc_thread_mutex_unlock (outcheck_ctx->mux_ignore);
 
   return available;
 }
 
-bool outfile_check_keep_going (hashcat_ctx_t *hashcat_ctx)
+bool outfile_check_ignore (hashcat_ctx_t *hashcat_ctx)
 {
   outcheck_ctx_t *outcheck_ctx = hashcat_ctx->outcheck_ctx;
 
-  hc_thread_mutex_lock (outcheck_ctx->mux_keep_going);
+  hc_thread_mutex_lock (outcheck_ctx->mux_ignore);
 
-  const bool changed = (outcheck_ctx->enabled == true) && (outcheck_ctx->keep_going == false);
+  const bool changed = (outcheck_ctx->enabled == true) && (outcheck_ctx->ignore == false);
 
-  if (changed == true) outcheck_ctx->keep_going = true;
+  if (changed == true) outcheck_ctx->ignore = true;
 
-  hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+  hc_thread_mutex_unlock (outcheck_ctx->mux_ignore);
 
   return changed;
 }
@@ -124,7 +124,7 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
   {
     sleep (1);
 
-    if (outfile_check_keep_going_requested (hashcat_ctx) == true) break;
+    if (outfile_check_ignore_requested (hashcat_ctx) == true) break;
 
     if (status_ctx->devices_status != STATUS_RUNNING) continue;
 
@@ -198,7 +198,7 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
 
     for (int j = 0; j < out_cnt; j++)
     {
-      if (outfile_check_keep_going_requested (hashcat_ctx) == true) break;
+      if (outfile_check_ignore_requested (hashcat_ctx) == true) break;
 
       HCFILE fp;
 
@@ -232,22 +232,22 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
       {
         size_t line_len = fgetl (&fp, line_buf, HCBUFSIZ_LARGE);
 
-        // Synchronize a complete parsed line with the interactive keep-going request. The request
+        // Synchronize a complete parsed line with the interactive ignore request. The request
         // may wait for the line already in progress, but after it returns no later line can mark a
         // hash as cracked. File I/O stays outside the lock so a slow read cannot delay the key.
 
-        hc_thread_mutex_lock (outcheck_ctx->mux_keep_going);
+        hc_thread_mutex_lock (outcheck_ctx->mux_ignore);
 
-        if (outcheck_ctx->keep_going == true)
+        if (outcheck_ctx->ignore == true)
         {
-          hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+          hc_thread_mutex_unlock (outcheck_ctx->mux_ignore);
 
           break;
         }
 
         if (line_len == 0)
         {
-          hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+          hc_thread_mutex_unlock (outcheck_ctx->mux_ignore);
 
           continue;
         }
@@ -354,7 +354,7 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
           if (status_ctx->shutdown_inner == true) break;
         }
 
-        hc_thread_mutex_unlock (outcheck_ctx->mux_keep_going);
+        hc_thread_mutex_unlock (outcheck_ctx->mux_ignore);
       }
 
       hcfree (line_buf);
@@ -366,7 +366,7 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
       hc_fclose (&fp);
 
       if (status_ctx->shutdown_inner == true) break;
-      if (outfile_check_keep_going_requested (hashcat_ctx) == true) break;
+      if (outfile_check_ignore_requested (hashcat_ctx) == true) break;
     }
   }
 
@@ -412,7 +412,7 @@ int outcheck_ctx_init (hashcat_ctx_t *hashcat_ctx)
   const user_options_t  *user_options  = hashcat_ctx->user_options;
 
   outcheck_ctx->enabled = false;
-  outcheck_ctx->keep_going = false;
+  outcheck_ctx->ignore = false;
   outcheck_ctx->digests_done = 0;
   outcheck_ctx->root_directory = NULL;
 
@@ -484,7 +484,7 @@ void outcheck_ctx_destroy (hashcat_ctx_t *hashcat_ctx)
   }
 
   outcheck_ctx->enabled = false;
-  outcheck_ctx->keep_going = false;
+  outcheck_ctx->ignore = false;
   outcheck_ctx->digests_done = 0;
   outcheck_ctx->root_directory = NULL;
 }

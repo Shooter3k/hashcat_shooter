@@ -12,11 +12,10 @@
 #include <mutils/mtypes.h>
 #include <mutils/mutils.h>
 
-#ifdef WIN32
-# define WIN32DLL_DEFINE __declspec( dllexport)
-#else
-# define WIN32DLL_DEFINE
-#endif
+/* mhash is linked privately into bridge_mdxfind, not shipped as a standalone
+ * Windows DLL. Exporting these definitions is unnecessary and Clang rejects
+ * adding dllexport after the unannotated declarations in mutils.h. */
+#define WIN32DLL_DEFINE
 
 #define RAND32 (mutils_word32) ((mutils_word32)rand() << 17 ^ (mutils_word32)rand() << 9 ^ rand())
 

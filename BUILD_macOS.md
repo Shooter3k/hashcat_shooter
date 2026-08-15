@@ -8,7 +8,7 @@ Make sure to have the HomeBrew upgraded.
 
 ```
 brew install mingw-w64
-git clone https://github.com/hashcat/hashcat
+git clone https://github.com/Shooter3k/hashcat_shooter.git
 git clone https://github.com/win-iconv/win-iconv
 cd win-iconv/
 cmake -D WIN_ICONV_BUILD_EXECUTABLE=OFF -D CMAKE_INSTALL_PREFIX=/opt/win-iconv-64 -D CMAKE_CXX_COMPILER=$(which x86_64-w64-mingw32-g++) -D CMAKE_C_COMPILER=$(which x86_64-w64-mingw32-gcc) -D CMAKE_SYSTEM_NAME=Windows
@@ -21,9 +21,9 @@ sudo tar --zstd -xf mingw-w64-x86_64-python-3.12.10-1-any.pkg.tar.zst -C /opt/wi
 
 ### Building ###
 
-You've already cloned the latest master revision of hashcat repository above, so switch to the folder and type "make win" to start compiling hashcat
+You've already cloned the latest Shooter revision above, so switch to the folder and type `make win` to start compiling it.
 ```
-cd hashcat/
+cd hashcat_shooter/
 make win
 ```
 

@@ -1,5 +1,56 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260815.39
+
+Faster `--show` and `--left` processing for very large hash lists and
+potfiles, a clearer outfile-check command, and a repaired Linux build.
+
+### Changed
+
+- The interactive outfile-directory command is now
+  `[i]gnore outfile-check-dir` and uses the `i` key in every active and paused
+  prompt.
+- Large unsalted lists build a compact 16-bit range index so normal potfile
+  entries are searched within a narrow slice of the sorted hash array.
+- Salted modes locate the matching salt group first and search only that
+  group's digests. Custom potfile validators and special keep-all-hashes jobs
+  retain their existing paths.
+- When `-o` is open, `--show` and `--left` no longer allocate, sort, and free a
+  redundant in-memory copy of results that the stdout event handler will not
+  consume.
+
+### Fixed
+
+- The mdxfind bridge's bundled static libraries are now compiled as
+  position-independent code. Linux static and shared builds can link
+  `bridge_mdxfind.so` instead of failing on `librhash.a` relocations.
+- The privately linked mhash code no longer declares internal functions as
+  Windows DLL exports, avoiding Clang's conflicting `dllexport` declaration
+  errors in the supported-platform CI build.
+- The primary build matrix now covers Shooter's supported Linux and Windows
+  targets. Inherited macOS and BSD jobs were removed instead of presenting
+  those unverified mdxfind targets as supported.
+- The Linux build documentation now points to this repository and lists the
+  compiler, OpenSSL, Python, and current stable Rust prerequisites needed by
+  Shooter's additional bridges and feeds.
+
+### Measured and verified
+
+- On the supplied 84,381,739-entry mode-0 list and 41,948,260-byte potfile,
+  `--left -o NUL` fell from 105.501 to 18.637 seconds: 5.66 times faster and
+  82.3% less total process time.
+- Alternating warm-cache `--show -o NUL` runs improved from 13.02/14.90
+  seconds to 12.74/14.47 seconds. Hash parsing remains most of that runtime.
+- The real 296,078-byte `--show` output was byte-identical to the previous
+  release. Separate unsalted MD5 and salted mode-10 fixtures produced
+  byte-identical `--show` and `--left` files.
+- A live 12-GPU session displayed `[i]gnore outfile-check-dir`; pressing `i`
+  printed `Ignoring --outfile-check-dir for the rest of this run.` and the
+  command disappeared from the next prompt.
+- Clean Ubuntu 24.04 Clang builds completed with both `SHARED=0` and
+  `SHARED=1`; the resulting executable and `bridge_mdxfind.so` were verified
+  as x86-64 ELF binaries and the executable reported this release version.
+
 ## v7.1.2-shooter.20260815.38
 
 Portable Windows release binaries, plus the large-rule and status improvements
@@ -929,35 +980,35 @@ Atomic CUDA startup retry for multi-GPU jobs.
 
 ## v7.1.2-shooter.20260812.9 (local source build)
 
-Interactive outfile-check keep-going control.
+Interactive ignore-outfile-check-dir control.
 
 ### Added
 
-- Added `[k]eep-going` to the interactive menu whenever outfile-directory
+- Added `[i]gnore outfile-check-dir` to the interactive menu whenever outfile-directory
   checking is active.
-- Pressing `k` stops further `--outfile-check-dir` processing for the current
+- Pressing `i` stops further `--outfile-check-dir` processing for the current
   run without deleting, truncating, or modifying anything in that directory.
 - The checker and key handler synchronize at outfile-line boundaries. A line
-  already being processed may finish, but after `k` takes effect no later line
+  already being processed may finish, but after `i` takes effect no later line
   can mark another hash as cracked.
 
 ### Compatibility
 
-- Hashes processed before `k` remain marked as cracked. The control applies to
+- Hashes processed before `i` remain marked as cracked. The control applies to
   the current process only; a new run or `--restore` starts with the configured
   outfile checker enabled again.
 - The key is hidden when outfile checking is disabled, unavailable for the
-  selected mode, or already bypassed.
+  selected mode, or already ignored.
 
 ### Verified
 
 - Completed a forced full Windows MSYS2/MinGW64 production rebuild and
   confirmed `hashcat.exe --version` reports
   `v7.1.2-shooter.20260812.9`.
-- On the target 12 x RTX 4090 system, pressed `k`, added a matching MD5 result
+- On the target 12 x RTX 4090 system, pressed `i`, added a matching MD5 result
   to the watched directory, waited through multiple one-second check periods,
   and confirmed the attack remained `Running` with `Recovered: 0/1`.
-- Repeated the same test without pressing `k` and confirmed the unchanged
+- Repeated the same test without pressing `i` and confirmed the unchanged
   checker found the result after one second and completed as `Cracked` with
   `Recovered: 1/1`.
 

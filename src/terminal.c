@@ -29,11 +29,11 @@ static const char *const PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoin
 static const char *const RUNTIME_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower => ";
 static const char *const RUNTIME_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower => ";
 
-static const char *const OUTCHECK_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [k]eep-going => ";
-static const char *const OUTCHECK_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [k]eep-going => ";
+static const char *const OUTCHECK_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [i]gnore outfile-check-dir => ";
+static const char *const OUTCHECK_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [i]gnore outfile-check-dir => ";
 
-static const char *const RUNTIME_OUTCHECK_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower [k]eep-going => ";
-static const char *const RUNTIME_OUTCHECK_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower [k]eep-going => ";
+static const char *const RUNTIME_OUTCHECK_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower [i]gnore outfile-check-dir => ";
+static const char *const RUNTIME_OUTCHECK_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower [i]gnore outfile-check-dir => ";
 
 static const char *terminal_prompt (hashcat_ctx_t *hashcat_ctx)
 {
@@ -42,7 +42,7 @@ static const char *terminal_prompt (hashcat_ctx_t *hashcat_ctx)
 
   const bool paused = (status_ctx->devices_status == STATUS_PAUSED);
   const bool runtime = (user_options->runtime > 0);
-  const bool outcheck = outfile_check_keep_going_available (hashcat_ctx);
+  const bool outcheck = outfile_check_ignore_available (hashcat_ctx);
 
   if (runtime == true)
   {
@@ -445,17 +445,17 @@ static void keypress (hashcat_ctx_t *hashcat_ctx)
 
         break;
 
-      case 'k':
+      case 'i':
 
         event_log_info (hashcat_ctx, NULL);
 
-        if (outfile_check_keep_going (hashcat_ctx) == true)
+        if (outfile_check_ignore (hashcat_ctx) == true)
         {
-          event_log_info (hashcat_ctx, "Keep-going enabled. Further --outfile-check-dir processing is disabled for this run.");
+          event_log_info (hashcat_ctx, "Ignoring --outfile-check-dir for the rest of this run.");
         }
         else
         {
-          event_log_info (hashcat_ctx, "--outfile-check-dir processing is not active or was already disabled.");
+          event_log_info (hashcat_ctx, "--outfile-check-dir is not active or is already being ignored.");
         }
 
         event_log_info (hashcat_ctx, NULL);

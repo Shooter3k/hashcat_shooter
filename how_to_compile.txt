@@ -114,97 +114,14 @@ Output binary:
 Version format:
     v7.1.2-shooter.YYYYMMDD.REVISION
 
-For example, the first build revision produced on August 11, 2026 reports:
-    v7.1.2-shooter.20260811.1
+The current release reports:
+    v7.1.2-shooter.20260815.39
 
-The runtime lower-control build from the same date reports:
-    v7.1.2-shooter.20260811.2
+The release date and revision are pinned in src\Makefile so rebuilding a tag
+produces the same version. See CHANGELOG.md for the complete release history.
+For a one-off build, the revision can be overridden:
 
-The legacy yescrypt mode 67000 compatibility build reports:
-    v7.1.2-shooter.20260811.3
-
-The 12 x RTX 4090 Windows fast-start build reports:
-    v7.1.2-shooter.20260811.4
-
-The current local checkpoint/startup/elapsed-time build reports (build date is
-generated when make starts):
-    v7.1.2-shooter.20260812.5
-
-The RTX 4090 autotune-cache validation fix reports:
-    v7.1.2-shooter.20260812.6
-
-The transient Windows outfile-access retry build reports:
-    v7.1.2-shooter.20260812.7
-
-The resumable --stdout session build reports:
-    v7.1.2-shooter.20260812.8
-
-The interactive outfile-check keep-going build reports:
-    v7.1.2-shooter.20260812.9
-
-The atomic CUDA context retry and in-place stream/event retry build reports:
-    v7.1.2-shooter.20260812.10
-
-The whole-candidate-rules and visible-quit-progress build reports:
-    v7.1.2-shooter.20260812.13
-
-The dynamic multi-file mode-1 build reports:
-    v7.1.2-shooter.20260812.14
-
-The mode-1 whole-candidate-rule status-name fix reports:
-    v7.1.2-shooter.20260812.15
-
-The phpBB3 bcrypt-over-phpass module build reports:
-    v7.1.2-shooter.20260812.16
-
-The responsive phpBB3 bcrypt-stage tuning build reports:
-    v7.1.2-shooter.20260812.17
-
-The official-hashcat synchronization through commit 9c735bade, including
-official general multi-hybrid attack mode 12, reports:
-    v7.1.2-shooter.20260812.18
-
-The parallel large-unsalted-hashlist sorting build reports:
-    v7.1.2-shooter.20260812.19
-
-The complete mdxfind named-module build reports:
-    v7.1.2-shooter.20260813.20
-
-The mdxfind public-mode display correction reports:
-    v7.1.2-shooter.20260813.21
-
-The e987 Magento Argon2 compatibility build reports:
-    v7.1.2-shooter.20260813.22
-
-The fully verified mdxfind compatibility-module build reports:
-    v7.1.2-shooter.20260813.23
-
-The documented mdxfind verification release reports:
-    v7.1.2-shooter.20260813.24
-
-The Pure Kernel status-highlight release reports:
-    v7.1.2-shooter.20260813.25
-
-The optimized high-throughput plaintext/stdout release reports:
-    v7.1.2-shooter.20260813.26
-
-The outfile-check-dir status distinction release reports:
-    v7.1.2-shooter.20260814.27
-
-The portable third-party Windows build release reports:
-    v7.1.2-shooter.20260814.28
-
-The high-throughput cracked-result streaming release reports:
-    v7.1.2-shooter.20260814.29
-
-The self-contained repo-local Windows build release reports:
-    v7.1.2-shooter.20260814.30
-
-The date is generated automatically when make starts. Increment
-SHOOTER_BUILD_REVISION in src\Makefile when producing another published
-revision on the same date. For a one-off build, it can also be overridden:
-
-    make SHOOTER_BUILD_REVISION=5 -j
+    make SHOOTER_BUILD_REVISION=40 -j
 
 ------------------------------------------------------------------------
  BUILD (optional - launch the build from PowerShell)
