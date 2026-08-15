@@ -120,6 +120,58 @@ geometry versus 693.1 GH/s with acceleration 96, a difference of approximately
 short-session startup and host-memory use can raise or disable the staging
 limit as described above.
 
+## Large text hash-list parsing
+
+Native-format text lists with at least 4,194,304 nonempty hashes use a
+memory-mapped parser with up to 64 CPU workers. Mode 0 retains its specialized
+hex validation and direct MD5 decoder. Other compatible modes pass each line
+to the selected module's own decoder, preserving raw, salted, structured,
+extended-salt, hook-salt, original-hash-copy, and compatible postprocess
+formats. The file mapping is released before hash sorting begins.
+
+Empty lines and mixed LF/CRLF endings retain the original behavior. If any
+worker encounters malformed input, Hashcat clears the partial digest data and
+reruns the complete file through the original sequential loader. This keeps
+the original line-specific warnings and partial-file recovery semantics.
+
+Required binary containers, split-hash formats, non-native hash-list formats,
+compressed or BOM-prefixed inputs, username/dynamic parsing, association
+autosplit, and postprocessors using external keyfiles or keyboard maps retain
+the original loader. Optional-binary modes can participate when Hashcat has
+classified the input as native text.
+
+Set `HASHCAT_HASH_PARSE_PARALLEL_DISABLE=1` to force the original parser for an
+A/B test:
+
+```powershell
+$env:HASHCAT_HASH_PARSE_PARALLEL_DISABLE = '1'
+M:\github\hashcat_shooter\hashcat.exe ...
+Remove-Item Env:HASHCAT_HASH_PARSE_PARALLEL_DISABLE
+```
+
+`HASHCAT_HASH_PARSE_MD5_DISABLE=1` remains a mode-0-compatible alias.
+`HASHCAT_HASH_PARSE_PARALLEL_MIN` can set a lower activation count for focused
+correctness tests or controlled benchmarks; production use should normally
+leave the default unchanged.
+
+On the Threadripper PRO 5995WX system:
+
+- The supplied 2.87 GB mode-0 file contained 84,381,740 physical lines, one
+  empty line, and 84,381,739 MD5 hashes. Parse plus sort fell from 33.56
+  seconds to 6.41 seconds. Preprocessing through duplicate removal fell from
+  48.12 seconds to 11.28 seconds.
+- A 4,194,304-entry SHA-1 fixture completed `--left` in 0.57 seconds versus
+  1.49 seconds with the original parser.
+- A 4,194,304-entry salted mode-10 fixture completed `--left` in 1.36 seconds
+  versus 2.48 seconds with the original parser.
+
+BOM-free two-worker fixtures were also compared with the forced original
+parser across all 854 modes exposing usable self-test examples. All 814 that
+loaded successfully matched, and 39 special-file/option failures were
+identical. Mode 32500 was excluded from output comparison because repeated
+original-parser runs expose an existing nondeterministic trailing-byte encoder
+defect.
+
 The original v7.1.2-shooter.20260811.4 CUDA-only probe measurement is retained
 below for reference.
 

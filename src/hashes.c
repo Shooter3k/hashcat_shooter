@@ -28,6 +28,12 @@
 #include "brain.h"
 #endif
 
+#if defined (_WIN)
+#include "feeds/mmap_windows.c"
+#else
+#include <sys/mman.h>
+#endif
+
 int sort_by_digest_p0p1 (const void *v1, const void *v2, void *v3)
 {
   const u32 *d1 = (const u32 *) v1;
@@ -116,6 +122,446 @@ int sort_by_hash_no_salt (const void *v1, const void *v2, void *v3)
   const void *d2 = h2->digest;
 
   return sort_by_digest_p0p1 (d1, d2, v3);
+}
+
+#define HASH_PARSE_PARALLEL_MINIMUM          (1U << 22)
+#define HASH_PARSE_PARALLEL_BYTES_PER_THREAD (1U << 24)
+#define HASH_PARSE_PARALLEL_THREADS_MAX      64
+
+typedef enum hash_parse_parallel_kind
+{
+  HASH_PARSE_PARALLEL_MODULE,
+  HASH_PARSE_PARALLEL_MD5
+
+} hash_parse_parallel_kind_t;
+
+typedef struct hash_parse_parallel_thread_param
+{
+  const u8 *input;
+
+  size_t from;
+  size_t to;
+
+  u64 hashes_base;
+  u64 lines;
+
+  size_t line_max;
+
+  hash_t             *hashes_buf;
+  const hashconfig_t  *hashconfig;
+  const module_ctx_t  *module_ctx;
+  const user_options_t       *user_options;
+  const user_options_extra_t *user_options_extra;
+
+  hash_parse_parallel_kind_t kind;
+
+  bool decode;
+  bool valid;
+
+} hash_parse_parallel_thread_param_t;
+
+static inline u32 hash_parse_md5_hex_to_u32 (const u8 *hex)
+{
+  const u32 h0 = (hex[0] & 15) + (hex[0] >> 6) * 9;
+  const u32 h1 = (hex[1] & 15) + (hex[1] >> 6) * 9;
+  const u32 h2 = (hex[2] & 15) + (hex[2] >> 6) * 9;
+  const u32 h3 = (hex[3] & 15) + (hex[3] >> 6) * 9;
+  const u32 h4 = (hex[4] & 15) + (hex[4] >> 6) * 9;
+  const u32 h5 = (hex[5] & 15) + (hex[5] >> 6) * 9;
+  const u32 h6 = (hex[6] & 15) + (hex[6] >> 6) * 9;
+  const u32 h7 = (hex[7] & 15) + (hex[7] >> 6) * 9;
+
+  return (h1 <<  0)
+       | (h0 <<  4)
+       | (h3 <<  8)
+       | (h2 << 12)
+       | (h5 << 16)
+       | (h4 << 20)
+       | (h7 << 24)
+       | (h6 << 28);
+}
+
+#if defined (_WIN)
+static HC_API_CALL DWORD hash_parse_parallel_thread (void *p)
+#else
+static HC_API_CALL void *hash_parse_parallel_thread (void *p)
+#endif
+{
+  hash_parse_parallel_thread_param_t *param = (hash_parse_parallel_thread_param_t *) p;
+
+  const u8 *input = param->input;
+
+  hc_memchr_t hc_memchr = hc_memchr_get ();
+
+  size_t pos = param->from;
+
+  u64 line_pos = 0;
+
+  param->valid = true;
+
+  char *line_buf = NULL;
+
+  if ((param->decode == true) && (param->kind == HASH_PARSE_PARALLEL_MODULE))
+  {
+    line_buf = (char *) hcmalloc (param->line_max + 1);
+  }
+
+  while (pos < param->to)
+  {
+    const size_t left = param->to - pos;
+    const size_t step = hc_memchr (input + pos, '\n', left);
+
+    size_t line_len = step;
+
+    while ((line_len > 0) && (input[pos + line_len - 1] == '\r')) line_len--;
+
+    if (line_len == 0)
+    {
+      // Match fgetl() parsing: empty lines are silently skipped.
+    }
+    else
+    {
+      if (line_len > param->line_max) param->line_max = line_len;
+
+      if (line_len >= HCBUFSIZ_LARGE)
+      {
+        param->valid = false;
+
+        line_pos++;
+
+        pos += step;
+
+        if ((pos < param->to) && (input[pos] == '\n')) pos++;
+
+        continue;
+      }
+
+      if ((param->kind == HASH_PARSE_PARALLEL_MD5)
+       && ((line_len != 32) || (is_valid_hex_string (input + pos, line_len) == false)))
+      {
+        param->valid = false;
+
+        line_pos++;
+
+        pos += step;
+
+        if ((pos < param->to) && (input[pos] == '\n')) pos++;
+
+        continue;
+      }
+
+      if (param->decode == true)
+      {
+        const size_t hash_pos = (size_t) (param->hashes_base + line_pos);
+
+        hash_t *hash = &param->hashes_buf[hash_pos];
+
+        if (param->kind == HASH_PARSE_PARALLEL_MD5)
+        {
+          u32 *digest = (u32 *) hash->digest;
+
+          digest[0] = hash_parse_md5_hex_to_u32 (input + pos +  0);
+          digest[1] = hash_parse_md5_hex_to_u32 (input + pos +  8);
+          digest[2] = hash_parse_md5_hex_to_u32 (input + pos + 16);
+          digest[3] = hash_parse_md5_hex_to_u32 (input + pos + 24);
+
+          if (param->hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL)
+          {
+            digest[0] -= 0x67452301U;
+            digest[1] -= 0xefcdab89U;
+            digest[2] -= 0x98badcfeU;
+            digest[3] -= 0x10325476U;
+          }
+        }
+        else
+        {
+          memcpy (line_buf, input + pos, line_len);
+
+          line_buf[line_len] = 0;
+
+          if ((param->hashconfig->opts_type & OPTS_TYPE_HASH_COPY) || (param->user_options->hash_copy == true))
+          {
+            hcfree (hash->hash_info->orighash);
+
+            hash->hash_info->orighash = hcstrdup (line_buf);
+          }
+
+          if (param->hashconfig->is_salted == true)
+          {
+            const u32 orig_pos = hash->salt->orig_pos;
+
+            memset (hash->salt, 0, sizeof (salt_t));
+
+            hash->salt->orig_pos = orig_pos;
+          }
+
+          if (param->hashconfig->esalt_size > 0)
+          {
+            memset (hash->esalt, 0, param->hashconfig->esalt_size);
+          }
+
+          if (param->hashconfig->hook_salt_size > 0)
+          {
+            memset (hash->hook_salt, 0, param->hashconfig->hook_salt_size);
+          }
+
+          int parser_status = param->module_ctx->module_hash_decode
+          (
+            param->hashconfig,
+            hash->digest,
+            hash->salt,
+            hash->esalt,
+            hash->hook_salt,
+            hash->hash_info,
+            line_buf,
+            (int) line_len
+          );
+
+          if ((parser_status >= PARSER_GLOBAL_ZERO)
+           && (param->module_ctx->module_hash_decode_postprocess != MODULE_DEFAULT))
+          {
+            parser_status = param->module_ctx->module_hash_decode_postprocess
+            (
+              param->hashconfig,
+              hash->digest,
+              hash->salt,
+              hash->esalt,
+              hash->hook_salt,
+              hash->hash_info,
+              param->user_options,
+              param->user_options_extra
+            );
+          }
+
+          if (parser_status < PARSER_GLOBAL_ZERO)
+          {
+            param->valid = false;
+          }
+        }
+      }
+
+      line_pos++;
+    }
+
+    pos += step;
+
+    if ((pos < param->to) && (input[pos] == '\n')) pos++;
+  }
+
+  param->lines = line_pos;
+
+  hcfree (line_buf);
+
+  return 0;
+}
+
+static void hash_parse_parallel_run_threads (hc_thread_t *threads, hash_parse_parallel_thread_param_t *params, const u32 threads_cnt)
+{
+  u32 threads_created = 0;
+
+  for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+  {
+    hc_thread_t thread;
+
+    #if defined (_WIN)
+    hc_thread_create (thread, hash_parse_parallel_thread, &params[thread_pos]);
+
+    if (thread == NULL)
+    #else
+    if (hc_thread_create (thread, hash_parse_parallel_thread, &params[thread_pos]) != 0)
+    #endif
+    {
+      hash_parse_parallel_thread (&params[thread_pos]);
+    }
+    else
+    {
+      threads[threads_created++] = thread;
+    }
+  }
+
+  hc_thread_wait (threads_created, threads);
+
+  #if defined (_WIN)
+  for (u32 thread_pos = 0; thread_pos < threads_created; thread_pos++)
+  {
+    CloseHandle (threads[thread_pos]);
+  }
+  #endif
+}
+
+static u64 hash_parse_parallel_minimum (void)
+{
+  const char *value = getenv ("HASHCAT_HASH_PARSE_PARALLEL_MIN");
+
+  if ((value != NULL) && (value[0] != 0))
+  {
+    char *end = NULL;
+
+    const unsigned long long parsed = strtoull (value, &end, 10);
+
+    if ((end != value) && (*end == 0) && (parsed >= 2) && (parsed <= UINT32_MAX))
+    {
+      return (u64) parsed;
+    }
+  }
+
+  return HASH_PARSE_PARALLEL_MINIMUM;
+}
+
+static bool hash_parse_parallel_prepare
+(
+  const u8 *input,
+  const size_t input_sz,
+  const hash_parse_parallel_kind_t kind,
+  const u64 minimum,
+  hc_thread_t **threads_buf,
+  hash_parse_parallel_thread_param_t **params_buf,
+  u32 *threads_cnt_buf,
+  u64 *hashes_avail
+)
+{
+  const u32 processors = (u32) hc_get_processor_count ();
+
+  u32 threads_cnt = processors;
+
+  threads_cnt = MIN (threads_cnt, HASH_PARSE_PARALLEL_THREADS_MAX);
+
+  const size_t threads_by_size = 1 + ((input_sz - 1) / HASH_PARSE_PARALLEL_BYTES_PER_THREAD);
+
+  threads_cnt = MIN (threads_cnt, (u32) MIN (threads_by_size, HASH_PARSE_PARALLEL_THREADS_MAX));
+
+  // Short text formats can contain the minimum number of hashes in less than
+  // one byte-sized work unit. Keep two workers available on multi-core hosts.
+
+  if ((processors >= 2) && (threads_cnt < 2)) threads_cnt = 2;
+
+  if (threads_cnt < 2) return false;
+
+  hc_thread_t *threads = (hc_thread_t *) hccalloc (threads_cnt, sizeof (hc_thread_t));
+
+  hash_parse_parallel_thread_param_t *params = (hash_parse_parallel_thread_param_t *) hccalloc (threads_cnt, sizeof (hash_parse_parallel_thread_param_t));
+
+  if ((threads == NULL) || (params == NULL))
+  {
+    hcfree (params);
+    hcfree (threads);
+
+    return false;
+  }
+
+  hc_memchr_t hc_memchr = hc_memchr_get ();
+
+  params[0].from = 0;
+
+  for (u32 thread_pos = 1; thread_pos < threads_cnt; thread_pos++)
+  {
+    size_t from = (input_sz * thread_pos) / threads_cnt;
+
+    const size_t left = input_sz - from;
+    const size_t step = hc_memchr (input + from, '\n', left);
+
+    from += step;
+
+    if ((from < input_sz) && (input[from] == '\n')) from++;
+
+    params[thread_pos].from = from;
+  }
+
+  for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+  {
+    hash_parse_parallel_thread_param_t *param = &params[thread_pos];
+
+    param->input  = input;
+    param->to     = (thread_pos + 1 < threads_cnt) ? params[thread_pos + 1].from : input_sz;
+    param->kind   = kind;
+    param->decode = false;
+  }
+
+  hash_parse_parallel_run_threads (threads, params, threads_cnt);
+
+  u64 hashes_cnt = 0;
+
+  bool valid = true;
+
+  for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+  {
+    if (params[thread_pos].valid == false) valid = false;
+
+    hashes_cnt += params[thread_pos].lines;
+  }
+
+  if ((hashes_cnt < minimum) || (hashes_cnt > UINT32_MAX)) valid = false;
+
+  if (valid == false)
+  {
+    hcfree (params);
+    hcfree (threads);
+
+    return false;
+  }
+
+  *threads_buf     = threads;
+  *params_buf      = params;
+  *threads_cnt_buf = threads_cnt;
+  *hashes_avail    = hashes_cnt;
+
+  return true;
+}
+
+static bool hash_parse_parallel_eligible
+(
+  const hashconfig_t *hashconfig,
+  const module_ctx_t *module_ctx,
+  const user_options_t *user_options,
+  const user_options_extra_t *user_options_extra
+)
+{
+  if (hashconfig->opts_type & OPTS_TYPE_HASH_SPLIT) return false;
+  if ((hashconfig->opts_type & OPTS_TYPE_BINARY_HASHFILE)
+   && ((hashconfig->opts_type & OPTS_TYPE_BINARY_HASHFILE_OPTIONAL) == 0)) return false;
+
+  if (module_ctx->module_hash_decode == MODULE_DEFAULT) return false;
+
+  if ((module_ctx->module_hash_decode_postprocess != MODULE_DEFAULT)
+   && ((user_options->truecrypt_keyfiles != NULL)
+    || (user_options->keyboard_layout_mapping != NULL))) return false;
+
+  if (user_options->dynamic_x == true) return false;
+  if (user_options->username == true) return false;
+  if (user_options->hash_copy == true) return false;
+
+  if (user_options_extra->association_autosplit == true) return false;
+
+  const char *disable = getenv ("HASHCAT_HASH_PARSE_PARALLEL_DISABLE");
+
+  if ((disable != NULL) && (disable[0] != 0) && (disable[0] != '0')) return false;
+
+  if (user_options->hash_mode == 0)
+  {
+    disable = getenv ("HASHCAT_HASH_PARSE_MD5_DISABLE");
+
+    if ((disable != NULL) && (disable[0] != 0) && (disable[0] != '0')) return false;
+  }
+
+  return true;
+}
+
+static hash_parse_parallel_kind_t hash_parse_parallel_kind
+(
+  const hashconfig_t *hashconfig,
+  const user_options_t *user_options
+)
+{
+  if ((user_options->hash_mode == 0)
+   && (hashconfig->is_salted == false)
+   && (hashconfig->dgst_size == 16)
+   && ((hashconfig->opts_type & OPTS_TYPE_HASH_COPY) == 0)
+   && (user_options->hash_copy == false))
+  {
+    return HASH_PARSE_PARALLEL_MD5;
+  }
+
+  return HASH_PARSE_PARALLEL_MODULE;
 }
 
 #define HASH_SORT_RADIX_BUCKETS 256
@@ -1247,6 +1693,18 @@ int hashes_init_stage1 (hashcat_ctx_t *hashcat_ctx)
 
   u64 hashes_avail = 0;
 
+  u8 *hash_parse_parallel_buf = NULL;
+
+  size_t hash_parse_parallel_sz = 0;
+
+  hc_thread_t *hash_parse_parallel_threads = NULL;
+
+  hash_parse_parallel_thread_param_t *hash_parse_parallel_params = NULL;
+
+  u32 hash_parse_parallel_threads_cnt = 0;
+
+  hash_parse_parallel_kind_t hash_parse_kind = HASH_PARSE_PARALLEL_MODULE;
+
   if ((user_options->benchmark == false) && (user_options->stdout_flag == false) && (user_options->keyspace == false))
   {
     if (hashlist_mode == HL_MODE_ARG)
@@ -1281,7 +1739,78 @@ int hashes_init_stage1 (hashcat_ctx_t *hashcat_ctx)
 
       EVENT_DATA (EVENT_HASHLIST_COUNT_LINES_PRE, hashfile, strlen (hashfile));
 
-      hashes_avail = count_lines (&fp);
+      bool hashlist_format_checked = false;
+
+      if ((fp.pfp != NULL)
+       && (fp.bom_size == 0)
+       && (hash_parse_parallel_eligible (hashconfig, module_ctx, user_options, user_options_extra) == true))
+      {
+        hashlist_format = hlfmt_detect (hashcat_ctx, &fp, 100);
+
+        hashlist_format_checked = true;
+
+        hc_rewind (&fp);
+
+        if (hashlist_format == HLFMT_HASHCAT)
+        {
+          struct stat st_before;
+
+          const u64 minimum = hash_parse_parallel_minimum ();
+
+          const u64 minimum_bytes = minimum * 2;
+
+          if ((hc_fstat (&fp, &st_before) == 0)
+           && (st_before.st_size > 0)
+           && ((u64) st_before.st_size >= minimum_bytes)
+           && ((u64) st_before.st_size <= SIZE_MAX))
+          {
+            const size_t input_sz = (size_t) st_before.st_size;
+
+            hash_parse_kind = hash_parse_parallel_kind (hashconfig, user_options);
+
+            hash_parse_parallel_buf = (u8 *) mmap (NULL, input_sz, PROT_READ, MAP_PRIVATE, fp.fd, 0);
+
+            if (hash_parse_parallel_buf != MAP_FAILED)
+            {
+              hash_parse_parallel_sz = input_sz;
+
+              struct stat st_after;
+
+              const bool unchanged = (hc_fstat (&fp, &st_after) == 0) && (st_after.st_size == st_before.st_size);
+
+              if ((unchanged == false)
+               || (hash_parse_parallel_prepare
+                  (
+                    hash_parse_parallel_buf,
+                    input_sz,
+                    hash_parse_kind,
+                    minimum,
+                    &hash_parse_parallel_threads,
+                    &hash_parse_parallel_params,
+                    &hash_parse_parallel_threads_cnt,
+                    &hashes_avail
+                  ) == false))
+              {
+                munmap (hash_parse_parallel_buf, hash_parse_parallel_sz);
+
+                hash_parse_parallel_buf = NULL;
+                hash_parse_parallel_sz  = 0;
+              }
+            }
+            else
+            {
+              hash_parse_parallel_buf = NULL;
+            }
+          }
+        }
+      }
+
+      if (hash_parse_parallel_buf == NULL)
+      {
+        hc_rewind (&fp);
+
+        hashes_avail = count_lines (&fp);
+      }
 
       EVENT_DATA (EVENT_HASHLIST_COUNT_LINES_POST, hashfile, strlen (hashfile));
 
@@ -1296,7 +1825,10 @@ int hashes_init_stage1 (hashcat_ctx_t *hashcat_ctx)
         return -1;
       }
 
-      hashlist_format = hlfmt_detect (hashcat_ctx, &fp, 100); // 100 = max numbers to "scan". could be hashes_avail, too
+      if (hashlist_format_checked == false)
+      {
+        hashlist_format = hlfmt_detect (hashcat_ctx, &fp, 100); // 100 = max numbers to "scan". could be hashes_avail, too
+      }
 
       // A hash file with no separator in it cannot be split into username and hash, so every line would
       // fail to parse and the run would end on "No hashes loaded" with a warning per line and no word
@@ -1769,6 +2301,74 @@ int hashes_init_stage1 (hashcat_ctx_t *hashcat_ctx)
     }
     else if (hashlist_mode == HL_MODE_FILE_PLAIN)
     {
+      bool hash_parse_parallel_done = false;
+
+      if (hash_parse_parallel_buf != NULL)
+      {
+        u64 hashes_base = 0;
+
+        for (u32 thread_pos = 0; thread_pos < hash_parse_parallel_threads_cnt; thread_pos++)
+        {
+          hash_parse_parallel_thread_param_t *param = &hash_parse_parallel_params[thread_pos];
+
+          param->hashes_base = hashes_base;
+          param->hashes_buf  = hashes_buf;
+          param->hashconfig  = hashconfig;
+          param->module_ctx  = module_ctx;
+          param->user_options       = user_options;
+          param->user_options_extra = user_options_extra;
+          param->decode      = true;
+
+          hashes_base += param->lines;
+        }
+
+        hash_parse_parallel_run_threads (hash_parse_parallel_threads, hash_parse_parallel_params, hash_parse_parallel_threads_cnt);
+
+        bool valid = true;
+
+        for (u32 thread_pos = 0; thread_pos < hash_parse_parallel_threads_cnt; thread_pos++)
+        {
+          if (hash_parse_parallel_params[thread_pos].valid == false) valid = false;
+        }
+
+        if (valid == true)
+        {
+          hashes_cnt = (u32) hashes_avail;
+
+          hashlist_parse_t hashlist_parse;
+
+          hashlist_parse.hashes_cnt   = hashes_cnt;
+          hashlist_parse.hashes_avail = hashes_avail;
+
+          EVENT_DATA (EVENT_HASHLIST_PARSE_HASH, &hashlist_parse, sizeof (hashlist_parse_t));
+
+          hash_parse_parallel_done = true;
+        }
+        else
+        {
+          // Preserve the original warnings and recovery behavior for malformed
+          // or mode-specific input by parsing the file again sequentially.
+
+          memset (digests_buf, 0, hashes_avail * hashconfig->dgst_size);
+
+          if ((hashconfig->opts_type & OPTS_TYPE_HASH_COPY) || (user_options->hash_copy == true))
+          {
+            for (u64 hash_pos = 0; hash_pos < hashes_avail; hash_pos++)
+            {
+              hcfree (hashes_buf[hash_pos].hash_info->orighash);
+
+              hashes_buf[hash_pos].hash_info->orighash = NULL;
+            }
+          }
+        }
+
+        hcfree (hash_parse_parallel_params);
+        hcfree (hash_parse_parallel_threads);
+        munmap (hash_parse_parallel_buf, hash_parse_parallel_sz);
+      }
+
+      if (hash_parse_parallel_done == false)
+      {
       HCFILE fp;
 
       if (hc_fopen (&fp, hashfile, "rb") == false)
@@ -2161,6 +2761,7 @@ int hashes_init_stage1 (hashcat_ctx_t *hashcat_ctx)
       hcfree (line_buf);
 
       hc_fclose (&fp);
+      }
     }
     else if (hashlist_mode == HL_MODE_FILE_BINARY)
     {

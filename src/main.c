@@ -40,6 +40,32 @@ int _dowildcard = -1;
 static int    main_argc_utf8 = 0;
 static char **main_argv_utf8 = NULL;
 
+// MinGW presents main() with arguments converted through the active ANSI code
+// page and may also expand wildcards. A command-line mask contains '?' tokens,
+// so a UTF-8 mask can differ from argv even when no filesystem expansion took
+// place. Compare against the expected ANSI conversion to tell those cases
+// apart: equality means only the encoding changed and the UTF-8 argument is the
+// one to keep; inequality means MinGW replaced the wildcard with a path.
+
+static bool main_arg_wildcard_was_expanded (const wchar_t *arg_wide, const char *arg_crt)
+{
+  const int ansi_size = WideCharToMultiByte (CP_ACP, 0, arg_wide, -1, NULL, 0, NULL, NULL);
+
+  if (ansi_size == 0) return true;
+
+  char *arg_ansi = (char *) malloc (ansi_size);
+
+  if (arg_ansi == NULL) return true;
+
+  const int rc = WideCharToMultiByte (CP_ACP, 0, arg_wide, -1, arg_ansi, ansi_size, NULL, NULL);
+
+  const bool expanded = (rc == 0) || (strcmp (arg_ansi, arg_crt) != 0);
+
+  free (arg_ansi);
+
+  return expanded;
+}
+
 static void main_argv_utf8_destroy (void)
 {
   for (int i = 0; i < main_argc_utf8; i++) free (main_argv_utf8[i]);
@@ -124,7 +150,9 @@ static int main_argv_utf8_init (int *argc, char ***argv)
         }
       }
 
-      if ((has_wildcard == true) && (strcmp (argv_utf8[i], (*argv)[i]) != 0))
+      if ((has_wildcard == true)
+       && (strcmp (argv_utf8[i], (*argv)[i]) != 0)
+       && (main_arg_wildcard_was_expanded (argv_wide[i], (*argv)[i]) == true))
       {
         keep_crt_argv = true;
 

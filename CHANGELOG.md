@@ -1,5 +1,106 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260814.34
+
+UTF-8 literal masks on Windows.
+
+### Fixed
+
+- Preserved native UTF-8 command-line masks containing `?d` or other mask
+  tokens. MinGW's wildcard compatibility previously made Hashcat retain its
+  ANSI `argv` whenever it saw `?`, replacing characters outside the active
+  code page with `?` before mask parsing.
+- Distinguished a real MinGW filesystem-wildcard expansion from a lossy ANSI
+  conversion by comparing the CRT argument with the original wide argument's
+  expected ANSI representation. Existing wildcard argument expansion remains
+  enabled.
+- The fix is in the shared Windows command-line path and therefore applies to
+  every algorithm and mask-capable attack mode. Literal Unicode characters
+  continue to expand to their UTF-8 bytes in Hashcat's byte-oriented mask
+  engine; `--hex-charset` behavior is unchanged.
+
+### Verified
+
+- Completed a clean Windows production rebuild through the repository's
+  self-bootstrapping `build-windows.ps1` entry point; the resulting executable
+  reports `v7.1.2-shooter.20260814.34`.
+- Passed the literal command-line mask `?d?d№?d?d№?d?d№` through the Windows
+  UTF-8 path and confirmed candidates contain the exact `e2 84 96` byte
+  sequence at all three literal positions.
+- Rechecked two-, three-, and four-byte literals and both single- and
+  multi-match wildcard expansion.
+
+## v7.1.2-shooter.20260814.33
+
+Parallel large-list parsing for compatible text hash modes.
+
+### Added
+
+- Generalized the memory-mapped large-list loader from mode 0 to native text
+  hash formats. Each worker invokes the selected module's own decoder, so raw,
+  salted, embedded-salt, extended-salt, hook-salt, original-hash-copy, and
+  compatible postprocess modes retain their format-specific behavior.
+- Mode 0 keeps the direct MD5 decoder introduced in `.32`.
+- Inputs with at least 4,194,304 nonempty hashes use up to 64 CPU workers.
+  Empty LF/CRLF lines are skipped as before. Malformed input automatically
+  reruns through the original sequential parser so warnings and recovery
+  behavior are preserved.
+- Required binary containers, split-hash formats, non-native hash-list
+  formats, compressed/BOM inputs, username/dynamic parsing, association
+  autosplit, and postprocessors using external keyfiles or keyboard maps keep
+  the original loader. Optional-binary modes can use the parallel path when
+  their input is native text.
+- Set `HASHCAT_HASH_PARSE_PARALLEL_DISABLE=1` to force the original loader.
+  `HASHCAT_HASH_PARSE_MD5_DISABLE=1` remains a mode-0-compatible alias.
+  `HASHCAT_HASH_PARSE_PARALLEL_MIN` can lower the activation count for focused
+  testing and benchmarking.
+
+### Measured and verified
+
+- A 4,194,304-entry SHA-1 fixture (171.97 MB) completed `--left` in 0.57
+  seconds versus 1.49 seconds with the original parser, a 61.7% reduction.
+- A 4,194,304-entry salted mode-10 fixture (169.87 MB) completed `--left` in
+  1.36 seconds versus 2.48 seconds, a 45.2% reduction.
+- Mode 0 retained identical output and completed the 4,194,304-line regression
+  fixture in 0.58 seconds versus 1.39 seconds with the original parser.
+- BOM-free two-worker fixtures were compared with the forced original parser
+  across all 854 modes exposing usable self-test examples. All 814 examples
+  that loaded successfully matched. Another 39 failed identically because
+  they require special files or options. Mode 32500 was excluded from output
+  comparison because its encoder produces nondeterministic trailing bytes in
+  repeated original-parser runs.
+- Representative SHA-1, SHA-256, NTLM, salted MD5, and bcrypt fixtures with
+  mixed LF/CRLF endings and an empty line produced identical output. Malformed
+  MD5 and SHA-1 fixtures also produced identical automatic-fallback warnings
+  and output.
+
+## v7.1.2-shooter.20260814.32
+
+Faster startup for very large plain MD5 hash lists.
+
+### Added
+
+- Plain native-format mode-0 lists with at least 4,194,304 hashes now use a
+  memory-mapped parallel validation and decode path with up to 64 CPU workers.
+- Empty lines retain the original parser's skip behavior. Compressed files,
+  byte-order-marked files, non-native formats, malformed nonempty lines, and
+  inputs needing username, dynamic, or original-hash metadata automatically
+  retain the original line-by-line parser.
+- Set `HASHCAT_HASH_PARSE_MD5_DISABLE=1` to force the original parser for an
+  A/B test.
+
+### Measured and verified
+
+- On the intended Threadripper PRO 5995WX system, the supplied 2.87 GB file
+  contained 84,381,740 physical lines, one empty line, and 84,381,739 MD5
+  hashes. Parse plus sort fell from 33.56 seconds to 6.41 seconds, an 80.9%
+  reduction. Preprocessing through duplicate removal fell from 48.12 seconds
+  to 11.28 seconds, a 76.6% reduction.
+- A 4,194,304-line mixed-LF/CRLF fixture produced byte-for-byte identical
+  `--left` output with the original parser, the parallel parser, and the
+  forced-fallback path. The complete supplied list retained the expected
+  84,381,739 digest count after duplicate removal.
+
 ## v7.1.2-shooter.20260814.31
 
 Native UTF-8 literal rules and reliable Windows loopback induction.
