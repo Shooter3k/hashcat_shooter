@@ -14842,7 +14842,7 @@ HC_API_CALL void *thread_backend_host_staging_init (void *p)
 
     if ((slot->pws_comp == NULL) || (slot->pws_idx == NULL) || (slot->pws_base == NULL))
     {
-      fprintf (stderr, "%s\n", MSG_ENOMEM);
+      event_log_error (hashcat_ctx, "%s", MSG_ENOMEM);
 
       return 0;
     }

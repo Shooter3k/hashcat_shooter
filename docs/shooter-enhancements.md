@@ -372,3 +372,24 @@ failure that previously reported an `R_X86_64_PC32` relocation in
 
 Both the normal `SHARED=0` build and the `SHARED=1` library build are covered.
 See [BUILD.md](../BUILD.md) for the tested Ubuntu prerequisites and commands.
+
+## Support and troubleshooting
+
+### 45. Automatic error reports
+
+The first normal Hashcat error in a process creates a uniquely named
+`shooter_hashcat-error-YYYYMMDD-HHMMSS-PID.log` in the directory where the
+program was started. Every later error and warning from the same run is
+appended to that one file, including errors reported concurrently by different
+GPU workers. Up to 64 recent warnings from before the first error are included
+as context. This ensures messages such as `Hash parsing error`, which Hashcat
+internally treats as warnings, are not lost. Successful runs and warning-only
+runs do not create a report.
+
+The report includes timestamps, the exact Shooter version, operating system,
+architecture, process ID, working directory, and a bounded command-line
+argument list. `--brain-password` values are automatically replaced with
+`[REDACTED]`. Input and output files are not attached, but a normal diagnostic
+can quote an individual malformed input line. Other arguments and paths may
+also be private, so users should review the text file before sharing it. See
+the [error-report guide](error-reports.md).

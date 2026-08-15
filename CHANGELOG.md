@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+No changes recorded yet.
+
+## v7.1.2-shooter.20260815.40
+
+Automatic support reports for easier troubleshooting, together with the
+project-wide `shooter_hashcat` rename and public-documentation cleanup made
+after the previous release.
+
+### Added
+
+- The first error sent through Hashcat's normal logger automatically creates
+  one `shooter_hashcat-error-YYYYMMDD-HHMMSS-PID.log` file in the directory
+  where the program was started. No new option is required.
+- The report keeps every normal error from that process, all warnings emitted
+  after the first error, and up to 64 recent warnings from before the error.
+  This preserves preceding diagnostics such as `Hash parsing error` without
+  creating files for successful or warning-only runs.
+- Reports include timestamps, exact Shooter version, operating system,
+  architecture, process ID, working directory, and bounded command-line
+  arguments. Both forms of `--brain-password` are automatically redacted.
+- A Windows-and-Linux CI regression verifies report creation, console path
+  output, version/platform context, both password-redaction forms, the actual
+  command-line error, and the absence of a report after a successful command.
+
 ### Changed
 
 - Renamed the project and repository to `shooter_hashcat`, including clone
@@ -11,6 +35,34 @@
   `shooter_hashcat-<version>-windows-x64-complete.7z` name.
 - The optional fast-start and host-staging environment variables are now
   `SHOOTER_HASHCAT_FAST_START` and `SHOOTER_HASHCAT_HOST_STAGING_MB`.
+- Removed public contest-specific guides, labels, credits, and generated
+  documentation entries while retaining the underlying compatibility modules
+  in the source tree.
+- Command-line option parsing and several first-party allocation, network,
+  session, and potfile-search failures now use the shared error logger so they
+  are included in the automatic report instead of appearing only on stderr.
+
+### Privacy and limitations
+
+- Reports never attach input or output files. Normal diagnostics can quote an
+  individual malformed hash, rule, or other input line, and arguments can
+  contain private paths or values, so users are told to review the report
+  before sharing it.
+- A process killed by the operating system, a power loss, a crash before the
+  logger is initialized, or an unwritable starting directory can prevent the
+  report from being created or completed.
+
+### Verified
+
+- A portable Windows x64 production build completed and reported
+  `v7.1.2-shooter.20260815.40`.
+- An invalid-option regression created exactly one report, printed its path,
+  included the expected error and environment context, redacted both supported
+  brain-password forms, and left both secret values absent from the file.
+- A malformed MD5 command-line hash placed the preceding parse warning and
+  final `No hashes loaded` error in the same report.
+- A successful `--version` command created no report. The report sources also
+  compiled warning-free with the Linux GCC headers and feature configuration.
 
 ## v7.1.2-shooter.20260815.39
 

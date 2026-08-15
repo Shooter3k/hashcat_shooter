@@ -616,7 +616,7 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
 
   if (hashcat_get_status (hashcat_ctx, status_ctx->hashcat_status_final) == -1)
   {
-    fprintf (stderr, "Initialization problem: the hashcat status monitoring function returned an unexpected value\n");
+    event_log_error (hashcat_ctx, "Initialization problem: the hashcat status monitoring function returned an unexpected value");
   }
 
   status_ctx->accessible = false;
@@ -1594,7 +1594,7 @@ int hashcat_session_init (hashcat_ctx_t *hashcat_ctx, const char *install_folder
 
     if (WSAStartup (wVersionRequested, &wsaData) != NO_ERROR)
     {
-      fprintf (stderr, "WSAStartup: %s\n", strerror (errno));
+      event_log_error (hashcat_ctx, "WSAStartup: %s", strerror (errno));
 
       return -1;
     }

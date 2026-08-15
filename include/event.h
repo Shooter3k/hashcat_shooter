@@ -28,6 +28,8 @@ __attribute__ ((format (__MINGW_PRINTF_FORMAT, 2, 3))) size_t event_log_info    
 __attribute__ ((format (__MINGW_PRINTF_FORMAT, 2, 3))) size_t event_log_warning    (hashcat_ctx_t *hashcat_ctx, const char *fmt, ...);
 __attribute__ ((format (__MINGW_PRINTF_FORMAT, 2, 3))) size_t event_log_error      (hashcat_ctx_t *hashcat_ctx, const char *fmt, ...);
 
+void event_error_report_init (hashcat_ctx_t *hashcat_ctx, const char *version_tag, const int argc, char **argv);
+
 int  event_ctx_init         (hashcat_ctx_t *hashcat_ctx);
 void event_ctx_destroy      (hashcat_ctx_t *hashcat_ctx);
 

@@ -22,6 +22,13 @@ Please provide us with all files required to reproduce the bug locally on our de
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
+**Automatic shooter_hashcat error report**
+If the console printed `Error report saved to:`, attach that `.log` file after
+reviewing it for private paths, arguments, hashes, rules, or quoted input.
+`--brain-password` values are redacted automatically. See the
+[error-report guide](https://github.com/Shooter3k/shooter_hashcat/blob/master/docs/error-reports.md)
+for details. Do not attach an unreviewed report.
+
 **Hardware/Compute device (please complete the following information):**
 - Compute device name: [e.g. RTX2080Ti]
 - OpenCL/CUDA driver name: [e.g. NVIDIA DRIVER]

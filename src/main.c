@@ -1632,6 +1632,9 @@ int main (int argc, char **argv)
 
     return -1;
   }
+
+  event_error_report_init (hashcat_ctx, VERSION_TAG, argc, argv);
+
   // install and shared folder need to be set to recognize "make install" use
 
   const char *install_folder = NULL;

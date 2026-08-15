@@ -558,7 +558,7 @@ int potfile_remove_parse (hashcat_ctx_t *hashcat_ctx)
 
       if (found_entry == NULL)
       {
-        fprintf (stderr, "Error while allocating memory for the potfile search: %s\n", MSG_ENOMEM);
+        event_log_error (hashcat_ctx, "Error while allocating memory for the potfile search: %s", MSG_ENOMEM);
 
         return -1;
       }

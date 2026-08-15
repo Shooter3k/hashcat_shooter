@@ -115,13 +115,13 @@ Version format:
     v7.1.2-shooter.YYYYMMDD.REVISION
 
 The current release reports:
-    v7.1.2-shooter.20260815.39
+    v7.1.2-shooter.20260815.40
 
 The release date and revision are pinned in src\Makefile so rebuilding a tag
 produces the same version. See CHANGELOG.md for the complete release history.
 For a one-off build, the revision can be overridden:
 
-    make SHOOTER_BUILD_REVISION=40 -j
+    make SHOOTER_BUILD_REVISION=41 -j
 
 ------------------------------------------------------------------------
  BUILD (optional - launch the build from PowerShell)
@@ -205,6 +205,14 @@ report "No CUDA platform found".
 ------------------------------------------------------------------------
 TROUBLESHOOTING
 ------------------------------------------------------------------------
+- Any normal Hashcat error automatically creates one file named like
+  shooter_hashcat-error-YYYYMMDD-HHMMSS-PID.log in the directory where the
+  program was started. The console prints the exact path after
+  "Error report saved to:". Review the file for private paths, arguments, or
+  quoted input before sending it with a bug report. --brain-password values
+  are redacted automatically. See docs\error-reports.md for the complete
+  contents, privacy notes, and limitations.
+
 - "fatal error: openssl/des.h: No such file or directory" (or another
   openssl/*.h header):
     The mdxfind bridge's build dependency is missing from the active MinGW64

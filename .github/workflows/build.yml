@@ -115,6 +115,19 @@ jobs:
         run: |
           make ENABLE_LTO=0 CC=clang CXX=clang++
 
+      - name: Verify automatic error reports (Windows)
+        if: matrix.os_name_lowercase == 'windows' && matrix.shared == 0
+        shell: msys2 {0}
+        env:
+          PATH: /mingw64/bin:$PATH
+        run: |
+          bash ./tools/test-error-report.sh ./hashcat.exe
+
+      - name: Verify automatic error reports (Linux)
+        if: matrix.os_name_lowercase == 'linux' && matrix.shared == 0
+        run: |
+          bash ./tools/test-error-report.sh ./hashcat.bin
+
       - name: Generate documentation
         if: matrix.os_name_lowercase == 'linux' && matrix.shared == 0
         env:

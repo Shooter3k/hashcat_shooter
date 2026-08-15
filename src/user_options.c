@@ -414,6 +414,11 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
 {
   user_options_t *user_options = hashcat_ctx->user_options;
 
+  // Route getopt diagnostics through event_log_error() so the automatic support report receives
+  // the same command-line error the user sees instead of losing getopt's direct stderr output.
+
+  opterr = 0;
+
   int c = -1;
 
   int option_index;
@@ -492,7 +497,16 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
 
       case '?':
       {
-        event_log_error (hashcat_ctx, "Invalid argument specified.");
+        const char *invalid_argument = ((optind > 0) && (optind <= argc)) ? argv[optind - 1] : NULL;
+
+        if (invalid_argument != NULL)
+        {
+          event_log_error (hashcat_ctx, "Unknown or invalid command-line option: %s", invalid_argument);
+        }
+        else
+        {
+          event_log_error (hashcat_ctx, "Invalid command-line option.");
+        }
 
         return -1;
       }
@@ -3473,7 +3487,7 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
 
     if (rc_getaddrinfo != 0)
     {
-      fprintf (stderr, "%s: %s\n", user_options->brain_host, gai_strerror (rc_getaddrinfo));
+      event_log_error (hashcat_ctx, "%s: %s", user_options->brain_host, gai_strerror (rc_getaddrinfo));
 
       return -1;
     }

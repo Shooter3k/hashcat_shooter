@@ -4,7 +4,8 @@
 normal hashcat commands and features, then adds faster handling of very large
 hash and rule lists, better multi-GPU behavior, more ways to build password
 candidates, multibyte masks and rules on Windows, additional hash types, and a
-ready-to-run release.
+ready-to-run release. If an error occurs, it also creates one support file that
+can be reviewed and sent with a bug report.
 
 It was developed for a Windows machine with 12 NVIDIA GeForce RTX 4090 GPUs,
 but most of its additions also work on other hardware.
@@ -63,6 +64,7 @@ explanation.
 42. **[Prebuilt releases run on standard x64 CPUs](docs/shooter-enhancements.md#42-portable-prebuilt-windows-binaries)** — release binaries do not inherit the GitHub runner's CPU-only instructions.
 43. **[`--show` and `--left` finish faster on huge lists](docs/shooter-enhancements.md#43-faster-show-and-left)** — large potfiles use narrower lookups, and `-o` jobs skip a redundant full-result copy and sort.
 44. **[Linux builds complete successfully](docs/shooter-enhancements.md#44-working-linux-builds)** — Shooter's mdxfind bridge now links in both static and shared Linux builds.
+45. **[Errors are saved in one support file](docs/shooter-enhancements.md#45-automatic-error-reports)** — the file records recent warnings, every normal error, later warnings, and the details needed to investigate the problem.
 
 ## Download and run
 
@@ -77,6 +79,11 @@ Verify the package and check the version:
 .\verify-windows-package.ps1
 .\hashcat.exe --version
 ```
+
+If a run reports an error, look for `Error report saved to:` in the console.
+Review that text file and send it with a short description of the problem; see
+[Automatic error reports](docs/error-reports.md) for privacy details and
+limitations.
 
 Rebuild everything from the included source:
 
@@ -102,6 +109,7 @@ free disk space. Nothing is installed system-wide, and the system or user
 | mdxfind modes | [docs/mdxfind-modules.md](docs/mdxfind-modules.md) and the [complete JSON registry](docs/mdxfind-modules.json) |
 | Windows builds | [how_to_compile.txt](how_to_compile.txt) |
 | Linux builds | [BUILD.md](BUILD.md) |
+| Error reports and privacy | [docs/error-reports.md](docs/error-reports.md) |
 | Every release and verification result | [CHANGELOG.md](CHANGELOG.md) |
 | Source comparison | [Feature origins](docs/shooter-enhancements.md) and the [complete comparison with the upstream baseline](https://github.com/Shooter3k/shooter_hashcat/compare/fdad9f2f7bd7ec7f53056727e39331a17514db7c...master) |
 

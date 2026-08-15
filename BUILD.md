@@ -82,3 +82,13 @@ Without custom XDG variables, session files are stored under
 Shooter currently validates native Linux and Windows targets in CI. macOS and
 BSD are not currently claimed as supported targets for Shooter's additional
 bridges and feeds.
+
+## Reporting runtime errors
+
+When a normal Hashcat error occurs, Shooter creates one file named like
+`shooter_hashcat-error-YYYYMMDD-HHMMSS-PID.log` in the directory where it was
+started and prints the exact path. Review the file before sharing it because
+arguments, paths, or an individual malformed input line may be private.
+`--brain-password` values are redacted automatically. See the
+[automatic error-report guide](docs/error-reports.md) for the recorded fields
+and the small number of failures that can prevent a report from being written.

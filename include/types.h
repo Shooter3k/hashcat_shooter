@@ -3510,6 +3510,7 @@ typedef struct hashlist_parse
 } hashlist_parse_t;
 
 #define MAX_OLD_EVENTS 10
+#define MAX_ERROR_REPORT_WARNINGS 64u
 
 typedef struct event_ctx
 {
@@ -3522,6 +3523,22 @@ typedef struct event_ctx
   bool   msg_newline;
 
   size_t prev_len;
+
+  const char *error_report_version;
+  int         error_report_argc;
+  char      **error_report_argv;
+  char        error_report_path[HCBUFSIZ_TINY];
+  bool        error_report_configured;
+  bool        error_report_created;
+  bool        error_report_announced;
+  bool        error_report_failed;
+  bool        error_report_line_open;
+  u32         error_report_line_id;
+  char        error_report_warnings[MAX_ERROR_REPORT_WARNINGS][HCBUFSIZ_SMALL];
+  size_t      error_report_warning_len[MAX_ERROR_REPORT_WARNINGS];
+  bool        error_report_warning_newline[MAX_ERROR_REPORT_WARNINGS];
+  u32         error_report_warning_next;
+  u32         error_report_warning_count;
 
   hc_thread_mutex_t mux_event;
   hc_thread_mutex_t mux_log;
