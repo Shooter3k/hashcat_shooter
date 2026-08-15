@@ -126,7 +126,7 @@ jobs:
       - name: Verify automatic error reports (Linux)
         if: matrix.os_name_lowercase == 'linux' && matrix.shared == 0
         run: |
-          bash ./tools/test-error-report.sh ./hashcat.bin
+          bash ./tools/test-error-report.sh ./hashcat
 
       - name: Generate documentation
         if: matrix.os_name_lowercase == 'linux' && matrix.shared == 0
