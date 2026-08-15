@@ -2,9 +2,9 @@
 
 `hashcat_shooter` is a Windows-focused version of hashcat 7.1.2. It keeps the
 normal hashcat commands and features, then adds faster handling of very large
-hash lists, better multi-GPU behavior, more ways to build password candidates,
-multibyte masks and rules on Windows, additional hash types, and a ready-to-run
-release.
+hash and rule lists, better multi-GPU behavior, more ways to build password
+candidates, multibyte masks and rules on Windows, additional hash types, and a
+ready-to-run release.
 
 It was developed for a Windows machine with 12 NVIDIA GeForce RTX 4090 GPUs,
 but most of its additions also work on other hardware.
@@ -14,7 +14,7 @@ authorized to audit.
 
 ## Improvements at a glance
 
-This is the complete user-visible feature inventory through release `.36`.
+This is the complete user-visible feature inventory on the current branch.
 Items 14 and 43 came from newer official hashcat work included after the fork;
 the other items are Shooter changes. Every item links to a plain-language
 explanation.
@@ -62,6 +62,7 @@ explanation.
 41. **[Release versions are reproducible](docs/shooter-enhancements.md#41-reproducible-release-versioning)** — tags, packages, rebuilds, and `--version` stay identical.
 42. **[CMIYC workloads can be split across GPUs](docs/shooter-enhancements.md#42-cmiyc-multi-gpu-sharding)** — the included launcher creates and combines independent shards.
 43. **[Newer official hashcat fixes are included](docs/shooter-enhancements.md#43-newer-upstream-correctness-fixes)** — upstream fixes after the fork are preserved and clearly credited.
+44. **[Huge rule files load across CPU cores](docs/shooter-enhancements.md#44-parallel-rule-file-loading)** — all rule-capable algorithms spend less time waiting at `Loading rules`.
 
 ## Download and run
 

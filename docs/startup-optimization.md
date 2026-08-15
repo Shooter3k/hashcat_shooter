@@ -172,6 +172,54 @@ identical. Mode 32500 was excluded from output comparison because repeated
 original-parser runs expose an existing nondeterministic trailing-byte encoder
 defect.
 
+## Large rule-file parsing
+
+Plain rule files of at least 16 MiB use up to 64 CPU workers to count,
+validate, and compile rules. Work is split only at line boundaries and valid
+rules are compacted in original file order. Comments, blank lines, UTF-8 BOM
+handling, mixed LF/CRLF endings, a final line without a newline, warning text
+and line numbers, and multiple chained `-r` files retain their existing
+behavior. The loader is shared by all rule-capable hash algorithms.
+
+Compressed rule files and unusual inputs keep the original streaming loader.
+That fallback is faster too: its rule buffer now grows geometrically instead
+of in fixed 10,000-rule increments, and the validator uses a stack buffer for
+ordinary rules instead of doing one heap allocation and free per line.
+
+For a single rule file, the compiled rules are now returned directly. The old
+path allocated a second complete array and copied every compiled rule before
+startup could continue. The parallel path temporarily adds one input-sized
+read buffer and one status byte per candidate, but does not create that second
+compiled-rule array.
+
+Set `HASHCAT_RULE_PARSE_PARALLEL_DISABLE=1` to force the optimized serial path
+for an A/B test:
+
+```powershell
+$env:HASHCAT_RULE_PARSE_PARALLEL_DISABLE = '1'
+M:\github\hashcat_shooter\hashcat.exe ... -r M:\rules\large.rule
+Remove-Item Env:HASHCAT_RULE_PARSE_PARALLEL_DISABLE
+```
+
+`HASHCAT_RULE_PARSE_PARALLEL_MIN` changes the byte threshold for focused tests
+or controlled benchmarks. Production use should normally leave the 16 MiB
+default unchanged.
+
+On the Threadripper PRO 5995WX system, the supplied 63,758,579-byte (60.80
+MiB) rule file contained 4,902,480 rules. Loader-only `--keyspace` startup
+measured 26.235 seconds with the pre-change binary. The new parallel loader's
+seven-run median was 0.140 seconds (range 0.138-0.147 seconds), about 187 times
+faster and a 99.5% reduction. The optimized serial fallback's seven-run median
+was 0.872 seconds (range 0.869-0.894 seconds).
+
+Correctness was checked by applying all 4,902,480 rules to one word through
+both paths. Each produced an identical 53,502,267-byte candidate stream with
+SHA-256
+`B10A2FA49C7C5E27E98BF41A6567C1A708D80F9C543DF0E380B804BCA2A9A18C`.
+Separate fixtures confirmed matching diagnostics and output for invalid
+rules, BOM and CRLF input, comments, blank lines, a missing final newline, and
+two-file rule chaining.
+
 The original v7.1.2-shooter.20260811.4 CUDA-only probe measurement is retained
 below for reference.
 

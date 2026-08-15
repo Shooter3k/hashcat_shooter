@@ -311,3 +311,22 @@ fixes, PDF mode-10500 empty-ID support, full-length combinator buffers, and
 several overflow, double-free, and out-of-bounds corrections. These fixes are
 included but not claimed as Shooter-authored work. See the
 [integration release notes](../CHANGELOG.md#v712-shooter2026081218).
+
+## Rule loading
+
+### 44. Parallel rule-file loading
+
+Plain rule files of at least 16 MiB are read once and validated with up to 64
+CPU workers. This is part of the shared rule loader, so it benefits every hash
+algorithm and attack that accepts `-r`; it is not limited to MD5. Rule order,
+comments, blank lines, UTF-8 BOM handling, LF/CRLF input, invalid-rule
+warnings, and chained rule files retain their existing behavior. Compressed
+rule files and unusual inputs automatically keep the original streaming path.
+
+The loader also avoids one allocation and free for every rule, grows its
+serial fallback buffer geometrically, and no longer allocates and copies a
+second complete compiled-rule array when one rule file is used. On the
+measured 60.80 MiB file containing 4,902,480 rules, loader-only startup fell
+from 26.235 seconds with the pre-change binary to a seven-run median of 0.140
+seconds. See [startup optimization](startup-optimization.md#large-rule-file-parsing)
+for controls, memory behavior, and verification details.

@@ -1,5 +1,43 @@
 # hashcat_shooter release notes
 
+## Unreleased
+
+Faster loading for very large rule files.
+
+### Added
+
+- Plain rule files of at least 16 MiB are counted, validated, and compiled
+  with up to 64 CPU workers. The shared loader benefits every rule-capable
+  hash algorithm and preserves file order and warning order.
+- `HASHCAT_RULE_PARSE_PARALLEL_DISABLE=1` forces the optimized serial path for
+  comparison. `HASHCAT_RULE_PARSE_PARALLEL_MIN` changes the activation byte
+  threshold for focused testing.
+
+### Changed
+
+- Ordinary rule validation no longer performs one heap allocation and free
+  per line. Unusually long rules retain a heap fallback.
+- Serial rule storage grows geometrically instead of by fixed 10,000-rule
+  increments.
+- A single `-r` file now returns its compiled buffer directly instead of
+  allocating and copying a second complete array. Temporary per-file buffers
+  are released after multi-file rule chaining.
+- Compressed rule files and unusual inputs retain the original streaming
+  behavior.
+
+### Measured and verified
+
+- The supplied 63,758,579-byte file containing 4,902,480 rules loaded in a
+  seven-run median of 0.140 seconds, versus 26.235 seconds with the pre-change
+  binary. The optimized serial fallback's median was 0.872 seconds.
+- Applying the complete file through the parallel and forced-serial paths
+  produced byte-identical 53,502,267-byte output with SHA-256
+  `B10A2FA49C7C5E27E98BF41A6567C1A708D80F9C543DF0E380B804BCA2A9A18C`.
+- Matching output and diagnostics were verified for invalid rules, UTF-8 BOM,
+  CRLF, comments, blank lines, a final line without a newline, and chained
+  rule files. A Windows production build and a one-GPU rule-loading smoke
+  session completed successfully.
+
 ## v7.1.2-shooter.20260814.36
 
 Reproducible complete Windows release versioning.

@@ -1190,9 +1190,24 @@ int _old_apply_rule (const char *rule, int rule_len, char in[RP_PASSWORD_SIZE], 
 
   memcpy (out, in, out_len);
 
-  char *rule_new = (char *) hcmalloc (rule_len);
+  // Rule files normally contain millions of short rules. Allocating and
+  // freeing one heap buffer per line makes loading those files needlessly
+  // expensive, especially when several parser threads run at once. Keep the
+  // common case on the stack and retain the original heap fallback for an
+  // unusually long rule.
 
-  #define HCFREE_AND_RETURN(x) { hcfree (rule_new); return (x); }
+  char rule_new_stack[RP_RULE_SIZE];
+
+  char *rule_new = rule_new_stack;
+
+  if ((size_t) rule_len > sizeof (rule_new_stack))
+  {
+    rule_new = (char *) hcmalloc (rule_len);
+
+    if (rule_new == NULL) return (RULE_RC_REJECT_ERROR);
+  }
+
+  #define HCFREE_AND_RETURN(x) { if (rule_new != rule_new_stack) hcfree (rule_new); return (x); }
 
   int rule_len_new = 0;
 

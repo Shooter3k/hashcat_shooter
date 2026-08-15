@@ -12,6 +12,7 @@
 #include "filehandling.h"
 #include "rp.h"
 #include "rp_cpu.h"
+#include "thread.h"
 
 static const char grp_op_nop[] =
 {
@@ -1051,6 +1052,470 @@ bool kernel_rules_has_noop (const kernel_rule_t *kernel_rules_buf, const u32 ker
   return false;
 }
 
+#define RULE_PARSE_PARALLEL_MINIMUM_BYTES   (1U << 24)
+#define RULE_PARSE_PARALLEL_BYTES_PER_THREAD (1U << 20)
+#define RULE_PARSE_PARALLEL_THREADS_MAX      64
+
+typedef enum rule_parse_parallel_result
+{
+  RULE_PARSE_PARALLEL_ERROR  = -1,
+  RULE_PARSE_PARALLEL_UNUSED =  0,
+  RULE_PARSE_PARALLEL_DONE   =  1,
+  RULE_PARSE_PARALLEL_REOPEN =  2
+
+} rule_parse_parallel_result_t;
+
+typedef enum rule_parse_status
+{
+  RULE_PARSE_STATUS_VALID = 0,
+  RULE_PARSE_STATUS_INVALID,
+  RULE_PARSE_STATUS_UNCONVERTIBLE
+
+} rule_parse_status_t;
+
+typedef struct rule_parse_parallel_thread_param
+{
+  const u8 *input;
+
+  size_t from;
+  size_t to;
+
+  u64 candidate_base;
+
+  u64 lines;
+  u64 candidates;
+  u64 valid_rules;
+  u64 invalid_rules;
+
+  kernel_rule_t *rules;
+  u8            *statuses;
+
+  bool parse;
+  bool valid_input;
+
+} rule_parse_parallel_thread_param_t;
+
+#if defined (_WIN)
+static HC_API_CALL DWORD rule_parse_parallel_thread (void *p)
+#else
+static HC_API_CALL void *rule_parse_parallel_thread (void *p)
+#endif
+{
+  rule_parse_parallel_thread_param_t *param = (rule_parse_parallel_thread_param_t *) p;
+
+  const u8 *input = param->input;
+
+  hc_memchr_t hc_memchr = hc_memchr_get ();
+
+  size_t pos = param->from;
+
+  u64 lines         = 0;
+  u64 candidates    = 0;
+  u64 valid_rules   = 0;
+  u64 invalid_rules = 0;
+
+  param->valid_input = true;
+
+  while (pos < param->to)
+  {
+    const size_t left = param->to - pos;
+    const size_t step = hc_memchr (input + pos, '\n', left);
+
+    size_t rule_len = step;
+
+    while ((rule_len > 0) && (input[pos + rule_len - 1] == '\r')) rule_len--;
+
+    if (rule_len >= HCBUFSIZ_LARGE)
+    {
+      param->valid_input = false;
+    }
+    else if ((rule_len > 0) && (input[pos] != '#'))
+    {
+      if (param->parse == true)
+      {
+        const u64 candidate_pos = param->candidate_base + candidates;
+
+        kernel_rule_t *rule = &param->rules[param->candidate_base + valid_rules];
+
+        char in[RP_PASSWORD_SIZE];
+        char out[RP_PASSWORD_SIZE];
+
+        memset (in,  0, sizeof (in));
+        memset (out, 0, sizeof (out));
+        memset (rule, 0, sizeof (*rule));
+
+        const int result = _old_apply_rule ((const char *) input + pos, (int) rule_len, in, 1, out);
+
+        if (result == -1)
+        {
+          param->statuses[candidate_pos] = RULE_PARSE_STATUS_INVALID;
+
+          invalid_rules++;
+        }
+        else if (cpu_rule_to_kernel_rule ((char *) input + pos, (u32) rule_len, rule) == -1)
+        {
+          param->statuses[candidate_pos] = RULE_PARSE_STATUS_UNCONVERTIBLE;
+
+          invalid_rules++;
+        }
+        else
+        {
+          valid_rules++;
+        }
+      }
+
+      candidates++;
+    }
+
+    lines++;
+
+    pos += step;
+
+    if ((pos < param->to) && (input[pos] == '\n')) pos++;
+  }
+
+  param->lines         = lines;
+  param->candidates    = candidates;
+  param->valid_rules   = valid_rules;
+  param->invalid_rules = invalid_rules;
+
+  return 0;
+}
+
+static void rule_parse_parallel_run_threads (hc_thread_t *threads, rule_parse_parallel_thread_param_t *params, const u32 threads_cnt)
+{
+  u32 threads_created = 0;
+
+  for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+  {
+    hc_thread_t thread;
+
+    #if defined (_WIN)
+    hc_thread_create (thread, rule_parse_parallel_thread, &params[thread_pos]);
+
+    if (thread == NULL)
+    #else
+    if (hc_thread_create (thread, rule_parse_parallel_thread, &params[thread_pos]) != 0)
+    #endif
+    {
+      rule_parse_parallel_thread (&params[thread_pos]);
+    }
+    else
+    {
+      threads[threads_created++] = thread;
+    }
+  }
+
+  hc_thread_wait (threads_created, threads);
+
+  #if defined (_WIN)
+  for (u32 thread_pos = 0; thread_pos < threads_created; thread_pos++)
+  {
+    CloseHandle (threads[thread_pos]);
+  }
+  #endif
+}
+
+static size_t rule_parse_parallel_minimum (void)
+{
+  const char *value = getenv ("HASHCAT_RULE_PARSE_PARALLEL_MIN");
+
+  if ((value != NULL) && (value[0] != 0))
+  {
+    char *end = NULL;
+
+    const unsigned long long parsed = strtoull (value, &end, 10);
+
+    if ((end != value) && (*end == 0) && (parsed >= 1) && (parsed <= SIZE_MAX))
+    {
+      return (size_t) parsed;
+    }
+  }
+
+  return RULE_PARSE_PARALLEL_MINIMUM_BYTES;
+}
+
+static void rule_parse_parallel_report
+(
+  hashcat_ctx_t *hashcat_ctx,
+  const char *rp_file,
+  const u8 *input,
+  const size_t input_sz,
+  const u8 *statuses
+)
+{
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  if (user_options->quiet == true) return;
+
+  char *rule_buf = (char *) hcmalloc (HCBUFSIZ_LARGE);
+
+  if (rule_buf == NULL) return;
+
+  hc_memchr_t hc_memchr = hc_memchr_get ();
+
+  size_t pos = 0;
+
+  u64 candidate_pos = 0;
+
+  u32 rule_line = 0;
+
+  while (pos < input_sz)
+  {
+    const size_t left = input_sz - pos;
+    const size_t step = hc_memchr (input + pos, '\n', left);
+
+    size_t rule_len = step;
+
+    while ((rule_len > 0) && (input[pos + rule_len - 1] == '\r')) rule_len--;
+
+    rule_line++;
+
+    if ((rule_len > 0) && (input[pos] != '#'))
+    {
+      const u8 status = statuses[candidate_pos++];
+
+      if (status != RULE_PARSE_STATUS_VALID)
+      {
+        memcpy (rule_buf, input + pos, rule_len);
+
+        rule_buf[rule_len] = 0;
+
+        if (status == RULE_PARSE_STATUS_INVALID)
+        {
+          event_log_warning (hashcat_ctx, "Skipping invalid or unsupported rule in file %s on line %u: %s", rp_file, rule_line, rule_buf);
+        }
+        else
+        {
+          event_log_warning (hashcat_ctx, "Cannot convert rule for use on OpenCL device in file %s on line %u: %s", rp_file, rule_line, rule_buf);
+        }
+      }
+    }
+
+    pos += step;
+
+    if ((pos < input_sz) && (input[pos] == '\n')) pos++;
+  }
+
+  hcfree (rule_buf);
+}
+
+static rule_parse_parallel_result_t kernel_rules_load_parallel
+(
+  hashcat_ctx_t *hashcat_ctx,
+  HCFILE *fp,
+  const char *rp_file,
+  kernel_rule_t **out_buf,
+  u32 *out_cnt
+)
+{
+  const char *disable = getenv ("HASHCAT_RULE_PARSE_PARALLEL_DISABLE");
+
+  if ((disable != NULL) && (disable[0] != 0) && (disable[0] != '0')) return RULE_PARSE_PARALLEL_UNUSED;
+
+  // Compressed rule files retain the original streaming loader. A plain file
+  // can be read once into an immutable buffer and split safely at line ends.
+
+  if (fp->pfp == NULL) return RULE_PARSE_PARALLEL_UNUSED;
+
+  struct stat st;
+
+  if (hc_fstat (fp, &st) == -1) return RULE_PARSE_PARALLEL_UNUSED;
+
+  const off_t input_off = hc_ftell (fp);
+
+  if ((input_off < 0) || (st.st_size < input_off)) return RULE_PARSE_PARALLEL_UNUSED;
+
+  const u64 input_sz64 = (u64) (st.st_size - input_off);
+
+  if ((input_sz64 < rule_parse_parallel_minimum ()) || (input_sz64 > SIZE_MAX)) return RULE_PARSE_PARALLEL_UNUSED;
+
+  const size_t input_sz = (size_t) input_sz64;
+
+  const u32 processors = (u32) hc_get_processor_count ();
+
+  u32 threads_cnt = processors;
+
+  threads_cnt = MIN (threads_cnt, RULE_PARSE_PARALLEL_THREADS_MAX);
+
+  const size_t threads_by_size = 1 + ((input_sz - 1) / RULE_PARSE_PARALLEL_BYTES_PER_THREAD);
+
+  threads_cnt = MIN (threads_cnt, (u32) MIN (threads_by_size, RULE_PARSE_PARALLEL_THREADS_MAX));
+
+  if (threads_cnt < 2) return RULE_PARSE_PARALLEL_UNUSED;
+
+  u8 *input = (u8 *) hcmalloc (input_sz);
+
+  if (input == NULL) return RULE_PARSE_PARALLEL_UNUSED;
+
+  const size_t nread = hc_fread (input, 1, input_sz, fp);
+
+  if (nread != input_sz)
+  {
+    hcfree (input);
+
+    return RULE_PARSE_PARALLEL_REOPEN;
+  }
+
+  hc_thread_t *threads = (hc_thread_t *) hccalloc (threads_cnt, sizeof (hc_thread_t));
+
+  rule_parse_parallel_thread_param_t *params = (rule_parse_parallel_thread_param_t *) hccalloc (threads_cnt, sizeof (rule_parse_parallel_thread_param_t));
+
+  if ((threads == NULL) || (params == NULL))
+  {
+    hcfree (params);
+    hcfree (threads);
+    hcfree (input);
+
+    return RULE_PARSE_PARALLEL_REOPEN;
+  }
+
+  hc_memchr_t hc_memchr = hc_memchr_get ();
+
+  params[0].from = 0;
+
+  for (u32 thread_pos = 1; thread_pos < threads_cnt; thread_pos++)
+  {
+    size_t from = (input_sz * thread_pos) / threads_cnt;
+
+    const size_t left = input_sz - from;
+    const size_t step = hc_memchr (input + from, '\n', left);
+
+    from += step;
+
+    if ((from < input_sz) && (input[from] == '\n')) from++;
+
+    params[thread_pos].from = from;
+  }
+
+  for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+  {
+    rule_parse_parallel_thread_param_t *param = &params[thread_pos];
+
+    param->input = input;
+    param->to    = (thread_pos + 1 < threads_cnt) ? params[thread_pos + 1].from : input_sz;
+    param->parse = false;
+  }
+
+  rule_parse_parallel_run_threads (threads, params, threads_cnt);
+
+  u64 lines      = 0;
+  u64 candidates = 0;
+
+  bool valid_input = true;
+
+  for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+  {
+    rule_parse_parallel_thread_param_t *param = &params[thread_pos];
+
+    if (param->valid_input == false) valid_input = false;
+
+    param->candidate_base = candidates;
+
+    lines      += param->lines;
+    candidates += param->candidates;
+  }
+
+  if (valid_input == false)
+  {
+    hcfree (params);
+    hcfree (threads);
+    hcfree (input);
+
+    return RULE_PARSE_PARALLEL_REOPEN;
+  }
+
+  if (lines > UINT32_MAX)
+  {
+    event_log_error (hashcat_ctx, "Unsupported number of lines in rule file %s.", rp_file);
+
+    hcfree (params);
+    hcfree (threads);
+    hcfree (input);
+
+    return RULE_PARSE_PARALLEL_ERROR;
+  }
+
+  if ((candidates > UINT32_MAX) || (candidates > (SIZE_MAX / sizeof (kernel_rule_t))))
+  {
+    event_log_error (hashcat_ctx, "Unsupported number of rules in rule file %s.", rp_file);
+
+    hcfree (params);
+    hcfree (threads);
+    hcfree (input);
+
+    return RULE_PARSE_PARALLEL_ERROR;
+  }
+
+  if (candidates == 0)
+  {
+    hcfree (params);
+    hcfree (threads);
+    hcfree (input);
+
+    return RULE_PARSE_PARALLEL_REOPEN;
+  }
+
+  kernel_rule_t *rules = (kernel_rule_t *) hccalloc ((size_t) candidates, sizeof (kernel_rule_t));
+  u8 *statuses         = (u8 *)            hccalloc ((size_t) candidates, sizeof (u8));
+
+  if ((rules == NULL) || (statuses == NULL))
+  {
+    hcfree (statuses);
+    hcfree (rules);
+    hcfree (params);
+    hcfree (threads);
+    hcfree (input);
+
+    return RULE_PARSE_PARALLEL_ERROR;
+  }
+
+  for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+  {
+    rule_parse_parallel_thread_param_t *param = &params[thread_pos];
+
+    param->rules    = rules;
+    param->statuses = statuses;
+    param->parse    = true;
+  }
+
+  rule_parse_parallel_run_threads (threads, params, threads_cnt);
+
+  u64 valid_rules   = 0;
+  u64 invalid_rules = 0;
+
+  for (u32 thread_pos = 0; thread_pos < threads_cnt; thread_pos++)
+  {
+    rule_parse_parallel_thread_param_t *param = &params[thread_pos];
+
+    kernel_rule_t *src = &rules[param->candidate_base];
+    kernel_rule_t *dst = &rules[valid_rules];
+
+    if ((param->valid_rules > 0) && (src != dst))
+    {
+      memmove (dst, src, (size_t) param->valid_rules * sizeof (kernel_rule_t));
+    }
+
+    valid_rules   += param->valid_rules;
+    invalid_rules += param->invalid_rules;
+  }
+
+  if (invalid_rules > 0)
+  {
+    rule_parse_parallel_report (hashcat_ctx, rp_file, input, input_sz, statuses);
+  }
+
+  hcfree (statuses);
+  hcfree (params);
+  hcfree (threads);
+  hcfree (input);
+
+  *out_buf = rules;
+  *out_cnt = (u32) valid_rules;
+
+  return RULE_PARSE_PARALLEL_DONE;
+}
+
 int kernel_rules_load (hashcat_ctx_t *hashcat_ctx, kernel_rule_t **out_buf, u32 *out_cnt)
 {
   const user_options_t *user_options = hashcat_ctx->user_options;
@@ -1070,7 +1535,7 @@ int kernel_rules_load (hashcat_ctx_t *hashcat_ctx, kernel_rule_t **out_buf, u32 
     all_kernel_rules_buf = (kernel_rule_t **) hccalloc (user_options->rp_files_cnt, sizeof (kernel_rule_t *));
   }
 
-  char *rule_buf = (char *) hcmalloc (HCBUFSIZ_LARGE);
+  char *rule_buf = NULL;
 
   u32 rule_len = 0;
 
@@ -1103,6 +1568,84 @@ int kernel_rules_load (hashcat_ctx_t *hashcat_ctx, kernel_rule_t **out_buf, u32 
       hcfree (rule_buf);
 
       return -1;
+    }
+
+    const rule_parse_parallel_result_t parallel_result = kernel_rules_load_parallel
+    (
+      hashcat_ctx,
+      &fp,
+      rp_file,
+      &kernel_rules_buf,
+      &kernel_rules_cnt
+    );
+
+    if (parallel_result == RULE_PARSE_PARALLEL_DONE)
+    {
+      hc_fclose (&fp);
+
+      all_kernel_rules_cnt[i] = kernel_rules_cnt;
+      all_kernel_rules_buf[i] = kernel_rules_buf;
+
+      continue;
+    }
+
+    if (parallel_result == RULE_PARSE_PARALLEL_ERROR)
+    {
+      hc_fclose (&fp);
+
+      for (u32 j = 0; j < i; j++)
+      {
+        hcfree (all_kernel_rules_buf[j]);
+      }
+
+      hcfree (all_kernel_rules_cnt);
+      hcfree (all_kernel_rules_buf);
+
+      hcfree (rule_buf);
+
+      return -1;
+    }
+
+    if (parallel_result == RULE_PARSE_PARALLEL_REOPEN)
+    {
+      hc_fclose (&fp);
+
+      if (hc_fopen (&fp, rp_file, "rb") == false)
+      {
+        event_log_error (hashcat_ctx, "%s: %s", rp_file, strerror (errno));
+
+        for (u32 j = 0; j < i; j++)
+        {
+          hcfree (all_kernel_rules_buf[j]);
+        }
+
+        hcfree (all_kernel_rules_cnt);
+        hcfree (all_kernel_rules_buf);
+
+        hcfree (rule_buf);
+
+        return -1;
+      }
+    }
+
+    if (rule_buf == NULL)
+    {
+      rule_buf = (char *) hcmalloc (HCBUFSIZ_LARGE);
+
+      if (rule_buf == NULL)
+      {
+        hc_fclose (&fp);
+
+        for (u32 j = 0; j < i; j++)
+        {
+          hcfree (all_kernel_rules_buf[j]);
+        }
+
+        hcfree (all_kernel_rules_cnt);
+        hcfree (all_kernel_rules_buf);
+
+        return -1;
+      }
     }
 
     while (!hc_feof (&fp))
@@ -1152,13 +1695,23 @@ int kernel_rules_load (hashcat_ctx_t *hashcat_ctx, kernel_rule_t **out_buf, u32 
 
       if (kernel_rules_avail == kernel_rules_cnt)
       {
-        kernel_rules_buf = (kernel_rule_t *) hcrealloc (kernel_rules_buf, kernel_rules_avail * sizeof (kernel_rule_t), INCR_RULES * sizeof (kernel_rule_t));
-
         const u32 kernel_rules_avail_old = kernel_rules_avail;
 
-        kernel_rules_avail += INCR_RULES;
+        if (kernel_rules_avail == 0)
+        {
+          kernel_rules_avail = INCR_RULES;
+        }
+        else if (kernel_rules_avail <= (UINT32_MAX / 2))
+        {
+          kernel_rules_avail *= 2;
+        }
+        else
+        {
+          kernel_rules_avail = UINT32_MAX;
+        }
 
-        if (kernel_rules_avail < kernel_rules_avail_old) // u32 overflow
+        if ((kernel_rules_avail <= kernel_rules_avail_old)
+         || (kernel_rules_avail > (SIZE_MAX / sizeof (kernel_rule_t))))
         {
           event_log_error (hashcat_ctx, "Unsupported number of rules in rule file %s.", rp_file);
 
@@ -1178,6 +1731,34 @@ int kernel_rules_load (hashcat_ctx_t *hashcat_ctx, kernel_rule_t **out_buf, u32 
 
           return -1;
         }
+
+        kernel_rule_t *kernel_rules_buf_new = (kernel_rule_t *) hcrealloc
+        (
+          kernel_rules_buf,
+          (size_t) kernel_rules_avail_old * sizeof (kernel_rule_t),
+          (size_t) (kernel_rules_avail - kernel_rules_avail_old) * sizeof (kernel_rule_t)
+        );
+
+        if (kernel_rules_buf_new == NULL)
+        {
+          hc_fclose (&fp);
+
+          hcfree (kernel_rules_buf);
+
+          for (u32 j = 0; j < i; j++)
+          {
+            hcfree (all_kernel_rules_buf[j]);
+          }
+
+          hcfree (all_kernel_rules_cnt);
+          hcfree (all_kernel_rules_buf);
+
+          hcfree (rule_buf);
+
+          return -1;
+        }
+
+        kernel_rules_buf = kernel_rules_buf_new;
       }
 
       char in[RP_PASSWORD_SIZE];
@@ -1240,6 +1821,30 @@ int kernel_rules_load (hashcat_ctx_t *hashcat_ctx, kernel_rule_t **out_buf, u32 
 
   hcfree (rule_buf);
 
+  if (user_options->rp_files_cnt == 1)
+  {
+    const u32 kernel_rules_cnt = all_kernel_rules_cnt[0];
+
+    kernel_rule_t *kernel_rules_buf = all_kernel_rules_buf[0];
+
+    hcfree (all_kernel_rules_cnt);
+    hcfree (all_kernel_rules_buf);
+
+    if (kernel_rules_cnt == 0)
+    {
+      event_log_error (hashcat_ctx, "No valid rules left.");
+
+      hcfree (kernel_rules_buf);
+
+      return -1;
+    }
+
+    *out_cnt = kernel_rules_cnt;
+    *out_buf = kernel_rules_buf;
+
+    return 0;
+  }
+
   /**
    * merge rules
    */
@@ -1279,6 +1884,11 @@ int kernel_rules_load (hashcat_ctx_t *hashcat_ctx, kernel_rule_t **out_buf, u32 
   if (kernel_rules_buf == NULL)
   {
     event_log_error (hashcat_ctx, "Not enough allocatable memory (RAM) for this ruleset.");
+
+    for (u32 j = 0; j < user_options->rp_files_cnt; j++)
+    {
+      hcfree (all_kernel_rules_buf[j]);
+    }
 
     hcfree (all_kernel_rules_cnt);
     hcfree (all_kernel_rules_buf);
@@ -1332,6 +1942,11 @@ int kernel_rules_load (hashcat_ctx_t *hashcat_ctx, kernel_rule_t **out_buf, u32 
   hcfree (repeats);
 
   kernel_rules_cnt -= invalid_cnt;
+
+  for (u32 i = 0; i < user_options->rp_files_cnt; i++)
+  {
+    hcfree (all_kernel_rules_buf[i]);
+  }
 
   hcfree (all_kernel_rules_cnt);
   hcfree (all_kernel_rules_buf);
