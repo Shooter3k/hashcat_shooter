@@ -1,46 +1,94 @@
 # hashcat_shooter
 
-`hashcat_shooter` is a Windows-focused customization of hashcat 7.1.2 for a
-12 x NVIDIA GeForce RTX 4090 system. It keeps the upstream hashcat feature set
-and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
-and custom-hash-mode work developed in the Shooter beta tree.
+`hashcat_shooter` is a Windows-focused edition of hashcat 7.1.2 built for
+large password-recovery jobs, especially on a 12 x NVIDIA GeForce RTX 4090
+system. It keeps the standard hashcat commands and capabilities, then adds
+faster preparation of very large hash lists, multi-GPU startup and recovery
+improvements, more candidate-generation options, Windows Unicode support,
+extra hash formats, and a ready-to-run Windows release.
+
+## Start here
+
+If you already use hashcat, Shooter is intended to be a drop-in replacement:
+the normal attack modes, hash modes, potfiles, restore files, rules, masks,
+and command-line options remain available. The additions are automatic where
+they are safe, narrowly guarded where they are hardware-specific, and usually
+have an environment-variable opt-out for comparison testing.
+
+If you are new to hashcat, the practical differences are:
+
+| Area | What Shooter adds | Why it matters |
+| --- | --- | --- |
+| Starting a 12-GPU job | Detects the intended all-NVIDIA system, avoids duplicate GPU-backend discovery, initializes GPUs concurrently, and prepares less host memory. | Short jobs begin sooner, shutdown is faster, and Windows commits much less RAM before cracking starts. |
+| Opening huge hash lists | Parses compatible text hash files and sorts large unsalted lists with up to 64 CPU workers. | Files containing millions of hashes spend much less time at `Parsing Hashes` and in preprocessing before the GPUs can work. |
+| Repeating similar jobs | Saves and validates successful RTX 4090 autotune settings and reuses them across identical cards. | Later runs can avoid repeating the full GPU tuning search. |
+| Building password candidates | Extends combination mode to three or more wordlists and lets rules transform the complete result of combination, mask, and hybrid attacks. | More candidate strategies can run directly in hashcat instead of requiring large intermediate wordlists. |
+| Generating wordlists | Parallelizes CPU rule processing for high-volume `--stdout` jobs and avoids unnecessary GPU transfers. | Generated candidates can be written or piped faster while retaining deterministic output order. |
+| Unicode on Windows | Preserves UTF-8 literals in masks, rule files, and inline rules, including masks such as `?d?d№?d?d№?d?d№`. | Non-ASCII characters reach hashcat intact instead of being replaced or misread by the Windows command-line path. |
+| Long-running jobs | Lets you adjust a runtime limit interactively, coordinates checkpoints across GPUs, makes `--stdout` generation resumable, retries transient CUDA/outfile failures, and reports shutdown progress. | Large jobs are easier to control, recover, and diagnose without silently losing devices or output. |
+| Hash formats | Adds the mdxfind `e1`-`e1001` namespace plus Shooter-specific and compatibility modes. | Existing mdxfind workflows and several uncommon formats can use the same GPU-oriented tool. |
+| Downloading and rebuilding | Publishes one Windows `.7z` containing the complete tagged source and a ready-to-run build, plus verification and self-bootstrapping build scripts. | A user can run the included executable immediately or rebuild the same source without assembling the repository by hand. |
 
 The current release is
 [`v7.1.2-shooter.20260814.36`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260814.36).
-Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
+Download its single `windows-x64-complete.7z` asset, extract it, and run
+`hashcat.exe`. See [Download, build, and run](#download-build-and-run) for the
+verification and rebuild commands. Complete release-by-release notes are in
+[CHANGELOG.md](CHANGELOG.md).
+
+### A few hashcat terms
+
+- A **hash list** is the input file containing the password hashes being
+  audited.
+- A **candidate** is one possible password that hashcat tests.
+- A **wordlist** supplies candidates from a file; a **mask** describes a
+  pattern such as digits or literal characters; a **rule** transforms a
+  candidate before it is tested.
+- A **hash mode** tells hashcat which password-hash format it must interpret.
+- **Autotune** selects GPU workload settings. A **checkpoint** records a safe
+  position from which a session can later continue.
+- A **potfile** remembers hashes already recovered. An **outfile** is the
+  result file explicitly selected with `-o`.
+
+Only the automatic CUDA-only probe and 3072 MiB staging limit are tied to the
+exact 12 x RTX 4090 setup. Persisted autotuning is specific to RTX 4090 cards
+but does not require twelve of them. Large-list parsing and sorting,
+candidate-generation features, Unicode handling, checkpoint/reliability
+work, additional hash modes, and release packaging are not limited to that
+exact machine unless a detailed section says otherwise.
 
 > **Comparison baseline:** the first Shooter commit is based directly on
 > upstream hashcat master commit
 > [`fdad9f2f7`](https://github.com/hashcat/hashcat/commit/fdad9f2f7bd7ec7f53056727e39331a17514db7c)
-> from August 10, 2026. The list below describes the custom behavior added
-> after that exact commit. The complete source comparison is available in
+> from August 10, 2026. The list below describes behavior that differs from
+> that exact commit and labels whether it came from Shooter or newer upstream
+> hashcat. The complete source comparison is available in
 > [GitHub's compare view](https://github.com/Shooter3k/hashcat_shooter/compare/fdad9f2f7bd7ec7f53056727e39331a17514db7c...master).
 
-The source has now also been synchronized with official hashcat master through
+The source has also been synchronized with official hashcat master through
 [`9c735bade`](https://github.com/hashcat/hashcat/commit/9c735badebda0792b78010a5b94e3c8733bc1825)
-from August 12, 2026. This includes the official general multi-hybrid attack
-mode 12 from
-[`554c1207a`](https://github.com/hashcat/hashcat/commit/554c1207ae367b551daf74ba641d0dc9fae419e0).
+from August 12, 2026. The official additions received after the fork are
+listed separately below.
 
-## Shooter changes from the upstream baseline
+## What changed from the upstream baseline
 
-### Performance and 12-GPU startup
+Most sections below describe Shooter-specific work. One clearly labeled
+section describes newer official hashcat work synchronized after the fork.
+This distinction keeps the comparison complete without claiming upstream
+features as Shooter inventions.
 
-| Change | What it does |
-| --- | --- |
-| Automatic CUDA-only fast start | On Windows, normal cracking sessions automatically skip redundant HIP and OpenCL discovery when CUDA reports exactly twelve devices and every device is an `NVIDIA GeForce RTX 4090`. `-I`/`--backend-info` still probes every backend. Set `HASHCAT_SHOOTER_FAST_START=0` to disable this behavior. |
-| Parallel CUDA initialization | Creates CUDA contexts and queries available memory concurrently across the GPUs instead of serializing the dominant WDDM startup work. |
-| Parallel device teardown | Releases per-device session resources and CUDA contexts concurrently at shutdown. |
-| Faster candidate staging | Initializes the large per-GPU host candidate buffers concurrently, avoids zero-filling data that is overwritten before use, and resets only required metadata between sessions. |
-| Lower startup memory commitment | On the exact Windows 12 x RTX 4090 configuration, the two candidate-pipeline slots are limited to 3072 MiB per GPU by default. This reduced the tested fast-hash host allocation from about 97.7 GB to 36.7 GB. Set `HASHCAT_SHOOTER_HOST_STAGING_MB` to another MiB value, or to `0` for upstream's generic limit. |
-| Parallel large text-hash-list parsing | Native-format text lists containing at least 4,194,304 hashes are memory-mapped and decoded with up to 64 CPU workers. Mode 0 retains its specialized direct decoder; other compatible modes call their own module decoder in parallel, including salted and structured hashes. Unsupported or malformed inputs automatically use the original parser. Set `HASHCAT_HASH_PARSE_PARALLEL_DISABLE=1` for an A/B test. |
-| UTF-8 literal masks on Windows | Native command-line masks retain two-, three-, and four-byte UTF-8 literals even when `?d` and the other mask tokens are present. Literal characters are emitted as their UTF-8 bytes, so the support is shared by every mask-capable hash mode. |
-| Complete Windows release archive | Starting with `.35`, Shooter releases publish one `windows-x64-complete.7z` asset containing the tagged source, a ready-to-run `hashcat.exe`, every built module/bridge/feed DLL, required MinGW runtime DLLs, build scripts, build metadata, and an internal SHA-256 manifest. |
-| Parallel large-hashlist sorting | Unsalted lists containing at least 4,194,304 hashes use a stable parallel radix sort instead of the single-threaded comparison sort. It uses up to 64 CPU workers and preserves hashcat's exact digest ordering and duplicate-removal behavior. Smaller and salted lists retain the upstream sorter. |
-| Batched cracked-result streaming | Streams very large crack sets to `-o` and the potfile in bounded 4,096-result batches instead of opening, locking, flushing, and closing files per crack. Cracked plaintexts are rebuilt from the retained host launch batch, avoiding per-result GPU round trips. Outfiles continue to publish full stdio buffers during a batch and are explicitly flushed and closed at every boundary. |
-| Persisted RTX 4090 autotune profiles | Saves successful accel, loops, threads, and timing selections in `hashcat.autotune-cache`; validates them with initialized test launches on later runs; and lets identical 4090s share one profile. This avoids repeating the full tuning search for matching jobs. |
-| Multi-GPU-safe autotune logging | Serializes concurrent cache messages so output from twelve tuning threads retains the correct device number and does not become duplicated or interleaved. |
-| Blowfish compiled-kernel cache | Removes upstream's forced JIT-cache disable for Blowfish-based modes `3200`, `25600`, `25800`, `28400`, `30600`, `30601`, `33800`, and `35500`, allowing their compiled kernels to be cached and reused. |
+### Faster startup and very large jobs
+
+| Enhancement | What it means in practice | When it applies |
+| --- | --- | --- |
+| Automatic CUDA-only fast start | Shooter skips redundant HIP and OpenCL discovery when it confirms the intended all-NVIDIA system. Diagnostic `-I`/`--backend-info` still probes everything. | Windows with exactly 12 detected RTX 4090 GPUs. Set `HASHCAT_SHOOTER_FAST_START=0` to disable it. |
+| Parallel GPU setup and shutdown | CUDA contexts, memory queries, candidate-buffer preparation, and device teardown run concurrently instead of making twelve cards wait on one another. | Multi-GPU CUDA sessions. |
+| Lower startup memory use | Candidate staging is capped at 3072 MiB per GPU across two pipeline slots. The measured fast-hash host commitment fell from about 97.7 GB to 36.7 GB. | The exact Windows 12 x RTX 4090 configuration. Change `HASHCAT_SHOOTER_HOST_STAGING_MB`, or set it to `0` for hashcat's generic limit. |
+| Parallel hash-list parsing | Compatible native-text files with at least 4,194,304 nonempty hashes are memory-mapped and decoded with up to 64 CPU workers. Malformed or unsupported inputs automatically return to the original parser. | Raw, salted, structured, extended-salt, and other compatible text modes. Set `HASHCAT_HASH_PARSE_PARALLEL_DISABLE=1` to compare. |
+| Parallel large-list sorting | Large unsalted lists use a stable parallel radix sort while preserving hashcat's digest order and duplicate removal. | Unsalted lists with at least 4,194,304 hashes; smaller or salted lists keep the original sorter. |
+| Batched recovered-result output | Recovered plaintexts are rebuilt from retained host data instead of requiring a GPU round trip, then large result groups are written to the outfile and potfile in bounded batches. | Jobs recovering many hashes. |
+| Reusable RTX 4090 autotune profiles | Successful GPU workload settings are saved, validated on later runs, and shared by identical cards. Log messages remain correctly associated with each GPU. | Matching RTX 4090 cracking jobs without explicit tuning values. Set `HASHCAT_AUTOTUNE_CACHE_DISABLE=1` to bypass it. |
+| Blowfish kernel caching | Compiled kernels can be reused for Blowfish-based modes that upstream normally recompiles. | Modes `3200`, `25600`, `25800`, `28400`, `30600`, `30601`, `33800`, and `35500`. |
 
 The RTX 4090 autotune cache is used by the shared GPU autotune path, not by
 only one attack type. It covers standard GPU cracking attack modes, including
@@ -53,11 +101,27 @@ See [docs/startup-optimization.md](docs/startup-optimization.md) and
 [RTX_4090_AUTOTUNE_CACHE.md](RTX_4090_AUTOTUNE_CACHE.md) for the exact guards,
 cache key, validation rules, overrides, and measurements.
 
-### Official attack mode 12
+### Newer official hashcat improvements included after the fork
 
-Official attack mode 12 is a general multi-hybrid mode. Its mask is the first
-attack argument, `?w` marks the first wordlist's position, and optional `?q`
-marks a second wordlist after `?w`:
+These changes were authored upstream and synchronized into Shooter. They are
+differences from the original baseline, but they are not claimed as
+Shooter-authored work.
+
+| Official improvement | Plain-language effect |
+| --- | --- |
+| General multi-hybrid attack mode 12 ([`554c1207a`](https://github.com/hashcat/hashcat/commit/554c1207ae367b551daf74ba641d0dc9fae419e0)) | Places one or two wordlist entries at chosen positions inside a mask. |
+| Large-buffer and rule-processing safety fixes ([`62dcbb453`](https://github.com/hashcat/hashcat/commit/62dcbb453), [`8640be01c`](https://github.com/hashcat/hashcat/commit/8640be01c), [`e09c9650b`](https://github.com/hashcat/hashcat/commit/e09c9650b), [`fc6c49337`](https://github.com/hashcat/hashcat/commit/fc6c49337)) | Prevents integer-overflow, out-of-bounds-write, and double-free failures in hash/salt buffers, debug data, and chained rules. |
+| Correct long combinator results and status ([`72f3700a6`](https://github.com/hashcat/hashcat/commit/72f3700a6), [`f457206e4`](https://github.com/hashcat/hashcat/commit/f457206e4)) | Stops long combined plaintexts from being truncated or displayed as a non-matching result. |
+| PDF mode 10500 empty-ID support ([`0e3ae7e11`](https://github.com/hashcat/hashcat/commit/0e3ae7e11)) | Accepts valid PDF hashes whose ID field is empty. |
+| Per-device feed routing ([`fc3a57ead`](https://github.com/hashcat/hashcat/commit/fc3a57ead)) | Tells each external candidate feed which GPU device it serves. |
+| Yescrypt maintenance ([`5d5990ce3`](https://github.com/hashcat/hashcat/commit/5d5990ce3), [`9c735bade`](https://github.com/hashcat/hashcat/commit/9c735badebda0792b78010a5b94e3c8733bc1825)) | Fixes Metal address-space handling and reorganizes yescrypt around the maintained scrypt layout. |
+
+#### Attack mode 12 example
+
+A hybrid attack combines wordlist entries with a pattern. Official attack
+mode 12 is a general multi-hybrid mode: its mask is the first attack argument,
+`?w` marks the first wordlist's position, and optional `?q` marks a second
+wordlist:
 
 ```powershell
 hashcat.exe -m 0 -a 12 hashes.txt "?w-?d?d" words.txt
@@ -73,7 +137,16 @@ syntax and behavior. See
 [docs/hashcat-generic-attack-mode.md](docs/hashcat-generic-attack-mode.md) for
 the complete upstream syntax and restrictions.
 
-### UTF-8 literal rule operands
+### Unicode masks and rules on Windows
+
+Standard mask tokens such as `?d` still have their usual meaning, while
+literal two-, three-, and four-byte UTF-8 characters are preserved beside
+them. This works in every mask-capable hash mode. For example, this mask tests
+six digits separated into pairs by the literal numero sign:
+
+```powershell
+hashcat.exe -m 0 -a 3 hashes.txt "?d?d№?d?d№?d?d№"
+```
 
 UTF-8 rule files can use literal multibyte characters with the byte-emitting
 `$`, `^`, `i`, `v`, and `o` functions. Shooter compiles those literals into
@@ -86,6 +159,11 @@ and the exact scope. A ready-to-run set of 26 two-, three-, and four-byte test
 rules is included in [multibyte-test.rule](multibyte-test.rule).
 
 ### Multi-file mode 1 and whole-candidate rules
+
+Combination mode normally joins entries from two wordlists. Shooter can join
+three or more wordlists in one attack, and its rule support can transform the
+complete assembled candidate rather than only one piece of it. This avoids
+pre-generating and storing very large intermediate wordlists.
 
 Rule support in this build is summarized below. Generic mode 8 also supports
 rules, so it is marked accordingly rather than left unlabeled:
@@ -146,7 +224,9 @@ candidate generation or the native no-rule combinator path.
 
 ### Interactive runtime controls
 
-Attacks started with a positive `--runtime` value gain two interactive keys:
+`--runtime` normally gives a job a fixed time limit. Shooter lets an operator
+adjust that limit without restarting the attack. A positive `--runtime` value
+enables two interactive keys:
 
 - `[e]xtend` freezes the runtime countdown. Each second left enabled adds one
   second of permitted wall time.
@@ -159,9 +239,11 @@ and pause their adjustment while the cracking devices are paused. See
 
 ### Multi-GPU checkpoint behavior
 
-Checkpoint requests now coordinate all active GPUs at a shared barrier. A GPU
-that reaches a safe restore boundary waits with its worker and backend context
-alive while the other GPUs arrive. Cancelling the checkpoint releases every
+In standard multi-GPU work, different cards can reach safe stopping positions
+at different times. Shooter checkpoint requests coordinate all active GPUs at
+a shared barrier. A GPU that reaches a safe restore boundary waits with its
+worker and backend context alive while the other GPUs arrive. Cancelling the
+checkpoint releases every
 waiting GPU, including GPUs that reached the boundary first, and candidate
 producers pause without discarding prefetched work. A completed checkpoint
 still writes the normal restore file and exits as `Aborted (Checkpoint)`.
@@ -170,10 +252,24 @@ Skipped GPUs and devices that naturally finish at the end of the keyspace do
 not hold the barrier open. See
 [docs/checkpoint-control.md](docs/checkpoint-control.md).
 
+### Faster `--stdout` candidate generation
+
+Straight wordlist-and-rule `--stdout` jobs apply rules in a reusable CPU
+worker pool, write larger ordered buffers, and skip device uploads and
+downloads that do not contribute to candidate generation. Up to 64 workers
+can be used while preserving the same deterministic candidate order.
+
+The selected workload profile controls the automatic worker count. Set
+`HASHCAT_STDOUT_THREADS` to a positive number for a controlled comparison or
+to limit CPU use. Pause, checkpoint, and quit controls remain responsive
+between bounded output writes.
+
 ### Resumable `--stdout` sessions
 
-Mask- and file-driven `--stdout` candidate-generation sessions now use the
-same interactive menu as cracking sessions. `[p]ause`, `[r]esume`,
+`--stdout` generates candidates without hashing them, often for piping into
+another program or saving a generated wordlist. Mask- and file-driven
+`--stdout` sessions now use the same interactive menu as cracking sessions.
+`[p]ause`, `[r]esume`,
 `[c]heckpoint`, and `[q]uit` are available, and all menu/status text goes to
 stderr so the candidate stream remains clean.
 
@@ -196,9 +292,13 @@ share stdin with the interactive menu. Full behavior and limitations are in
 
 ### Reliability and reporting
 
+These changes focus on protecting long-running work and making the program's
+state visible when Windows, a GPU, or an output file temporarily misbehaves.
+
 | Change | What it does |
 | --- | --- |
 | Interactive outfile-check bypass | When outfile-directory checking is active, the menu shows `[k]eep-going`. Pressing `k` stops checking `--outfile-check-dir` for the rest of the current run without changing anything in that directory. Hashes already processed remain marked; starting or restoring a process begins with checking enabled again. |
+| Clear outfile-check completion status | If every recovered hash came from `--outfile-check-dir` rather than the current attack, the final status says `cracked from outfile-check-dir` so the source of the result is unambiguous. |
 | Atomic CUDA startup retry | If CUDA context creation fails on any selected device, releases the complete partial attempt, waits 5 seconds, and retries the clean session up to 10 times. CUDA stream and event creation retry in place on the affected device with the same interval and limit. A multi-GPU job no longer silently continues on only the devices that initialized successfully. |
 | Transient Windows outfile recovery | When `-o` is temporarily denied or locked, startup validation and result-time append opens retry every 250 ms for up to 5 seconds. After an exhausted window, a 30-second cooldown prevents repeated five-second stalls while later results still get an immediate open attempt. The successful path remains a single open with no retry delay. |
 | Buffered stdout outfile recovery | The same outfile-open helper is used for normal recovered results and buffered `--stdout` output directed through `-o`. |
@@ -210,7 +310,11 @@ share stdin with the interactive menu. Full behavior and limitations are in
 | Visible Pure Kernel selection | Interactive terminals display the `Kernel.Feature...: Pure Kernel` status line in bright yellow, making an unoptimized kernel choice immediately visible. Optimized-kernel lines retain the normal color, and redirected or machine-consumed output remains plain text without ANSI escape codes. |
 | Dated build identity | Production builds report `v7.1.2-shooter.YYYYMMDD.REVISION`, making the binary's source/release generation visible in `hashcat.exe --version`. |
 
-### Added and compatibility hash modes
+### More hash formats and mdxfind compatibility
+
+A hash mode is the format selector supplied with `-m`. Shooter keeps all
+standard hashcat modes and adds separate plugins; existing numeric modes are
+not repurposed or silently changed.
 
 Every algorithm in mdxfind's live `Types[]` registry is also available under
 its mdxfind name, from `e1` through `e1001`. For example:
@@ -239,15 +343,15 @@ names are special cases: `e426` (`PARALLEL`) is a scheduler pseudo-entry, not
 a hash algorithm, and `e535` (`SHA1-CUSTOMUSERSALT`) requires mdxfind's
 external custom-user/salt state and has no published standalone vector.
 
-| Hash mode | Addition |
-| --- | --- |
-| `29950` | phpBB3 legacy rehashes in their original `$H\2*$...` form: `bcrypt(phpass($pass))`. The parser extracts both embedded settings and the GPU runs the phpass and bcrypt stages without preprocessing the hash file. |
-| `29951` | Explicit rare-case companion for `bcrypt(phpass(md5($pass)))`; it uses the same original and extracted input formats but never guesses which inner pipeline a hash uses. |
-| `29960` | CMIYC 2026 SHA-512 GPU implementation with fixed-block optimizations and a PowerShell sharded launcher for small candidate sets on many GPUs. |
-| `29970` | CMIYC 2026 memory-hard SHA-512 GPU implementation retained as a known-good implementation. |
-| `29980` | GPU implementation of libxcrypt-style gost-yescrypt `$gy$j9T$` hashes for the supported default profile. |
-| `29990` | Private CMIYC 2026 memory-hard SHA-512 mode carried forward from the beta tree. |
-| `67000` | Compatibility alias for legacy yescrypt jobs. It accepts the same `$y$` hashes as current mode `36100` and shares the maintained mode 36100 implementation to avoid algorithm drift. |
+| Hash mode | Format or purpose | Practical note |
+| --- | --- | --- |
+| `29950` | phpBB3 legacy `bcrypt(phpass($pass))` rehashes in their original `$H\2*$...` form. | Hash files do not need to be preprocessed; the parser extracts both settings and the GPU performs both stages. |
+| `29951` | Rare `bcrypt(phpass(md5($pass)))` variant. | Kept explicit so hashcat never guesses which inner password pipeline a hash uses. |
+| `29960` | CMIYC 2026 SHA-512. | Includes GPU fixed-block optimizations and a PowerShell launcher that can shard small candidate sets across many GPUs. |
+| `29970` | CMIYC 2026 memory-hard SHA-512. | Retained as a known-good GPU implementation. |
+| `29980` | libxcrypt-style gost-yescrypt `$gy$j9T$`. | GPU implementation for the supported default profile. |
+| `29990` | Private CMIYC 2026 memory-hard SHA-512. | Carried forward from the Shooter beta tree. |
+| `67000` | Legacy yescrypt compatibility number. | Accepts the same `$y$` hashes as current mode `36100` and shares that maintained implementation. Use `36100` for new jobs. |
 
 Mode `36100` remains the preferred yescrypt number for new jobs. Technical
 notes for the custom modes are in [docs/mode-29950.md](docs/mode-29950.md),
@@ -256,8 +360,14 @@ notes for the custom modes are in [docs/mode-29950.md](docs/mode-29950.md),
 [GOST_YESCRYPT_GPU.md](GOST_YESCRYPT_GPU.md), and
 [docs/mode-67000.md](docs/mode-67000.md).
 
-### Windows build and maintenance material
+### Ready-to-run releases and Windows builds
 
+- Each release publishes one `windows-x64-complete.7z` containing the complete
+  tagged source, `hashcat.exe`, all built module/bridge/feed DLLs, required
+  MinGW runtime DLLs, build metadata, and an internal `SHA256SUMS` manifest.
+- The included `verify-windows-package.ps1` checks every packaged file. The
+  included `build-windows.ps1` downloads a checksum-pinned, repository-local
+  toolchain and rebuilds the source without changing the system `PATH`.
 - Added a reproducible MSYS2/MinGW64 production-build procedure in
   [how_to_compile.txt](how_to_compile.txt), including the required clean build
   after structure/header changes and Windows runtime troubleshooting.
@@ -269,24 +379,29 @@ notes for the custom modes are in [docs/mode-29950.md](docs/mode-29950.md),
   CMIYC workload across independently running GPUs and safely combine results.
 - Added generated `hashcat.autotune-cache` state to `.gitignore`.
 
-## What was already upstream
+## Compatibility and feature origin
 
-This comparison intentionally does not claim upstream work as a Shooter
-change. In particular, the starting commit already contained the upstream
+Shooter is an extension of hashcat, not a replacement for its normal feature
+set. All standard upstream attack modes and hash modes remain available. The
+performance and reliability changes use shared paths where appropriate, while
+private hash modules and the multi-file mode-1 extension are additions.
+
+This comparison intentionally does not claim upstream work as Shooter work.
+In particular, the starting commit already contained the upstream
 attack-mode 9 update from
 [`387cfdd`](https://github.com/hashcat/hashcat/commit/387cfdda3d3844c26bb96d2b04c1a1b21c9ec77f)
 and upstream hash mode `17230`. Those capabilities remain present, but they are
 inherited from hashcat rather than added by this branch.
 
-All standard upstream attack modes and hash modes remain available. The
-Shooter performance and reliability changes are implemented in shared paths
-where applicable. The private hash modules and multi-file extension to mode 1
-are additions, not replacements for standard modes.
+Official attack mode 12 was added to upstream after the original fork point
+and then synchronized into this repository. It differs from the baseline but
+is clearly identified above as newer upstream work.
 
 ## Verification on the target system
 
-The published releases were clean-built with MSYS2/MinGW64 and exercised on
-the intended Windows system with twelve RTX 4090 GPUs. Recorded verification
+The enhancements above have been exercised rather than only compiled. The
+published releases were clean-built with MSYS2/MinGW64 and tested on the
+intended Windows system with twelve RTX 4090 GPUs. Recorded verification
 includes:
 
 - Known-answer tests for standard attack modes 0, 1, 3, 6, 7, 8, and 9;
@@ -380,12 +495,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-windows.ps1
 The toolchain cache is ignored by Git and can be deleted after the build. The
 wrapper copies the required runtime DLLs beside the executable and checks its
 version.
-
-For a clean rebuild:
-
-```powershell
-.\build-windows.ps1 -Action Rebuild
-```
 
 The traditional system-wide MSYS2 MINGW64 workflow remains supported. See
 [how_to_compile.txt](how_to_compile.txt) for both approaches, dependency
