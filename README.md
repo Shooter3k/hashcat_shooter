@@ -63,47 +63,6 @@ explanation.
 42. **[CMIYC workloads can be split across GPUs](docs/shooter-enhancements.md#42-cmiyc-multi-gpu-sharding)** — the included launcher creates and combines independent shards.
 43. **[Newer official hashcat fixes are included](docs/shooter-enhancements.md#43-newer-upstream-correctness-fixes)** — upstream fixes after the fork are preserved and clearly credited.
 
-## Shooter compared with the original hashcat baseline
-
-| Area | Original hashcat baseline | What Shooter adds |
-| --- | --- | --- |
-| Opening huge hash lists | Uses the normal general-purpose parsing and sorting paths. | Uses up to 64 CPU workers to parse compatible text hash lists and sort large unsalted lists. This directly reduces time spent at `Parsing Hashes`. |
-| Starting many GPUs | Performs general backend discovery and GPU setup. | On the intended 12 x RTX 4090 system, skips redundant HIP/OpenCL discovery, initializes and shuts down GPUs concurrently, and commits much less host memory. |
-| Repeating similar jobs | Performs the normal autotune search for each new matching session. | Saves successful RTX 4090 tuning settings, validates them, and reuses them across identical GPUs. |
-| Creating password candidates | Provides the standard wordlist, mask, combination, and hybrid attacks. | Adds combinations of three or more wordlists, rules for the complete candidate in more attack modes, faster `--stdout` rule generation, and resumable candidate output. |
-| Multibyte masks and rules | Some Windows command-line paths can lose non-ASCII literal characters. | Preserves multibyte literals in masks, rule files, and inline rules, including masks such as `?d?d№?d?d№?d?d№`. |
-| Recovering from problems | Provides standard restore and session support. | Coordinates checkpoints across GPUs, retries temporary CUDA and outfile failures, protects loopback files, and shows progress during slow shutdowns. |
-| Hash types | Provides the standard hashcat modes. | Adds the complete mdxfind `e1`-`e1001` namespace plus seven Shooter-specific or compatibility mode numbers. |
-| Downloading and building | Normally requires obtaining the source or a suitable platform package. | Publishes one Windows `.7z` containing the complete tagged source, a ready-to-run build, verification tools, and a self-bootstrapping build script. |
-
-## Additional hash types
-
-Shooter keeps every standard hashcat hash mode. Its additions are separate, so
-existing numeric modes are not silently repurposed.
-
-### mdxfind compatibility modes
-
-Every entry in mdxfind's live registry is exposed as `e1` through `e1001`.
-The complete name-by-name list is in
-[docs/mdxfind-modules.json](docs/mdxfind-modules.json), with usage notes in
-[docs/mdxfind-modules.md](docs/mdxfind-modules.md).
-
-Of the 1,001 names, 999 are self-contained hash algorithms with passing test
-vectors. `e426` is a scheduler pseudo-entry, and `e535` requires mdxfind's
-external custom-user/salt state.
-
-### Shooter numeric modes
-
-| Mode | Purpose |
-| --- | --- |
-| `29950` | phpBB3 legacy `bcrypt(phpass($pass))` rehashes. |
-| `29951` | Rare `bcrypt(phpass(md5($pass)))` variant. |
-| `29960` | CMIYC 2026 SHA-512 GPU implementation. |
-| `29970` | CMIYC 2026 memory-hard SHA-512 GPU implementation. |
-| `29980` | Supported libxcrypt-style gost-yescrypt `$gy$j9T$` profile. |
-| `29990` | Private CMIYC 2026 memory-hard SHA-512 mode. |
-| `67000` | Compatibility number for legacy yescrypt jobs; use `36100` for new jobs. |
-
 ## Download and run
 
 Download the single `windows-x64-complete.7z` asset from the
@@ -129,17 +88,6 @@ the local `.build-tools` directory. Allow internet access and at least 5 GB of
 free disk space. Nothing is installed system-wide, and the system or user
 `PATH` is not changed. GPU vendor drivers remain an external requirement.
 
-## Which features require the 12-GPU system?
-
-Only the automatic CUDA-only probe and the 3072 MiB-per-GPU staging limit
-require the exact Windows 12 x RTX 4090 configuration. Persisted autotuning is
-specific to RTX 4090 cards but does not require twelve of them.
-
-Large-list parsing and sorting, candidate-generation features, multibyte mask
-and rule handling, checkpoint and reliability improvements, additional hash
-modes, and release packaging are not limited to that exact machine unless
-their detailed documentation says otherwise.
-
 ## Technical details
 
 | Topic | Documentation |
@@ -153,18 +101,7 @@ their detailed documentation says otherwise.
 | mdxfind modes | [docs/mdxfind-modules.md](docs/mdxfind-modules.md) and the [complete JSON registry](docs/mdxfind-modules.json) |
 | Windows builds | [how_to_compile.txt](how_to_compile.txt) |
 | Every release and verification result | [CHANGELOG.md](CHANGELOG.md) |
-
-## Comparison baseline and upstream work
-
-The original Shooter fork is based on upstream hashcat commit
-[`fdad9f2f7`](https://github.com/hashcat/hashcat/commit/fdad9f2f7bd7ec7f53056727e39331a17514db7c).
-The complete source comparison is available in
-[GitHub's compare view](https://github.com/Shooter3k/hashcat_shooter/compare/fdad9f2f7bd7ec7f53056727e39331a17514db7c...master).
-
-Shooter was later synchronized with official hashcat through
-[`9c735bade`](https://github.com/hashcat/hashcat/commit/9c735badebda0792b78010a5b94e3c8733bc1825).
-Official attack mode 12 and the upstream correctness fixes in that range are
-included but are not claimed as Shooter-authored work.
+| Source comparison | [Feature origins](docs/shooter-enhancements.md) and the [complete comparison with the upstream baseline](https://github.com/Shooter3k/hashcat_shooter/compare/fdad9f2f7bd7ec7f53056727e39331a17514db7c...master) |
 
 ## Upstream hashcat and license
 
