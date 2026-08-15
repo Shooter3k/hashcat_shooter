@@ -11,6 +11,28 @@ but most of its additions also work on other hardware.
 Use this software only on passwords and systems you own or are explicitly
 authorized to audit.
 
+## Improvements at a glance
+
+- **[Huge hash lists open faster](docs/startup-optimization.md)** — parallel
+  CPU parsing and sorting reduce the wait at `Parsing Hashes`.
+- **[Large GPU systems start faster and use less memory](docs/startup-optimization.md)**
+  — especially the intended Windows system with 12 RTX 4090 GPUs.
+- **[RTX 4090 tuning can be reused](RTX_4090_AUTOTUNE_CACHE.md)** — matching
+  jobs can skip repeating the complete GPU tuning search.
+- **[More password-candidate options](#3-more-ways-to-generate-password-candidates)**
+  — join three or more wordlists, apply rules more broadly, and generate
+  candidates faster.
+- **[UTF-8 masks and rules work correctly on Windows](#4-better-windows-unicode-support)**
+  — literal characters such as `№` are preserved.
+- **[Long jobs are easier to control and recover](#5-reliability-and-clearer-status-information)**
+  — coordinated checkpoints, retries, safer loopback files, and clearer
+  shutdown progress.
+- **[More hash-type compatibility](#additional-hash-types)** — the complete
+  mdxfind `e1`-`e1001` namespace plus seven Shooter numeric or compatibility
+  modes.
+- **[One complete Windows download](#download-and-run)** — the `.7z` includes
+  both a ready-to-run build and everything needed to rebuild it.
+
 ## Shooter compared with the original hashcat baseline
 
 | Area | Original hashcat baseline | What Shooter adds |
