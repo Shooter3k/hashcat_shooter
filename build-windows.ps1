@@ -18,7 +18,7 @@ $Msys2Release = '2026-06-11'
 $Msys2Archive = 'msys2-base-x86_64-20260611.sfx.exe'
 $Msys2ArchiveSha256 = 'c105946e64e08f099ac0e4647461ce762b95333ad211777666476a9a41451d65'
 $Msys2ArchiveUrl = "https://github.com/msys2/msys2-installer/releases/download/$Msys2Release/$Msys2Archive"
-$ToolchainStampVersion = 'hashcat-shooter-windows-toolchain-v4'
+$ToolchainStampVersion = 'hashcat-shooter-windows-toolchain-v5'
 $RequiredPackages = @(
   'git'
   'mingw-w64-x86_64-clang'
@@ -27,6 +27,7 @@ $RequiredPackages = @(
   'mingw-w64-x86_64-llvm'
   'mingw-w64-x86_64-make'
   'mingw-w64-x86_64-openssl'
+  'mingw-w64-x86_64-7zip'
   'mingw-w64-x86_64-libiconv'
   'mingw-w64-x86_64-rustup'
 )
@@ -94,6 +95,7 @@ $GccPath = Join-Path $MingwBin 'gcc.exe'
 $ClangPath = Join-Path $MingwBin 'clang.exe'
 $LibClangLibrary = Join-Path $MingwBin 'libclang.dll'
 $LldPath = Join-Path $MingwBin 'ld.lld.exe'
+$SevenZipPath = Join-Path $MingwBin '7z.exe'
 $RustupPath = Join-Path $MingwBin 'rustup.exe'
 $RustToolchainBin = Join-Path $MsysRoot 'var\lib\hashcat-shooter\rustup\toolchains\stable-x86_64-pc-windows-gnu\bin'
 $CargoPath = Join-Path $RustToolchainBin 'cargo.exe'
@@ -147,6 +149,7 @@ $RequiredFiles = @(
   $ClangPath
   $LibClangLibrary
   $LldPath
+  $SevenZipPath
   $RustupPath
   $CargoPath
   $RustcPath
@@ -189,14 +192,24 @@ if ($UpdateToolchain -or -not $StampMatches -or $MissingRequiredFiles.Count -gt 
 }
 
 $MakeCommand = "/mingw64/bin/mingw32-make.exe PRODUCTION=1 ENABLE_LTO=0 RUST_CARGO=/var/lib/hashcat-shooter/rustup/toolchains/stable-x86_64-pc-windows-gnu/bin/cargo.exe RUST_RUSTUP=/mingw64/bin/rustup.exe -j$Jobs"
+$CleanCommand = '/mingw64/bin/mingw32-make.exe PRODUCTION=1 clean'
 $PathPrefix = 'export PATH=/mingw64/bin:/var/lib/hashcat-shooter/rustup/toolchains/stable-x86_64-pc-windows-gnu/bin:/usr/bin:$PATH; export LIBCLANG_PATH=/mingw64/bin; export RUSTUP_HOME=/var/lib/hashcat-shooter/rustup; export CARGO_HOME=/var/lib/hashcat-shooter/cargo; '
+$HashcatPath = Join-Path $RepoRoot 'hashcat.exe'
+
+# The production version is compiled directly into the frontend, but the
+# frontend target cannot depend on a Make variable. Relink it on incremental
+# wrapper builds so a revision/date change never leaves a stale executable.
+
+if (($Action -eq 'Build') -and (Test-Path -LiteralPath $HashcatPath -PathType Leaf)) {
+  Remove-Item -LiteralPath $HashcatPath -Force
+}
 
 switch ($Action) {
   'Clean' {
-    $BuildCommand = $PathPrefix + '/mingw64/bin/mingw32-make.exe clean'
+    $BuildCommand = $PathPrefix + $CleanCommand
   }
   'Rebuild' {
-    $BuildCommand = $PathPrefix + '/mingw64/bin/mingw32-make.exe clean && ' + $MakeCommand
+    $BuildCommand = $PathPrefix + $CleanCommand + ' && ' + $MakeCommand
   }
   default {
     $BuildCommand = $PathPrefix + $MakeCommand
@@ -218,8 +231,6 @@ if ($Action -eq 'Clean') {
   Write-Host 'Clean completed.'
   exit 0
 }
-
-$HashcatPath = Join-Path $RepoRoot 'hashcat.exe'
 
 if (-not (Test-Path -LiteralPath $HashcatPath -PathType Leaf)) {
   throw "The build completed without producing $HashcatPath."

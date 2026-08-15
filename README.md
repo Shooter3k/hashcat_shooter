@@ -6,7 +6,7 @@ and adds multi-GPU startup, tuning, checkpoint, runtime-control, reliability,
 and custom-hash-mode work developed in the Shooter beta tree.
 
 The current release is
-[`v7.1.2-shooter.20260814.34`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260814.34).
+[`v7.1.2-shooter.20260814.35`](https://github.com/Shooter3k/hashcat_shooter/releases/tag/v7.1.2-shooter.20260814.35).
 Complete release-by-release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > **Comparison baseline:** the first Shooter commit is based directly on
@@ -35,6 +35,7 @@ mode 12 from
 | Lower startup memory commitment | On the exact Windows 12 x RTX 4090 configuration, the two candidate-pipeline slots are limited to 3072 MiB per GPU by default. This reduced the tested fast-hash host allocation from about 97.7 GB to 36.7 GB. Set `HASHCAT_SHOOTER_HOST_STAGING_MB` to another MiB value, or to `0` for upstream's generic limit. |
 | Parallel large text-hash-list parsing | Native-format text lists containing at least 4,194,304 hashes are memory-mapped and decoded with up to 64 CPU workers. Mode 0 retains its specialized direct decoder; other compatible modes call their own module decoder in parallel, including salted and structured hashes. Unsupported or malformed inputs automatically use the original parser. Set `HASHCAT_HASH_PARSE_PARALLEL_DISABLE=1` for an A/B test. |
 | UTF-8 literal masks on Windows | Native command-line masks retain two-, three-, and four-byte UTF-8 literals even when `?d` and the other mask tokens are present. Literal characters are emitted as their UTF-8 bytes, so the support is shared by every mask-capable hash mode. |
+| Complete Windows release archive | Starting with `.35`, Shooter releases publish one `windows-x64-complete.7z` asset containing the tagged source, a ready-to-run `hashcat.exe`, every built module/bridge/feed DLL, required MinGW runtime DLLs, build scripts, build metadata, and an internal SHA-256 manifest. |
 | Parallel large-hashlist sorting | Unsalted lists containing at least 4,194,304 hashes use a stable parallel radix sort instead of the single-threaded comparison sort. It uses up to 64 CPU workers and preserves hashcat's exact digest ordering and duplicate-removal behavior. Smaller and salted lists retain the upstream sorter. |
 | Batched cracked-result streaming | Streams very large crack sets to `-o` and the potfile in bounded 4,096-result batches instead of opening, locking, flushing, and closing files per crack. Cracked plaintexts are rebuilt from the retained host launch batch, avoiding per-result GPU round trips. Outfiles continue to publish full stdio buffers during a batch and are explicitly flushed and closed at every boundary. |
 | Persisted RTX 4090 autotune profiles | Saves successful accel, loops, threads, and timing selections in `hashcat.autotune-cache`; validates them with initialized test launches on later runs; and lets identical 4090s share one profile. This avoids repeating the full tuning search for matching jobs. |
@@ -325,8 +326,43 @@ preserved in [CHANGELOG.md](CHANGELOG.md).
 
 Download the
 [latest Shooter release](https://github.com/Shooter3k/hashcat_shooter/releases/latest)
-or build it locally. On Windows, the recommended build uses a disposable
-toolchain stored inside the checkout:
+and extract its single `windows-x64-complete.7z` asset. It contains both the
+complete tagged source and a ready-to-run Windows x64 build. Run it directly
+from the extracted directory:
+
+```powershell
+.\verify-windows-package.ps1
+.\hashcat.exe --version
+```
+
+The internal `SHA256SUMS` manifest covers every packaged source and binary
+file. `BUILD-INFO.txt` records the version, source commit, build counts, and
+exact rebuild command.
+
+To rebuild the included source, use the self-bootstrapping build wrapper:
+
+```powershell
+.\build-windows.ps1 -Action Rebuild
+```
+
+The first rebuild downloads a checksum-pinned official MSYS2 base and the
+required compiler packages into `.build-tools`. Allow internet access and at
+least 5 GB of free disk space. Nothing is installed system-wide and the
+machine or user `PATH` is not changed. GPU vendor drivers remain an external
+runtime prerequisite.
+
+To create the same complete release archive from a clean clone:
+
+```powershell
+.\package-windows.ps1 -BuildAction Rebuild
+```
+
+The packager exports only committed source files, overlays the complete
+Windows build, verifies that every source module has a matching DLL, writes
+and checks the internal manifest, and tests the resulting `.7z`. Its default
+output directory is `dist`.
+
+Alternatively, clone and build locally:
 
 ```powershell
 git clone https://github.com/Shooter3k/hashcat_shooter.git
@@ -341,11 +377,9 @@ not change the machine or user execution policy):
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-windows.ps1
 ```
 
-The first run downloads a checksum-pinned official MSYS2 base and the required
-packages into `.build-tools`. Allow at least 5 GB of free disk space. It does
-not install anything into Windows or change the system `PATH`. The cache is
-ignored by Git and can be deleted after the build. The wrapper also copies the
-required runtime DLLs beside the executable and checks its version.
+The toolchain cache is ignored by Git and can be deleted after the build. The
+wrapper copies the required runtime DLLs beside the executable and checks its
+version.
 
 For a clean rebuild:
 

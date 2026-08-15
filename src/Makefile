@@ -7,7 +7,7 @@ SHARED                  ?= 0
 DEBUG                   := 0
 PRODUCTION              := 0
 SHOOTER_BUILD_DATE      ?= $(shell date +%Y%m%d)
-SHOOTER_BUILD_REVISION  ?= 34
+SHOOTER_BUILD_REVISION  ?= 35
 PRODUCTION_VERSION      := v7.1.2-shooter.$(SHOOTER_BUILD_DATE).$(SHOOTER_BUILD_REVISION)
 MACOS_UNIVERSAL_BINARY  ?= 0
 ENABLE_LTO              ?= 0
@@ -714,14 +714,8 @@ clean:
 	$(RM) -f obj/*.su
 	$(RM) -f obj/*.a
 	$(RM) -f *.dylib
-	$(RM) -f *.bin *.exe
-	$(RM) -f *.pid
-	$(RM) -f *.log
+	$(RM) -f hashcat.bin hashcat.exe
 	$(RM) -f *.su
-	$(RM) -f core
-	$(RM) -rf *.induct
-	$(RM) -rf *.outfiles
-	$(RM) -rf kernels
 	$(RM) -rf Rust/bridges/*/target
 	$(RM) -rf Rust/feeds/*/target
 	$(RM) -rf Rust/hashcat-sys/src/bindings.rs

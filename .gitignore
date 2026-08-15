@@ -39,6 +39,7 @@ tools/luks_tests
 tools/luks2_tests
 .vscode
 .build-tools/
+/dist/
 
 # MinGW runtime DLLs copied beside hashcat.exe by build-windows.ps1
 /libgcc_s_seh-1.dll

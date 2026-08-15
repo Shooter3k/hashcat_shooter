@@ -1,5 +1,49 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260814.35
+
+Complete source and prebuilt Windows release archives.
+
+### Added
+
+- Added `package-windows.ps1`, a release packager that clean-builds by
+  default, exports only committed source files, and overlays the ready-to-run
+  Windows executable, all 1,601 module DLLs, bridge/feed DLLs, and required
+  MinGW runtime DLLs.
+- The package records its version, source commit, build counts, prerequisites,
+  and rebuild commands in `BUILD-INFO.txt`. An internal `SHA256SUMS` manifest
+  covers every other source and binary file.
+- Added `verify-windows-package.ps1` so recipients can validate the complete
+  extracted tree without installing another checksum utility.
+- Added a tag-triggered GitHub Actions workflow that performs a clean Windows
+  production build and publishes exactly one versioned
+  `windows-x64-complete.7z` release asset. Its SHA-256 is recorded in the
+  release notes rather than adding a second asset.
+- Added 7-Zip to the repository-local Windows toolchain bootstrap and exposed
+  the same packaging flow for local maintainers.
+
+### Package contents and prerequisites
+
+- The archive is both a complete source distribution and a runnable Windows
+  x64 distribution. No Git checkout is required to run or rebuild it.
+- Rebuilding uses the included `build-windows.ps1`. Its first run downloads
+  the checksum-pinned MSYS2 base and required packages into a local
+  `.build-tools` cache, so it requires internet access and at least 5 GB of
+  free disk space. The approximately 4 GB compiler cache is intentionally not
+  embedded in every release asset.
+- GPU vendor drivers remain external runtime prerequisites and are not
+  redistributable as part of the archive.
+
+### Verified
+
+- Completed the package script's source/module completeness checks, internal
+  manifest verification, and `7z t` archive-integrity test.
+- Extracted the finished archive into a clean directory, reverified every
+  manifest entry, loaded mode 0, and ran the packaged executable's self-test
+  and UTF-8 mask smoke checks.
+- Rebuilt the extracted source with the documented command and confirmed the
+  resulting executable reports `v7.1.2-shooter.20260814.35`.
+
 ## v7.1.2-shooter.20260814.34
 
 UTF-8 literal masks on Windows.
