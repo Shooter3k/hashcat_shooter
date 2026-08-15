@@ -30,6 +30,7 @@ on:
       - 'tools/**'
       - '**/Makefile'
       - '.github/workflows/build.yml'
+      - '.github/workflows/generate_docs.sh'
   pull_request:
     branches:
       - master
@@ -43,6 +44,7 @@ on:
       - 'tools/**'
       - '**/Makefile'
       - '.github/workflows/build.yml'
+      - '.github/workflows/generate_docs.sh'
 
 jobs:
   build:
@@ -119,94 +121,20 @@ jobs:
           SHARED: ${{ matrix.shared }}
           TERM: xterm
         run: |
-         cd .github/workflows/
-         bash -v ./generate_docs.sh || true # make sure return code of generate docs is always successful (we don't want a build to break because of it..)
+          cd .github/workflows/
+          bash ./generate_docs.sh
 
-      - name: Commit changes to docs
+      - name: Verify generated documentation
         if: matrix.os_name_lowercase == 'linux' && matrix.shared == 0
-        env:
-          SHARED: ${{ matrix.shared }}
         run: |
-          # https://github.com/actions/checkout?tab=readme-ov-file#push-a-commit-using-the-built-in-token
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/hashcat-help.md
-          git add docs/hashcat-example-hashes.md
-          if ! git diff --staged --quiet; then
-            if [ "$GITHUB_EVENT_NAME" = "push" ]; then
-              if [ "$GITHUB_REF_NAME" = "master" ]; then
-                git commit -m "Automatically updated docs/hashcat-help.md or docs/hashcat-example-hashes.md (by Github Action)"
-                git push
-              else
-                echo "Not on master branch (currently: $GITHUB_REF_NAME): skipping commit because otherwise we may be in detached head"
-              fi
-            else
-              echo "docs/hashcat-help.md or docs/hashcat-example-hashes.md are not up-to-date:"
-              echo "..."
-              git diff --staged | cat
-              echo "..."
-              echo "this will be updated automatically when merged into master"
-            fi
-          else
-            echo "No need to update docs/hashcat-help.md or docs/hashcat-example-hashes.md"
+          if ! git diff --quiet -- docs/hashcat-help.md docs/hashcat-example-hashes.md; then
+            git diff --stat -- docs/hashcat-help.md docs/hashcat-example-hashes.md
+            echo "::error::Generated help documentation is out of date. Build Hashcat, run .github/workflows/generate_docs.sh, and commit the results."
+            exit 1
           fi
 
       - name: Generate artifacts
         uses: actions/upload-artifact@v4
         with:
           name: hashcat-${{ matrix.os_name_lowercase }}-${{ matrix.shared == 0 && 'static' || 'shared' }}
-          path: ${{ env.include_paths }}
-  build_binaries:
-    name: Build binaries (Linux and Windows)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref }}
-          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-               wget ca-certificates zstd tar git make pkg-config llvm cmake g++-mingw-w64-x86-64 gcc-mingw-w64-x86-64 libc++-dev libc++abi-dev lld pkg-config python3
-
-          mkdir ~/src && cd ~/src
-          mkdir /opt/win-iconv-64
-          git clone --depth 1 --branch v0.0.10 https://github.com/win-iconv/win-iconv.git && cd win-iconv
-          cmake \
-            -D WIN_ICONV_BUILD_EXECUTABLE=OFF \
-            -D CMAKE_INSTALL_PREFIX=/opt/win-iconv-64 \
-            -D CMAKE_C_COMPILER=$(which x86_64-w64-mingw32-gcc) \
-            -D CMAKE_CXX_COMPILER=$(which x86_64-w64-mingw32-g++) \
-            -D CMAKE_SYSTEM_NAME=Windows \
-            -D CMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
-            -D CMAKE_C_STANDARD_LIBRARIES="-static-libgcc" \
-            -D CMAKE_CXX_STANDARD_LIBRARIES="-static-libgcc -static-libstdc++" .
-          make install
-
-          cd ~/src
-          mkdir /opt/win-python && cd /opt/win-python
-          wget https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-python-3.12.11-1-any.pkg.tar.zst
-          unzstd mingw-w64-x86_64-python-3.12.11-1-any.pkg.tar.zst
-          tar -xf mingw-w64-x86_64-python-3.12.11-1-any.pkg.tar
-
-          cd ~/src
-          curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
-          export PATH="$HOME/.cargo/bin:${PATH}"
-          rustup target add x86_64-pc-windows-gnu
-
-      - name: Build binaries
-        env:
-          TERM: xterm
-        run: |
-          make binaries \
-               CC=clang CC_LINUX=clang CC_WIN=clang CXX=clang++ \
-               CXX_LINUX=clang++ CXX_WIN=clang++ \
-               AR=llvm-ar AR_LINUX=llvm-ar AR_WIN=llvm-ar
-
-      - name: Generate artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: hashcat-linux-windows-cross
           path: ${{ env.include_paths }}

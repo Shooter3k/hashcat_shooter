@@ -28,11 +28,16 @@ potfiles, a clearer outfile-check command, and a repaired Linux build.
   Windows DLL exports, avoiding Clang's conflicting `dllexport` declaration
   errors in the supported-platform CI build.
 - The primary build matrix now covers Shooter's supported Linux and Windows
-  targets. Inherited macOS and BSD jobs were removed instead of presenting
-  those unverified mdxfind targets as supported.
+  targets. The redundant combined cross-build and inherited macOS and BSD
+  jobs were removed instead of presenting incomplete or unverified mdxfind
+  targets as supported.
 - The Linux build documentation now points to this repository and lists the
   compiler, OpenSSL, Python, and current stable Rust prerequisites needed by
   Shooter's additional bridges and feeds.
+- The generated command-help and example-hash pages now include the current
+  Shooter options and complete mode inventory. CI verifies those files are
+  current instead of trying to push an unrequested bot commit from a
+  read-only build job.
 
 ### Measured and verified
 
