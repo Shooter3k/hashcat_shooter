@@ -3,7 +3,8 @@
 `hashcat_shooter` is a Windows-focused version of hashcat 7.1.2. It keeps the
 normal hashcat commands and features, then adds faster handling of very large
 hash lists, better multi-GPU behavior, more ways to build password candidates,
-Unicode support on Windows, additional hash types, and a ready-to-run release.
+multibyte masks and rules on Windows, additional hash types, and a ready-to-run
+release.
 
 It was developed for a Windows machine with 12 NVIDIA GeForce RTX 4090 GPUs,
 but most of its additions also work on other hardware.
@@ -22,7 +23,7 @@ authorized to audit.
 - **[More password-candidate options](#3-more-ways-to-generate-password-candidates)**
   — join three or more wordlists, apply rules more broadly, and generate
   candidates faster.
-- **[UTF-8 masks and rules work correctly on Windows](#4-better-windows-unicode-support)**
+- **[Multibyte masks and rules work on Windows](#4-multibyte-masks-and-rules-work-on-windows)**
   — literal characters such as `№` are preserved.
 - **[Long jobs are easier to control and recover](#5-reliability-and-clearer-status-information)**
   — coordinated checkpoints, retries, safer loopback files, and clearer
@@ -41,7 +42,7 @@ authorized to audit.
 | Starting many GPUs | Performs general backend discovery and GPU setup. | On the intended 12 x RTX 4090 system, skips redundant HIP/OpenCL discovery, initializes and shuts down GPUs concurrently, and commits much less host memory. |
 | Repeating similar jobs | Performs the normal autotune search for each new matching session. | Saves successful RTX 4090 tuning settings, validates them, and reuses them across identical GPUs. |
 | Creating password candidates | Provides the standard wordlist, mask, combination, and hybrid attacks. | Adds combinations of three or more wordlists, rules for the complete candidate in more attack modes, faster `--stdout` rule generation, and resumable candidate output. |
-| Unicode on Windows | Some Windows command-line paths can lose non-ASCII literal characters. | Preserves UTF-8 literals in masks, rule files, and inline rules, including masks such as `?d?d№?d?d№?d?d№`. |
+| Multibyte masks and rules | Some Windows command-line paths can lose non-ASCII literal characters. | Preserves multibyte literals in masks, rule files, and inline rules, including masks such as `?d?d№?d?d№?d?d№`. |
 | Recovering from problems | Provides standard restore and session support. | Coordinates checkpoints across GPUs, retries temporary CUDA and outfile failures, protects loopback files, and shows progress during slow shutdowns. |
 | Hash types | Provides the standard hashcat modes. | Adds the complete mdxfind `e1`-`e1001` namespace plus seven Shooter-specific or compatibility mode numbers. |
 | Downloading and building | Normally requires obtaining the source or a suitable platform package. | Publishes one Windows `.7z` containing the complete tagged source, a ready-to-run build, verification tools, and a self-bootstrapping build script. |
@@ -88,7 +89,7 @@ authorized to audit.
 - The repository also includes newer official hashcat attack mode 12, which
   places one or two wordlist entries at chosen positions inside a mask.
 
-### 4. Better Windows Unicode support
+### 4. Multibyte masks and rules work on Windows
 
 - Literal two-, three-, and four-byte UTF-8 characters work beside normal mask
   tokens in every mask-capable hash mode:
@@ -177,10 +178,10 @@ Only the automatic CUDA-only probe and the 3072 MiB-per-GPU staging limit
 require the exact Windows 12 x RTX 4090 configuration. Persisted autotuning is
 specific to RTX 4090 cards but does not require twelve of them.
 
-Large-list parsing and sorting, candidate-generation features, Unicode
-handling, checkpoint and reliability improvements, additional hash modes, and
-release packaging are not limited to that exact machine unless their detailed
-documentation says otherwise.
+Large-list parsing and sorting, candidate-generation features, multibyte mask
+and rule handling, checkpoint and reliability improvements, additional hash
+modes, and release packaging are not limited to that exact machine unless
+their detailed documentation says otherwise.
 
 ## Technical details
 
