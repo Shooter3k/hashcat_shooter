@@ -330,3 +330,22 @@ measured 60.80 MiB file containing 4,902,480 rules, loader-only startup fell
 from 26.235 seconds with the pre-change binary to a seven-run median of 0.140
 seconds. See [startup optimization](startup-optimization.md#large-rule-file-parsing)
 for controls, memory behavior, and verification details.
+
+## Optional status detail
+
+### 45. Optional Restore.Sub status lines
+
+The per-device `Restore.Sub` rows are hidden from normal human-readable status
+output by default, keeping a 12-GPU status screen twelve lines shorter. Add
+`--status-restore-sub` to show the original salt, amplifier, and iteration
+ranges:
+
+```powershell
+hashcat.exe ... --status-restore-sub
+```
+
+The switch covers manual status requests, automatic `--status` updates, final
+summaries, every selected GPU, and bridge-backed modes. `Restore.Point` remains
+visible either way, and hiding the rows does not change checkpoint or restore
+behavior. JSON and machine-readable status formats are unchanged because they
+did not emit these human-readable rows.

@@ -4356,48 +4356,51 @@ void status_display (hashcat_ctx_t *hashcat_ctx)
     }
   }
 
-  if (bridge_ctx->enabled == true)
+  if (user_options->status_restore_sub == true)
   {
-    const device_info_t *device_info = hashcat_status->device_info_buf + 0;
-
-    if (pubkey_ctx->enabled == true)
+    if (bridge_ctx->enabled == true)
     {
-      event_log_info (hashcat_ctx, "Restore.Sub.#%02u..: [Protected]", 0 + 1);
-    }
-    else
-    {
-      event_log_info (hashcat_ctx,
-        "Restore.Sub.#%02u..: Salt:%u Amplifier:%" PRIu64 "-%" PRIu64 " Iteration:%u-%u", 0 + 1,
-        device_info->salt_pos_dev,
-        device_info->innerloop_pos_dev,
-        device_info->innerloop_pos_dev + device_info->innerloop_left_dev,
-        device_info->iteration_pos_dev,
-        device_info->iteration_pos_dev + device_info->iteration_left_dev);
-    }
-  }
-  else
-  {
-    for (int device_id = 0; device_id < hashcat_status->device_info_cnt; device_id++)
-    {
-      const device_info_t *device_info = hashcat_status->device_info_buf + device_id;
-
-      if (device_info->skipped_dev == true) continue;
-      if (device_info->skipped_warning_dev == true) continue;
+      const device_info_t *device_info = hashcat_status->device_info_buf + 0;
 
       if (pubkey_ctx->enabled == true)
       {
-        event_log_info (hashcat_ctx, "Restore.Sub.#%02u..: [Protected]", device_id + 1);
-
-        continue;
+        event_log_info (hashcat_ctx, "Restore.Sub.#%02u..: [Protected]", 0 + 1);
       }
+      else
+      {
+        event_log_info (hashcat_ctx,
+          "Restore.Sub.#%02u..: Salt:%u Amplifier:%" PRIu64 "-%" PRIu64 " Iteration:%u-%u", 0 + 1,
+          device_info->salt_pos_dev,
+          device_info->innerloop_pos_dev,
+          device_info->innerloop_pos_dev + device_info->innerloop_left_dev,
+          device_info->iteration_pos_dev,
+          device_info->iteration_pos_dev + device_info->iteration_left_dev);
+      }
+    }
+    else
+    {
+      for (int device_id = 0; device_id < hashcat_status->device_info_cnt; device_id++)
+      {
+        const device_info_t *device_info = hashcat_status->device_info_buf + device_id;
 
-      event_log_info (hashcat_ctx,
-        "Restore.Sub.#%02u..: Salt:%u Amplifier:%" PRIu64 "-%" PRIu64 " Iteration:%u-%u", device_id + 1,
-        device_info->salt_pos_dev,
-        device_info->innerloop_pos_dev,
-        device_info->innerloop_pos_dev + device_info->innerloop_left_dev,
-        device_info->iteration_pos_dev,
-        device_info->iteration_pos_dev + device_info->iteration_left_dev);
+        if (device_info->skipped_dev == true) continue;
+        if (device_info->skipped_warning_dev == true) continue;
+
+        if (pubkey_ctx->enabled == true)
+        {
+          event_log_info (hashcat_ctx, "Restore.Sub.#%02u..: [Protected]", device_id + 1);
+
+          continue;
+        }
+
+        event_log_info (hashcat_ctx,
+          "Restore.Sub.#%02u..: Salt:%u Amplifier:%" PRIu64 "-%" PRIu64 " Iteration:%u-%u", device_id + 1,
+          device_info->salt_pos_dev,
+          device_info->innerloop_pos_dev,
+          device_info->innerloop_pos_dev + device_info->innerloop_left_dev,
+          device_info->iteration_pos_dev,
+          device_info->iteration_pos_dev + device_info->iteration_left_dev);
+      }
     }
   }
 

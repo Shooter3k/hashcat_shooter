@@ -886,6 +886,7 @@ typedef enum user_options_defaults
   SPIN_DAMP                = 0,
   STATUS                   = false,
   STATUS_JSON              = false,
+  STATUS_RESTORE_SUB       = false,
   STATUS_TIMER             = 10,
   STDIN_TIMEOUT_ABORT      = 120,
   STDOUT_FLAG              = false,
@@ -1028,6 +1029,7 @@ typedef enum user_options_map
   IDX_SPIN_DAMP                 = 0xff49,
   IDX_STATUS                    = 0xff4a,
   IDX_STATUS_JSON               = 0xff4b,
+  IDX_STATUS_RESTORE_SUB        = 0xff63,
   IDX_STATUS_TIMER              = 0xff4c,
   IDX_STDOUT_FLAG               = 0xff4d,
   IDX_STDIN_TIMEOUT_ABORT       = 0xff4e,
@@ -2716,6 +2718,7 @@ typedef struct user_options
   bool         speed_only;
   bool         status;
   bool         status_json;
+  bool         status_restore_sub;
   bool         stdout_flag;
   bool         stdin_timeout_abort_chgd;
   bool         username;

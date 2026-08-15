@@ -63,6 +63,7 @@ explanation.
 42. **[CMIYC workloads can be split across GPUs](docs/shooter-enhancements.md#42-cmiyc-multi-gpu-sharding)** — the included launcher creates and combines independent shards.
 43. **[Newer official hashcat fixes are included](docs/shooter-enhancements.md#43-newer-upstream-correctness-fixes)** — upstream fixes after the fork are preserved and clearly credited.
 44. **[Huge rule files load across CPU cores](docs/shooter-enhancements.md#44-parallel-rule-file-loading)** — all rule-capable algorithms spend less time waiting at `Loading rules`.
+45. **[`Restore.Sub` status lines are optional](docs/shooter-enhancements.md#45-optional-restoresub-status-lines)** — they stay hidden unless `--status-restore-sub` is requested.
 
 ## Download and run
 

@@ -44,7 +44,6 @@ Recovered........: 1/1 (100.00%) Digests (total), 1/1 (100.00%) Digests (new)
 Progress.........: [Protected]
 Rejected.........: [Protected]
 Restore.Point....: [Protected]
-Restore.Sub.#02..: [Protected]
 Candidates.#02...: [Protected]
 ```
 
@@ -53,6 +52,10 @@ You can see it cracked. You cannot see what it cracked, or how far it got.
 Candidates are hidden because as hashcat walks the keyspace the right candidate would appear in that display like any other. The position is hidden for a different reason: on a job that runs for days, the exact offset is a ready made starting point. Someone could restart without encryption and jump straight to the part of the keyspace that matters, instead of repeating the whole search. For the same reason a protected run writes __no restore file__.
 
 Speed and estimated time are still shown. Whoever started the run knows how long it has been going, so they can already approximate the position from the speed - only the exact offset is worth withholding, and losing the ETA would make a multi-day job impossible to supervise.
+
+Per-device `Restore.Sub` rows are hidden by default. If the operator adds
+`--status-restore-sub`, a protected run prints them as `[Protected]` rather
+than exposing their internal positions.
 
 The outfile has the answer in it, but not in a form you can read:
 

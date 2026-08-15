@@ -12,6 +12,9 @@ Faster loading for very large rule files.
 - `HASHCAT_RULE_PARSE_PARALLEL_DISABLE=1` forces the optimized serial path for
   comparison. `HASHCAT_RULE_PARSE_PARALLEL_MIN` changes the activation byte
   threshold for focused testing.
+- Per-device `Restore.Sub` rows are now hidden from human-readable status by
+  default. `--status-restore-sub` restores the original salt, amplifier, and
+  iteration rows for manual, timed, and final status displays.
 
 ### Changed
 
@@ -37,6 +40,10 @@ Faster loading for very large rule files.
   CRLF, comments, blank lines, a final line without a newline, and chained
   rule files. A Windows production build and a one-GPU rule-loading smoke
   session completed successfully.
+- Identical 12-GPU runtime-limited status tests emitted zero `Restore.Sub`
+  rows by default and exactly rows `#01` through `#12` with
+  `--status-restore-sub`. `Restore.Point` and the remaining status fields were
+  still present in both outputs.
 
 ## v7.1.2-shooter.20260814.36
 
