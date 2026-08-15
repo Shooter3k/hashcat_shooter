@@ -55,9 +55,11 @@ RUSTFLAGS_SO    += -C lto -C embed-bitcode=y
 RUSTFLAGS_DLL   += -C lto -C embed-bitcode=y
 endif
 
+ifeq ($(MAINTAINER_MODE),0)
 ifeq ($(BUILD_MODE),native)
 RUSTFLAGS_SO    += -C target-cpu=native
 RUSTFLAGS_DLL   += -C target-cpu=native
+endif
 endif
 
 $(RUST_SUBS_DIR)/%.so: $(RUST_SCAN_DIR)/%/Cargo.toml

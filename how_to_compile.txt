@@ -31,8 +31,10 @@ disable protection system-wide. The MSYS2 base download is verified against the
 SHA-256 checksum recorded in build-windows.ps1 before it is extracted.
 
 The wrapper builds a Windows production binary, puts the required MinGW runtime
-DLLs beside hashcat.exe, and verifies the result with hashcat.exe --version.
-Later builds reuse the local toolchain.
+DLLs beside hashcat.exe, targets the standard x64 instruction baseline, and
+verifies the result with hashcat.exe --version. Later builds reuse the local
+toolchain. The portable target keeps a build made on one PC runnable on other
+x64 Windows processors.
 
 Useful variants:
 
@@ -93,11 +95,12 @@ in the CLEAN REBUILD section before using either action.
 ------------------------------------------------------------------------
 From the repository directory, run:
 
-    make PRODUCTION=1 -j
+    make PRODUCTION=1 MAINTAINER_MODE=1 -j
 
 Notes:
-- make PRODUCTION=1 -j builds using all CPU cores and embeds the dated shooter
-  version instead of a dirty-tree Git description.
+- make PRODUCTION=1 MAINTAINER_MODE=1 -j builds using all CPU cores, embeds the
+  pinned Shooter release version, and avoids CPU-specific compiler flags that
+  could make the binary fail on another x64 machine.
 - A zero exit status means the build succeeded. For a failure, diagnose the
   first error in the complete output rather than only the final message.
 - IMPORTANT: after editing include/types.h, use the CLEAN REBUILD below.

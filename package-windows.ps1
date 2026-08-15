@@ -252,7 +252,7 @@ try {
       "Version: $Version"
       "Source commit: $Commit"
       "Packaged UTC: $([DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
-      "Architecture: Windows x64"
+      "Architecture: Windows x64 portable baseline"
       "Prebuilt executable: hashcat.exe"
       "Module DLLs: $BuiltModuleCount"
       "Bridge DLLs: $BuiltBridgeCount"

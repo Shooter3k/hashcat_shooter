@@ -64,6 +64,7 @@ explanation.
 43. **[Newer official hashcat fixes are included](docs/shooter-enhancements.md#43-newer-upstream-correctness-fixes)** — upstream fixes after the fork are preserved and clearly credited.
 44. **[Huge rule files load across CPU cores](docs/shooter-enhancements.md#44-parallel-rule-file-loading)** — all rule-capable algorithms spend less time waiting at `Loading rules`.
 45. **[`Restore.Sub` status lines are optional](docs/shooter-enhancements.md#45-optional-restoresub-status-lines)** — they stay hidden unless `--status-restore-sub` is requested.
+46. **[Prebuilt releases run on standard x64 CPUs](docs/shooter-enhancements.md#46-portable-prebuilt-windows-binaries)** — release binaries do not inherit the GitHub runner's CPU-only instructions.
 
 ## Download and run
 

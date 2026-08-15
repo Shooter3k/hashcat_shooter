@@ -1,8 +1,42 @@
 # hashcat_shooter release notes
 
+## v7.1.2-shooter.20260815.38
+
+Portable Windows release binaries, plus the large-rule and status improvements
+introduced in the superseded `.37` build.
+
+### Includes
+
+- Huge plain rule files load across up to 64 CPU workers for every
+  rule-capable hash algorithm.
+- Per-device `Restore.Sub` status rows are hidden by default and can be shown
+  with `--status-restore-sub`.
+
+### Fixed
+
+- The repository-local Windows wrapper and GitHub release workflow now build
+  for the standard x64 instruction baseline instead of the build runner's CPU.
+  This prevents a downloaded executable from terminating with Windows error
+  `0xC000001D` (illegal instruction) on a different x64 processor.
+- Rust bridge and feed DLLs now honor `MAINTAINER_MODE=1`, matching the portable
+  C and C++ build instead of retaining `target-cpu=native`.
+- GitHub release descriptions now include the matching version's complete
+  changelog entry above the download and verification instructions.
+
+### Verified
+
+- A clean Windows rebuild completed with no `-march=native`, `-mtune=native`,
+  `target-cpu=native`, or hard-coded AVX2 flags in the release build paths.
+- The portable executable reports `v7.1.2-shooter.20260815.38`, exposes
+  `--status-restore-sub`, and accepts the literal multibyte mask
+  `?d?d№?d?d№?d?d№` on the Windows command line.
+- The clean build produced all 1,601 module DLLs, seven bridge DLLs, and five
+  feed DLLs.
+
 ## v7.1.2-shooter.20260815.37
 
-Faster loading for very large rule files and cleaner multi-GPU status.
+Faster loading for very large rule files and cleaner multi-GPU status. This
+build is superseded by `.38`, which rebuilds the same changes for portable x64.
 
 ### Added
 

@@ -191,8 +191,11 @@ if ($UpdateToolchain -or -not $StampMatches -or $MissingRequiredFiles.Count -gt 
   Set-Content -LiteralPath $StampPath -Value $ToolchainStampVersion -Encoding ASCII
 }
 
-$MakeCommand = "/mingw64/bin/mingw32-make.exe PRODUCTION=1 ENABLE_LTO=0 RUST_CARGO=/var/lib/hashcat-shooter/rustup/toolchains/stable-x86_64-pc-windows-gnu/bin/cargo.exe RUST_RUSTUP=/mingw64/bin/rustup.exe -j$Jobs"
-$CleanCommand = '/mingw64/bin/mingw32-make.exe PRODUCTION=1 clean'
+# Prebuilt releases must run on ordinary x64 CPUs, not only on the CPU model
+# used by the build machine. MAINTAINER_MODE disables host-specific C/C++
+# instruction flags; the Rust bridge/feed rules honor the same setting.
+$MakeCommand = "/mingw64/bin/mingw32-make.exe PRODUCTION=1 MAINTAINER_MODE=1 ENABLE_LTO=0 RUST_CARGO=/var/lib/hashcat-shooter/rustup/toolchains/stable-x86_64-pc-windows-gnu/bin/cargo.exe RUST_RUSTUP=/mingw64/bin/rustup.exe -j$Jobs"
+$CleanCommand = '/mingw64/bin/mingw32-make.exe PRODUCTION=1 MAINTAINER_MODE=1 clean'
 $PathPrefix = 'export PATH=/mingw64/bin:/var/lib/hashcat-shooter/rustup/toolchains/stable-x86_64-pc-windows-gnu/bin:/usr/bin:$PATH; export LIBCLANG_PATH=/mingw64/bin; export RUSTUP_HOME=/var/lib/hashcat-shooter/rustup; export CARGO_HOME=/var/lib/hashcat-shooter/cargo; '
 $HashcatPath = Join-Path $RepoRoot 'hashcat.exe'
 
@@ -273,5 +276,6 @@ finally {
 Write-Host ''
 Write-Host "Build succeeded: $HashcatPath"
 Write-Host "Version: $Version"
+Write-Host 'CPU target: portable Windows x64 (MAINTAINER_MODE=1)'
 Write-Host "Local toolchain: $MsysRoot"
 Write-Host 'The .build-tools cache and generated binaries are ignored by Git.'

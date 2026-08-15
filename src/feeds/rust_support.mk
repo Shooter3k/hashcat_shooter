@@ -41,9 +41,11 @@ RUSTFLAGS_SO    += -C lto -C embed-bitcode=y
 RUSTFLAGS_DLL   += -C lto -C embed-bitcode=y
 endif
 
+ifeq ($(MAINTAINER_MODE),0)
 ifeq ($(BUILD_MODE),native)
 RUSTFLAGS_SO    += -C target-cpu=native
 RUSTFLAGS_DLL   += -C target-cpu=native
+endif
 endif
 
 # A Rust feed reads FEEDS_INTERFACE_VERSION_CURRENT from the environment, which is cargo's equivalent
@@ -103,4 +105,3 @@ feeds_win:   $(patsubst $(RUST_SCAN_DIR)/%/Cargo.toml, feeds/rust_%.dll, $(FEEDS
 else
 feeds: $(patsubst $(RUST_SCAN_DIR)/%/Cargo.toml, feeds/rust_%.$(FEEDS_SUFFIX), $(FEEDS_RUST_SRC))
 endif
-

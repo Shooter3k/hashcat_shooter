@@ -46,7 +46,22 @@ jobs:
 
           $Hash = (Get-FileHash -LiteralPath $Archive.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           $Tag = $env:GITHUB_REF_NAME
+          $Changelog = Get-Content -LiteralPath CHANGELOG.md -Raw
+          $Pattern = '(?ms)^##\s+' + [regex]::Escape($Tag) + '\s*\r?\n(.*?)(?=^##\s+|\z)'
+          $Match = [regex]::Match($Changelog, $Pattern)
+
+          if (-not $Match.Success) {
+            throw "CHANGELOG.md does not contain a release section for $Tag."
+          }
+
+          $ReleaseChanges = $Match.Groups[1].Value.Trim()
           $Notes = @'
+          ## What changed
+
+          __RELEASE_CHANGES__
+
+          ## Download and use
+
           Complete Windows x64 source and prebuilt distribution.
 
           The single `.7z` asset contains the complete tagged source, `hashcat.exe`, every module/bridge/feed DLL, required MinGW runtime DLLs, build scripts, build metadata, and an internal `SHA256SUMS` manifest.
@@ -57,6 +72,6 @@ jobs:
 
           See the tagged `CHANGELOG.md` for implementation and verification details.
           '@
-          $Notes = $Notes.Replace('__ARCHIVE_SHA256__', $Hash)
+          $Notes = $Notes.Replace('__RELEASE_CHANGES__', $ReleaseChanges).Replace('__ARCHIVE_SHA256__', $Hash)
 
           gh release create $Tag $Archive.FullName --verify-tag --title "hashcat_shooter $Tag" --notes $Notes

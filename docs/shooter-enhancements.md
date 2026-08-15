@@ -349,3 +349,14 @@ summaries, every selected GPU, and bridge-backed modes. `Restore.Point` remains
 visible either way, and hiding the rows does not change checkpoint or restore
 behavior. JSON and machine-readable status formats are unchanged because they
 did not emit these human-readable rows.
+
+## Portable release binaries
+
+### 46. Portable prebuilt Windows binaries
+
+The one-file Windows release is compiled for the standard x64 baseline instead
+of the particular CPU model used by GitHub Actions. This prevents a downloaded
+`hashcat.exe`, bridge, or feed DLL from failing with an illegal-instruction
+error on an older x64 processor. The repo-local `build-windows.ps1` wrapper
+uses the same portable setting, while developers can still invoke make
+directly when they intentionally want machine-specific optimization.
