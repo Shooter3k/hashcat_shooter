@@ -24,5 +24,5 @@ To resume a completed checkpoint from PowerShell:
 
 ```powershell
 $env:PATH = "M:\msys64\mingw64\bin;$env:PATH"
-M:\github\hashcat_shooter\hashcat.exe --session SESSION_NAME --restore
+M:\github\shooter_hashcat\hashcat.exe --session SESSION_NAME --restore
 ```

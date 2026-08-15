@@ -1,6 +1,6 @@
-# hashcat_shooter
+# shooter_hashcat
 
-`hashcat_shooter` is a Windows-focused version of hashcat 7.1.2. It keeps the
+`shooter_hashcat` is a Windows-focused version of hashcat 7.1.2. It keeps the
 normal hashcat commands and features, then adds faster handling of very large
 hash and rule lists, better multi-GPU behavior, more ways to build password
 candidates, multibyte masks and rules on Windows, additional hash types, and a
@@ -70,8 +70,8 @@ explanation.
 
 ## Download and run
 
-Download the single `windows-x64-complete.7z` asset from the
-[latest release](https://github.com/Shooter3k/hashcat_shooter/releases/latest)
+Download the single `shooter_hashcat-<version>-windows-x64-complete.7z` asset from the
+[latest release](https://github.com/Shooter3k/shooter_hashcat/releases/latest)
 and extract it. The archive contains the complete tagged source and the
 already-built Windows x64 program.
 
@@ -107,7 +107,7 @@ free disk space. Nothing is installed system-wide, and the system or user
 | Windows builds | [how_to_compile.txt](how_to_compile.txt) |
 | Linux builds | [BUILD.md](BUILD.md) |
 | Every release and verification result | [CHANGELOG.md](CHANGELOG.md) |
-| Source comparison | [Feature origins](docs/shooter-enhancements.md) and the [complete comparison with the upstream baseline](https://github.com/Shooter3k/hashcat_shooter/compare/fdad9f2f7bd7ec7f53056727e39331a17514db7c...master) |
+| Source comparison | [Feature origins](docs/shooter-enhancements.md) and the [complete comparison with the upstream baseline](https://github.com/Shooter3k/shooter_hashcat/compare/fdad9f2f7bd7ec7f53056727e39331a17514db7c...master) |
 
 ## Upstream hashcat and license
 

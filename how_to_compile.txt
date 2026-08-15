@@ -2,7 +2,7 @@
  HOW TO COMPILE THIS HASHCAT BUILD (Windows / MSYS2 MinGW64)
 ========================================================================
 
-This is hashcat_shooter based on the latest GitHub master, with the local
+This is shooter_hashcat based on the latest GitHub master, with the local
 beta improvements ported forward. It is compiled on Windows using the MSYS2
 MinGW64 toolchain. The steps below work with a fresh clone in any directory.
 
@@ -80,8 +80,8 @@ in the CLEAN REBUILD section before using either action.
 
 - Clone this repository, not the upstream hashcat repository:
 
-    git clone https://github.com/Shooter3k/hashcat_shooter.git
-    cd hashcat_shooter
+    git clone https://github.com/Shooter3k/shooter_hashcat.git
+    cd shooter_hashcat
 
   OpenSSL is linked statically into bridge_mdxfind.dll. Builders need the
   package above, but users of the resulting Windows build do not need a
@@ -130,7 +130,7 @@ Set these two paths for your machine. The default MSYS2 installation directory
 is C:\msys64; the repository can be anywhere:
 
     $MsysRoot = 'C:\msys64'
-    $Repo = 'C:\path\to\hashcat_shooter'
+    $Repo = 'C:\path\to\shooter_hashcat'
     $RepoMsys = (& "$MsysRoot\usr\bin\cygpath.exe" -u $Repo).Trim()
     $env:MSYSTEM = 'MINGW64'
     & "$MsysRoot\usr\bin\bash.exe" -lc "cd '$RepoMsys' && make PRODUCTION=1 -j"
@@ -158,7 +158,7 @@ Run from PowerShell. Set the same paths used above, put the MinGW64 runtime
 DLLs on PATH, and run from the repository directory:
 
     $MsysRoot = 'C:\msys64'
-    $Repo = 'C:\path\to\hashcat_shooter'
+    $Repo = 'C:\path\to\shooter_hashcat'
     $env:PATH = "$MsysRoot\mingw64\bin;$env:PATH"
     Set-Location $Repo
     .\hashcat.exe --version

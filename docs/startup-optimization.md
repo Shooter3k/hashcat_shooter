@@ -11,7 +11,7 @@ HIP and OpenCL probing is redundant on this all-NVIDIA system. Avoiding those
 runtimes reduces driver discovery and duplicate device setup.
 
 The current build also carries forward the startup work from
-`M:\hashcat_shooter`:
+`M:\shooter_hashcat`:
 
 - CUDA contexts and their available-memory queries initialize concurrently.
 - Per-device session buffers and CUDA contexts are released concurrently.
@@ -37,7 +37,7 @@ sorter for an A/B test:
 
 ```powershell
 $env:HASHCAT_HASH_SORT_RADIX_DISABLE = '1'
-M:\github\hashcat_shooter\hashcat.exe ...
+M:\github\shooter_hashcat\hashcat.exe ...
 Remove-Item Env:HASHCAT_HASH_SORT_RADIX_DISABLE
 ```
 
@@ -62,14 +62,14 @@ so diagnostic output continues to enumerate every installed backend.
 Set the override to zero for a run that needs HIP or OpenCL discovery:
 
 ```powershell
-$env:HASHCAT_SHOOTER_FAST_START = '0'
-M:\github\hashcat_shooter\hashcat.exe ...
+$env:SHOOTER_HASHCAT_FAST_START = '0'
+M:\github\shooter_hashcat\hashcat.exe ...
 ```
 
 Restore automatic behavior afterward:
 
 ```powershell
-Remove-Item Env:HASHCAT_SHOOTER_FAST_START
+Remove-Item Env:SHOOTER_HASHCAT_FAST_START
 ```
 
 The existing `--backend-ignore-*` options remain available and continue to
@@ -81,22 +81,22 @@ Set a custom per-GPU limit in MiB before starting hashcat. The value covers
 both candidate pipeline slots combined:
 
 ```powershell
-$env:HASHCAT_SHOOTER_HOST_STAGING_MB = '4096'
-M:\github\hashcat_shooter\hashcat.exe ...
+$env:SHOOTER_HASHCAT_HOST_STAGING_MB = '4096'
+M:\github\shooter_hashcat\hashcat.exe ...
 ```
 
 Set the value to zero to disable the shooter-specific 3072 MiB limit and use
 hashcat's generic limit:
 
 ```powershell
-$env:HASHCAT_SHOOTER_HOST_STAGING_MB = '0'
-M:\github\hashcat_shooter\hashcat.exe ...
+$env:SHOOTER_HASHCAT_HOST_STAGING_MB = '0'
+M:\github\shooter_hashcat\hashcat.exe ...
 ```
 
 Restore the optimized default afterward:
 
 ```powershell
-Remove-Item Env:HASHCAT_SHOOTER_HOST_STAGING_MB
+Remove-Item Env:SHOOTER_HASHCAT_HOST_STAGING_MB
 ```
 
 Increasing this value can allow a larger acceleration setting for fast hashes,
@@ -111,7 +111,7 @@ memory. With the carried-forward startup work and the 3072 MiB per-GPU staging
 limit, the final test build reported about 36.7 GB and completed in 15.8-16.9
 seconds from a cold state, followed by warm runs ranging from 7.6 to 10.1
 seconds. The older
-`M:\hashcat_shooter` comparison build completed the same test in about 10
+`M:\shooter_hashcat` comparison build completed the same test in about 10
 seconds during this verification.
 
 A sustained 12-GPU mode-0 benchmark measured 686.3 GH/s with the lower-memory
@@ -145,7 +145,7 @@ A/B test:
 
 ```powershell
 $env:HASHCAT_HASH_PARSE_PARALLEL_DISABLE = '1'
-M:\github\hashcat_shooter\hashcat.exe ...
+M:\github\shooter_hashcat\hashcat.exe ...
 Remove-Item Env:HASHCAT_HASH_PARSE_PARALLEL_DISABLE
 ```
 
@@ -197,7 +197,7 @@ for an A/B test:
 
 ```powershell
 $env:HASHCAT_RULE_PARSE_PARALLEL_DISABLE = '1'
-M:\github\hashcat_shooter\hashcat.exe ... -r M:\rules\large.rule
+M:\github\shooter_hashcat\hashcat.exe ... -r M:\rules\large.rule
 Remove-Item Env:HASHCAT_RULE_PARSE_PARALLEL_DISABLE
 ```
 

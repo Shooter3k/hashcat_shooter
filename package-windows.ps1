@@ -190,7 +190,7 @@ try {
 
   New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
 
-  $PackageName = "hashcat-$Version-windows-x64-complete"
+  $PackageName = "shooter_hashcat-$Version-windows-x64-complete"
   $ArchivePath = Join-Path $OutputRoot "$PackageName.7z"
 
   if (Test-Path -LiteralPath $ArchivePath) {
@@ -202,7 +202,7 @@ try {
   }
 
   $TempBase = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
-  $StagingRoot = Join-Path $TempBase ("hashcat-shooter-package-" + [Guid]::NewGuid().ToString('N'))
+  $StagingRoot = Join-Path $TempBase ("shooter-hashcat-package-" + [Guid]::NewGuid().ToString('N'))
   $PackageRoot = Join-Path $StagingRoot $PackageName
   $SourceTar = Join-Path $StagingRoot 'source.tar'
 

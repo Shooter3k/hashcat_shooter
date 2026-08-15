@@ -8,7 +8,7 @@ controls for candidate-generation sessions.
 Use a regular outfile and a named session when you need exact continuation:
 
 ```powershell
-M:\github\hashcat_shooter\hashcat.exe --stdout -a 3 "?d?d?d?d?d?d?d?d" `
+M:\github\shooter_hashcat\hashcat.exe --stdout -a 3 "?d?d?d?d?d?d?d?d" `
   -o M:\work\candidates.txt `
   --session=stdout-candidates
 ```
@@ -25,7 +25,7 @@ The interactive menu is the same one used by a cracking session:
 Resume the saved command with:
 
 ```powershell
-M:\github\hashcat_shooter\hashcat.exe `
+M:\github\shooter_hashcat\hashcat.exe `
   --session=stdout-candidates `
   --restore
 ```

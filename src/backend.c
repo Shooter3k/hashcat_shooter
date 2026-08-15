@@ -5552,7 +5552,7 @@ static bool shooter_fast_start_cuda_only (hashcat_ctx_t *hashcat_ctx, const int 
   // The matching 12-card Windows rig defaults to the one runtime it actually uses. Setting the
   // variable to zero restores upstream's full HIP/OpenCL probing for diagnostics or mixed hardware.
 
-  const char *fast_start_env = getenv ("HASHCAT_SHOOTER_FAST_START");
+  const char *fast_start_env = getenv ("SHOOTER_HASHCAT_FAST_START");
 
   if ((fast_start_env != NULL) && (atoi (fast_start_env) == 0)) return false;
 
@@ -5734,7 +5734,7 @@ int backend_ctx_init (hashcat_ctx_t *hashcat_ctx)
 
   if ((shooter_cuda_only == true) && (user_options->quiet == false))
   {
-    event_log_info (hashcat_ctx, "Shooter fast-start: using CUDA only for 12 RTX 4090 devices (set HASHCAT_SHOOTER_FAST_START=0 to probe every backend).");
+    event_log_info (hashcat_ctx, "Shooter fast-start: using CUDA only for 12 RTX 4090 devices (set SHOOTER_HASHCAT_FAST_START=0 to probe every backend).");
   }
   #endif
 
@@ -14801,7 +14801,7 @@ static u64 shooter_host_staging_cap (MAYBE_UNUSED const hashcat_ctx_t *hashcat_c
 
   u64 cap_mib = 3072;
 
-  const char *cap_env = getenv ("HASHCAT_SHOOTER_HOST_STAGING_MB");
+  const char *cap_env = getenv ("SHOOTER_HASHCAT_HOST_STAGING_MB");
 
   if (cap_env != NULL) cap_mib = strtoull (cap_env, NULL, 10);
 
@@ -14936,7 +14936,7 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
 
   if ((host_staging_cap > 0) && (user_options->quiet == false))
   {
-    event_log_info (hashcat_ctx, "Shooter fast-start: host candidate staging limited to %" PRIu64 " MB per RTX 4090 (set HASHCAT_SHOOTER_HOST_STAGING_MB=0 to disable).", host_staging_cap / (1024 * 1024));
+    event_log_info (hashcat_ctx, "Shooter fast-start: host candidate staging limited to %" PRIu64 " MB per RTX 4090 (set SHOOTER_HASHCAT_HOST_STAGING_MB=0 to disable).", host_staging_cap / (1024 * 1024));
   }
 
   for (int backend_devices_idx = 0; backend_devices_idx < backend_ctx->backend_devices_cnt; backend_devices_idx++)

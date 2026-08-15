@@ -23,13 +23,13 @@ python312-devel
 Once all that is done, open the Cygwin bash (`cygwin\cygwin.bat`) and clone the Shooter repository into your Cygwin home directory.
 
 ```
-$ git clone https://github.com/Shooter3k/hashcat_shooter.git
+$ git clone https://github.com/Shooter3k/shooter_hashcat.git
 ```
 
 Switch to the newly created folder by running
 
 ```
-$ cd hashcat_shooter
+$ cd shooter_hashcat
 ```
 
 Now type "make" to start compiling hashcat

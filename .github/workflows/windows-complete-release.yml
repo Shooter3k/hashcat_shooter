@@ -28,7 +28,7 @@ jobs:
       - name: Upload the workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hashcat-windows-x64-complete
+          name: shooter_hashcat-windows-x64-complete
           path: dist/*.7z
           if-no-files-found: error
 
@@ -74,4 +74,4 @@ jobs:
           '@
           $Notes = $Notes.Replace('__RELEASE_CHANGES__', $ReleaseChanges).Replace('__ARCHIVE_SHA256__', $Hash)
 
-          gh release create $Tag $Archive.FullName --verify-tag --title "hashcat_shooter $Tag" --notes $Notes
+          gh release create $Tag $Archive.FullName --verify-tag --title "shooter_hashcat $Tag" --notes $Notes

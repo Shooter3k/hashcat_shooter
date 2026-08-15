@@ -264,7 +264,8 @@ maintained implementation behind current mode `36100`. New jobs should use
 
 ### 37. Complete Windows release archive
 
-Each release publishes one `windows-x64-complete.7z` containing the complete
+Each release publishes one `shooter_hashcat-<version>-windows-x64-complete.7z`
+containing the complete
 tagged source, the ready-to-run Windows x64 executable, module and bridge DLLs,
 required runtime DLLs, build metadata, and rebuild tools.
 

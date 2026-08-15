@@ -397,7 +397,7 @@ void autotune_cache_finalize (hashcat_ctx_t *hashcat_ctx)
 
       if ((hc_fstat (&fp, &cache_stat) == 0) && (cache_stat.st_size == 0))
       {
-        hc_fprintf (&fp, "# hashcat_shooter RTX 4090 autotune cache\n");
+        hc_fprintf (&fp, "# shooter_hashcat RTX 4090 autotune cache\n");
         hc_fprintf (&fp, "# Generated automatically. Set HASHCAT_AUTOTUNE_CACHE_DISABLE=1 to bypass.\n");
       }
     }

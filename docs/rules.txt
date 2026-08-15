@@ -1,4 +1,4 @@
-# UTF-8 literal operands (hashcat_shooter)
+# UTF-8 literal operands (shooter_hashcat)
 #
 # UTF-8 rule files may use a literal multibyte character with the byte-emitting
 # $, ^, i, v, and o functions. The loader expands the encoded bytes into the

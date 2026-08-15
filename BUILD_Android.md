@@ -66,8 +66,8 @@ ln -s /system/lib64/android.hardware.graphics.common-V5-ndk.so $PREFIX/opt/vendo
 Step 4: Clone and Build Hashcat
 
 ```bash
-git clone --depth 1 https://github.com/Shooter3k/hashcat_shooter.git
-cd hashcat_shooter
+git clone --depth 1 https://github.com/Shooter3k/shooter_hashcat.git
+cd shooter_hashcat
 make clean; make
 ```
 

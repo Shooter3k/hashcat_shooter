@@ -1,4 +1,16 @@
-# hashcat_shooter release notes
+# shooter_hashcat release notes
+
+## Unreleased
+
+### Changed
+
+- Renamed the project and repository to `shooter_hashcat`, including clone
+  URLs, example paths, generated help, release titles, packaging identifiers,
+  and repository-local toolchain paths.
+- Future complete Windows archives use the
+  `shooter_hashcat-<version>-windows-x64-complete.7z` name.
+- The optional fast-start and host-staging environment variables are now
+  `SHOOTER_HASHCAT_FAST_START` and `SHOOTER_HASHCAT_HOST_STAGING_MB`.
 
 ## v7.1.2-shooter.20260815.39
 
@@ -177,7 +189,8 @@ Complete source and prebuilt Windows release archives.
   extracted tree without installing another checksum utility.
 - Added a tag-triggered GitHub Actions workflow that performs a clean Windows
   production build and publishes exactly one versioned
-  `windows-x64-complete.7z` release asset. Its SHA-256 is recorded in the
+  `shooter_hashcat-<version>-windows-x64-complete.7z` release asset. Its
+  SHA-256 is recorded in the
   release notes rather than adding a second asset.
 - Added 7-Zip to the repository-local Windows toolchain bootstrap and exposed
   the same packaging flow for local maintainers.
@@ -437,7 +450,7 @@ Portable Windows build setup for fresh third-party clones.
   `openssl/des.h`, `openssl/sha.h`, and the static crypto library.
 - Replaced machine-specific `M:\...` paths with reusable MSYS2 and PowerShell
   instructions that work with repositories on any drive.
-- Corrected the MSYS2 guide to clone `Shooter3k/hashcat_shooter` instead of
+- Corrected the MSYS2 guide to clone `Shooter3k/shooter_hashcat` instead of
   upstream hashcat, and corrected the documented MinGW runtime DLL name and
   location.
 - Documented that OpenSSL is statically linked into the Windows mdxfind
@@ -1145,7 +1158,7 @@ Multi-GPU checkpoint cancellation reliability, elapsed-time reporting, and
 
 - Added `Total Time` to the final status summary, calculated from the displayed
   `Started` and `Stopped` timestamps.
-- Added `HASHCAT_SHOOTER_HOST_STAGING_MB` for changing the automatic per-GPU
+- Added `SHOOTER_HASHCAT_HOST_STAGING_MB` for changing the automatic per-GPU
   host candidate-staging limit. Set it to `0` to restore the generic limit.
 
 ### Changed
@@ -1161,7 +1174,7 @@ Multi-GPU checkpoint cancellation reliability, elapsed-time reporting, and
 - Counted only live, non-skipped GPU workers in the barrier and accounted for
   devices that naturally finish near the end of the keyspace.
 - Carried forward the missing parallel CUDA context initialization and
-  per-device teardown work from `M:\hashcat_shooter`.
+  per-device teardown work from `M:\shooter_hashcat`.
 - Initialized host candidate-staging buffers concurrently and avoided
   zero-filling data that candidate construction overwrites before use.
 - Replaced full candidate-buffer resets with the required metadata reset.
@@ -1193,7 +1206,7 @@ Windows startup optimization for the intended 12 x RTX 4090 system.
 
 - Added an automatic CUDA-only fast-start path for normal cracking sessions
   when CUDA reports exactly twelve `NVIDIA GeForce RTX 4090` devices.
-- Added `HASHCAT_SHOOTER_FAST_START=0` as a per-process override that restores
+- Added `SHOOTER_HASHCAT_FAST_START=0` as a per-process override that restores
   full HIP and OpenCL probing.
 - Added startup behavior, measurements, and override instructions in
   `docs/startup-optimization.md`.

@@ -45,11 +45,11 @@ Tested on Windows 11 23H2 x64
 
 ## Build
 
-1. **Fetch the latest hashcat_shooter source code from GitHub:**
+1. **Fetch the latest shooter_hashcat source code from GitHub:**
 
    ```sh
-   git clone https://github.com/Shooter3k/hashcat_shooter.git
-   cd hashcat_shooter
+   git clone https://github.com/Shooter3k/shooter_hashcat.git
+   cd shooter_hashcat
    ```
 
 2. **Compile:**

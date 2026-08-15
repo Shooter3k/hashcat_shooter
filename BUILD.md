@@ -1,4 +1,4 @@
-# Build hashcat_shooter on Linux
+# Build shooter_hashcat on Linux
 
 These instructions build the current Shooter source natively on 64-bit Linux.
 They were verified on Ubuntu 24.04 with Clang 18 and stable Rust.
@@ -31,8 +31,8 @@ but they are not needed merely to compile the program.
 Clone this repository, not the original Hashcat repository:
 
 ```bash
-git clone https://github.com/Shooter3k/hashcat_shooter.git
-cd hashcat_shooter
+git clone https://github.com/Shooter3k/shooter_hashcat.git
+cd shooter_hashcat
 make -j"$(nproc)" ENABLE_LTO=0 CC=clang CXX=clang++
 ```
 

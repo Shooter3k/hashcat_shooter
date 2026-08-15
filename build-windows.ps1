@@ -18,7 +18,7 @@ $Msys2Release = '2026-06-11'
 $Msys2Archive = 'msys2-base-x86_64-20260611.sfx.exe'
 $Msys2ArchiveSha256 = 'c105946e64e08f099ac0e4647461ce762b95333ad211777666476a9a41451d65'
 $Msys2ArchiveUrl = "https://github.com/msys2/msys2-installer/releases/download/$Msys2Release/$Msys2Archive"
-$ToolchainStampVersion = 'hashcat-shooter-windows-toolchain-v5'
+$ToolchainStampVersion = 'shooter-hashcat-windows-toolchain-v5'
 $RequiredPackages = @(
   'git'
   'mingw-w64-x86_64-clang'
@@ -97,7 +97,7 @@ $LibClangLibrary = Join-Path $MingwBin 'libclang.dll'
 $LldPath = Join-Path $MingwBin 'ld.lld.exe'
 $SevenZipPath = Join-Path $MingwBin '7z.exe'
 $RustupPath = Join-Path $MingwBin 'rustup.exe'
-$RustToolchainBin = Join-Path $MsysRoot 'var\lib\hashcat-shooter\rustup\toolchains\stable-x86_64-pc-windows-gnu\bin'
+$RustToolchainBin = Join-Path $MsysRoot 'var\lib\shooter-hashcat\rustup\toolchains\stable-x86_64-pc-windows-gnu\bin'
 $CargoPath = Join-Path $RustToolchainBin 'cargo.exe'
 $RustcPath = Join-Path $RustToolchainBin 'rustc.exe'
 $OpenSslHeader = Join-Path $MsysRoot 'mingw64\include\openssl\opensslv.h'
@@ -173,7 +173,7 @@ if ($UpdateToolchain -or -not $StampMatches -or $MissingRequiredFiles.Count -gt 
   # Keep the Rust toolchain in the repo-local MSYS2 tree and select the GNU
   # host explicitly. A plain `rustup default stable` selects MSVC on Windows,
   # which cannot link the MinGW bridge DLLs built by this project.
-  Invoke-Msys 'export PATH=/mingw64/bin:/usr/bin:$PATH; export RUSTUP_HOME=/var/lib/hashcat-shooter/rustup; export CARGO_HOME=/var/lib/hashcat-shooter/cargo; rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal; rustup default stable-x86_64-pc-windows-gnu; rustup target add x86_64-pc-windows-gnu --toolchain stable-x86_64-pc-windows-gnu'
+  Invoke-Msys 'export PATH=/mingw64/bin:/usr/bin:$PATH; export RUSTUP_HOME=/var/lib/shooter-hashcat/rustup; export CARGO_HOME=/var/lib/shooter-hashcat/cargo; rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal; rustup default stable-x86_64-pc-windows-gnu; rustup target add x86_64-pc-windows-gnu --toolchain stable-x86_64-pc-windows-gnu'
 
   $MissingRequiredFiles = @($RequiredFiles | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Leaf) })
 
@@ -194,9 +194,9 @@ if ($UpdateToolchain -or -not $StampMatches -or $MissingRequiredFiles.Count -gt 
 # Prebuilt releases must run on ordinary x64 CPUs, not only on the CPU model
 # used by the build machine. MAINTAINER_MODE disables host-specific C/C++
 # instruction flags; the Rust bridge/feed rules honor the same setting.
-$MakeCommand = "/mingw64/bin/mingw32-make.exe PRODUCTION=1 MAINTAINER_MODE=1 ENABLE_LTO=0 RUST_CARGO=/var/lib/hashcat-shooter/rustup/toolchains/stable-x86_64-pc-windows-gnu/bin/cargo.exe RUST_RUSTUP=/mingw64/bin/rustup.exe -j$Jobs"
+$MakeCommand = "/mingw64/bin/mingw32-make.exe PRODUCTION=1 MAINTAINER_MODE=1 ENABLE_LTO=0 RUST_CARGO=/var/lib/shooter-hashcat/rustup/toolchains/stable-x86_64-pc-windows-gnu/bin/cargo.exe RUST_RUSTUP=/mingw64/bin/rustup.exe -j$Jobs"
 $CleanCommand = '/mingw64/bin/mingw32-make.exe PRODUCTION=1 MAINTAINER_MODE=1 clean'
-$PathPrefix = 'export PATH=/mingw64/bin:/var/lib/hashcat-shooter/rustup/toolchains/stable-x86_64-pc-windows-gnu/bin:/usr/bin:$PATH; export LIBCLANG_PATH=/mingw64/bin; export RUSTUP_HOME=/var/lib/hashcat-shooter/rustup; export CARGO_HOME=/var/lib/hashcat-shooter/cargo; '
+$PathPrefix = 'export PATH=/mingw64/bin:/var/lib/shooter-hashcat/rustup/toolchains/stable-x86_64-pc-windows-gnu/bin:/usr/bin:$PATH; export LIBCLANG_PATH=/mingw64/bin; export RUSTUP_HOME=/var/lib/shooter-hashcat/rustup; export CARGO_HOME=/var/lib/shooter-hashcat/cargo; '
 $HashcatPath = Join-Path $RepoRoot 'hashcat.exe'
 
 # The production version is compiled directly into the frontend, but the
