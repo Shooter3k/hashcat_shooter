@@ -1,8 +1,8 @@
 # hashcat_shooter release notes
 
-## Unreleased
+## v7.1.2-shooter.20260815.37
 
-Faster loading for very large rule files.
+Faster loading for very large rule files and cleaner multi-GPU status.
 
 ### Added
 
