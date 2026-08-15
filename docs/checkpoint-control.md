@@ -23,6 +23,6 @@ requested` is displayed; cancellation remains safe during that pending time.
 To resume a completed checkpoint from PowerShell:
 
 ```powershell
-$env:PATH = "M:\msys64\mingw64\bin;$env:PATH"
-M:\github\shooter_hashcat\hashcat.exe --session SESSION_NAME --restore
+$env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
+.\hashcat.exe --session SESSION_NAME --restore
 ```

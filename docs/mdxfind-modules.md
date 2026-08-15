@@ -83,8 +83,8 @@ Run the generator whenever mdxfind's live registry changes:
 
 ```powershell
 python tools/generate_mdxfind_modules.py `
-  --mdxfind M:\junk\mdxfind-main `
-  --hashcat M:\github\shooter_hashcat
+  --mdxfind C:\path\to\mdxfind-main `
+  --hashcat .
 ```
 
 The generator reads `Types[]` and `Maphashcat[]` from `mdxfind.c`, validates

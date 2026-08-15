@@ -183,7 +183,7 @@ void goodbye_screen (hashcat_ctx_t *hashcat_ctx, const time_t proc_start, const 
 
   event_log_info_nn (hashcat_ctx, "Started: %s", ctime_r (&proc_start, start_buf));
   event_log_info_nn (hashcat_ctx, "Stopped: %s", ctime_r (&proc_stop,  stop_buf));
-  event_log_info    (hashcat_ctx, "Total Time: %s", elapsed_buf);
+  event_log_info    (hashcat_ctx, "Total Run Time: %s", elapsed_buf);
 }
 
 int setup_console (void)

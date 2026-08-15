@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-No changes recorded yet.
+### Changed
+
+- Renamed the final goodbye-summary label from `Total Time` to
+  `Total Run Time` so its start-to-stop elapsed duration is immediately clear.
+- Replaced developer-specific absolute paths in public documentation with
+  portable commands and clearly marked placeholder paths.
 
 ## v7.1.2-shooter.20260815.40
 
@@ -500,7 +505,7 @@ Portable Windows build setup for fresh third-party clones.
   mdxfind bridge in both Windows build guides and the GitHub Actions MSYS2
   environment. This resolves clean-build failures for missing
   `openssl/des.h`, `openssl/sha.h`, and the static crypto library.
-- Replaced machine-specific `M:\...` paths with reusable MSYS2 and PowerShell
+- Replaced machine-specific absolute paths with reusable MSYS2 and PowerShell
   instructions that work with repositories on any drive.
 - Corrected the MSYS2 guide to clone `Shooter3k/shooter_hashcat` instead of
   upstream hashcat, and corrected the documented MinGW runtime DLL name and
@@ -1016,7 +1021,8 @@ Whole-candidate rules on existing attacks and visible quit progress.
   GPU initialized, received work, and reported a nonzero speed until the
   intentional five-second runtime limit.
 - Confirmed a live long-running GPU session accepts quit and prints each new
-  shutdown-progress stage before its final Started/Stopped/Total Time summary.
+  shutdown-progress stage before its final Started/Stopped/Total Run Time
+  summary.
 
 ## v7.1.2-shooter.20260812.10 (local source build)
 
@@ -1208,8 +1214,8 @@ Multi-GPU checkpoint cancellation reliability, elapsed-time reporting, and
 
 ### Added
 
-- Added `Total Time` to the final status summary, calculated from the displayed
-  `Started` and `Stopped` timestamps.
+- Added `Total Run Time` to the final status summary, calculated from the
+  displayed `Started` and `Stopped` timestamps.
 - Added `SHOOTER_HASHCAT_HOST_STAGING_MB` for changing the automatic per-GPU
   host candidate-staging limit. Set it to `0` to restore the generic limit.
 
@@ -1226,7 +1232,7 @@ Multi-GPU checkpoint cancellation reliability, elapsed-time reporting, and
 - Counted only live, non-skipped GPU workers in the barrier and accounted for
   devices that naturally finish near the end of the keyspace.
 - Carried forward the missing parallel CUDA context initialization and
-  per-device teardown work from `M:\shooter_hashcat`.
+  per-device teardown work from the earlier Shooter development tree.
 - Initialized host candidate-staging buffers concurrently and avoided
   zero-filling data that candidate construction overwrites before use.
 - Replaced full candidate-buffer resets with the required metadata reset.

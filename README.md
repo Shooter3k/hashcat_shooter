@@ -44,7 +44,7 @@ explanation.
 22. **[Outfile-check-only cracks are labeled clearly](docs/shooter-enhancements.md#22-clear-outfile-check-completion-status)** — the final status identifies where the result came from.
 23. **[Loopback induction files clean up safely on Windows](docs/shooter-enhancements.md#23-reliable-loopback-cleanup)** — consumed files are not rediscovered forever.
 24. **[Quit shows shutdown progress](docs/shooter-enhancements.md#24-visible-quit-progress)** — the console explains what hashcat is still finishing.
-25. **[The final summary shows total elapsed time](docs/shooter-enhancements.md#25-total-elapsed-time)** — `Total Time` is calculated from start and stop timestamps.
+25. **[The final summary shows total run time](docs/shooter-enhancements.md#25-total-run-time)** — `Total Run Time` is calculated from start and stop timestamps.
 26. **[Combination status shows the correct wordlist paths](docs/shooter-enhancements.md#26-correct-combination-status)** — ruled mode-1 jobs no longer show `(null)`.
 27. **[Pure Kernel selection is highlighted](docs/shooter-enhancements.md#27-visible-pure-kernel-warning)** — interactive status displays the line in yellow.
 28. **[The complete mdxfind `e1`-`e1001` namespace is available](docs/shooter-enhancements.md#28-complete-mdxfind-namespace)** — 999 standalone algorithms plus two documented special entries.
@@ -56,7 +56,7 @@ explanation.
 34. **[One `.7z` contains both source and a ready-to-run build](docs/shooter-enhancements.md#34-complete-windows-release-archive)** — download one file to run or rebuild Shooter.
 35. **[Release contents can be verified locally](docs/shooter-enhancements.md#35-package-integrity-verification)** — an included script checks the complete SHA-256 manifest.
 36. **[Windows builds bootstrap with one command](docs/shooter-enhancements.md#36-self-bootstrapping-windows-build)** — the compiler toolchain stays inside the repository.
-37. **[Fresh clones build from any drive](docs/shooter-enhancements.md#37-portable-windows-build-instructions)** — no machine-specific `M:\` paths are required.
+37. **[Fresh clones build from any drive](docs/shooter-enhancements.md#37-portable-windows-build-instructions)** — no machine-specific absolute paths are required.
 38. **[Release versions are reproducible](docs/shooter-enhancements.md#38-reproducible-release-versioning)** — tags, packages, rebuilds, and `--version` stay identical.
 39. **[Newer official hashcat fixes are included](docs/shooter-enhancements.md#39-newer-upstream-correctness-fixes)** — upstream fixes after the fork are preserved and clearly credited.
 40. **[Huge rule files load across CPU cores](docs/shooter-enhancements.md#40-parallel-rule-file-loading)** — all rule-capable algorithms spend less time waiting at `Loading rules`.

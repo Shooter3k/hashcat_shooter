@@ -10,8 +10,8 @@ CUDA-only fast-start path when all of these checks pass:
 HIP and OpenCL probing is redundant on this all-NVIDIA system. Avoiding those
 runtimes reduces driver discovery and duplicate device setup.
 
-The current build also carries forward the startup work from
-`M:\shooter_hashcat`:
+The current build also carries forward the startup work from the earlier
+Shooter development tree:
 
 - CUDA contexts and their available-memory queries initialize concurrently.
 - Per-device session buffers and CUDA contexts are released concurrently.
@@ -37,7 +37,7 @@ sorter for an A/B test:
 
 ```powershell
 $env:HASHCAT_HASH_SORT_RADIX_DISABLE = '1'
-M:\github\shooter_hashcat\hashcat.exe ...
+.\hashcat.exe ...
 Remove-Item Env:HASHCAT_HASH_SORT_RADIX_DISABLE
 ```
 
@@ -63,7 +63,7 @@ Set the override to zero for a run that needs HIP or OpenCL discovery:
 
 ```powershell
 $env:SHOOTER_HASHCAT_FAST_START = '0'
-M:\github\shooter_hashcat\hashcat.exe ...
+.\hashcat.exe ...
 ```
 
 Restore automatic behavior afterward:
@@ -82,7 +82,7 @@ both candidate pipeline slots combined:
 
 ```powershell
 $env:SHOOTER_HASHCAT_HOST_STAGING_MB = '4096'
-M:\github\shooter_hashcat\hashcat.exe ...
+.\hashcat.exe ...
 ```
 
 Set the value to zero to disable the shooter-specific 3072 MiB limit and use
@@ -90,7 +90,7 @@ hashcat's generic limit:
 
 ```powershell
 $env:SHOOTER_HASHCAT_HOST_STAGING_MB = '0'
-M:\github\shooter_hashcat\hashcat.exe ...
+.\hashcat.exe ...
 ```
 
 Restore the optimized default afterward:
@@ -110,8 +110,7 @@ GitHub build took about 18-23 seconds and reported roughly 97.7 GB of host
 memory. With the carried-forward startup work and the 3072 MiB per-GPU staging
 limit, the final test build reported about 36.7 GB and completed in 15.8-16.9
 seconds from a cold state, followed by warm runs ranging from 7.6 to 10.1
-seconds. The older
-`M:\shooter_hashcat` comparison build completed the same test in about 10
+seconds. The earlier comparison build completed the same test in about 10
 seconds during this verification.
 
 A sustained 12-GPU mode-0 benchmark measured 686.3 GH/s with the lower-memory
@@ -145,7 +144,7 @@ A/B test:
 
 ```powershell
 $env:HASHCAT_HASH_PARSE_PARALLEL_DISABLE = '1'
-M:\github\shooter_hashcat\hashcat.exe ...
+.\hashcat.exe ...
 Remove-Item Env:HASHCAT_HASH_PARSE_PARALLEL_DISABLE
 ```
 
@@ -197,7 +196,7 @@ for an A/B test:
 
 ```powershell
 $env:HASHCAT_RULE_PARSE_PARALLEL_DISABLE = '1'
-M:\github\shooter_hashcat\hashcat.exe ... -r M:\rules\large.rule
+.\hashcat.exe ... -r C:\path\to\large.rule
 Remove-Item Env:HASHCAT_RULE_PARSE_PARALLEL_DISABLE
 ```
 

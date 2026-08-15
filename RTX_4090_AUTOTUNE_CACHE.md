@@ -44,7 +44,7 @@ Set this environment variable to bypass the cache for a run:
 
 ```powershell
 $env:HASHCAT_AUTOTUNE_CACHE_DISABLE = '1'
-M:\github\shooter_hashcat\hashcat.exe ...
+.\hashcat.exe ...
 ```
 
 Remove it again with:
@@ -56,7 +56,7 @@ Remove-Item Env:HASHCAT_AUTOTUNE_CACHE_DISABLE
 To discard every saved profile and force fresh tuning, delete:
 
 ```powershell
-Remove-Item M:\github\shooter_hashcat\hashcat.autotune-cache -Force
+Remove-Item .\hashcat.autotune-cache -Force
 ```
 
 The cache file is generated runtime state and is ignored by Git. A clean

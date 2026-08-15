@@ -183,10 +183,10 @@ session-service shutdown, GPU-resource release, and final session-file work so
 the console does not appear frozen. See the
 [release notes](../CHANGELOG.md#v712-shooter2026081213-local-source-build).
 
-### 25. Total elapsed time
+### 25. Total run time
 
-The final summary prints `Total Time`, calculated from the displayed `Started`
-and `Stopped` timestamps. See the
+The final summary prints `Total Run Time`, calculated from the displayed
+`Started` and `Stopped` timestamps. See the
 [release notes](../CHANGELOG.md#v712-shooter202608125).
 
 ### 26. Correct combination status
@@ -270,7 +270,7 @@ software or changing the user or system `PATH`. See
 
 Build commands work with a fresh clone on any drive and include all required
 GCC, Clang, Rust, OpenSSL, iconv, bridge, feed, and runtime dependencies. No
-developer-specific `M:\` paths are required. See
+developer-specific absolute paths are required. See
 [how_to_compile.txt](../how_to_compile.txt).
 
 ### 38. Reproducible release versioning
