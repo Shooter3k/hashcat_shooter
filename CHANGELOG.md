@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## v7.1.2-shooter.20260815.43
+
+Clean-runner Rust setup follow-up for the `.42` reliability fixes.
+
+- Preinstall the `rust-src` component in the same serialized Make prerequisite
+  as the Windows GNU target, preventing parallel proc-macro builds from racing
+  during Rust's first-use component installation.
+
 ## v7.1.2-shooter.20260815.42
 
 Release-build reliability follow-up for the `.41` feature set.

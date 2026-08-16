@@ -84,6 +84,7 @@ $(RUST_SUBS_DIR)/%.so: $(RUST_SCAN_DIR)/%/Cargo.toml
 ifeq ($(RUSTUP_PRESENT),true)
 .PHONY: rust-windows-target
 rust-windows-target:
+	$(RUST_RUSTUP) --quiet component add rust-src
 	$(RUST_RUSTUP) --quiet target add x86_64-pc-windows-gnu
 
 $(RUST_SUBS_DIR)/%.dll: $(RUST_SCAN_DIR)/%/Cargo.toml | rust-windows-target
