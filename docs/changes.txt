@@ -1,5 +1,7 @@
 * changes v7.1.2 -> v7.1.x
 
+- Status: Always show Remaining and Recovered/Time in the normal status display, including for jobs with 1,000 or fewer digests
+
 ##
 ## Backward Incompatible Changes
 ##

@@ -4170,30 +4170,27 @@ void status_display (hashcat_ctx_t *hashcat_ctx)
       hashcat_status->digests_percent_new);
   }
 
-  if (hashcat_status->digests_cnt > 1000)
+  const int    digests_remain         = hashcat_status->digests_cnt - hashcat_status->digests_done;
+  const double digests_remain_percent = (double) digests_remain / (double) hashcat_status->digests_cnt * 100;
+
+  const int    salts_remain           = hashcat_status->salts_cnt - hashcat_status->salts_done;
+  const double salts_remain_percent   = (double) salts_remain / (double) hashcat_status->salts_cnt * 100;
+
+  if (hashcat_status->salts_cnt > 1)
   {
-    const int    digests_remain         = hashcat_status->digests_cnt - hashcat_status->digests_done;
-    const double digests_remain_percent = (double) digests_remain / (double) hashcat_status->digests_cnt * 100;
-
-    const int    salts_remain           = hashcat_status->salts_cnt - hashcat_status->salts_done;
-    const double salts_remain_percent   = (double) salts_remain / (double) hashcat_status->salts_cnt * 100;
-
-    if (hashcat_status->salts_cnt > 1)
-    {
-      event_log_info (hashcat_ctx,
-        "Remaining........: %u (%.2f%%) Digests, %u (%.2f%%) Salts",
-        digests_remain,
-        digests_remain_percent,
-        salts_remain,
-        salts_remain_percent);
-    }
-    else
-    {
-      event_log_info (hashcat_ctx, "Remaining........: %u (%.2f%%) Digests", digests_remain, digests_remain_percent);
-    }
-
-    event_log_info (hashcat_ctx, "Recovered/Time...: %s", hashcat_status->cpt);
+    event_log_info (hashcat_ctx,
+      "Remaining........: %u (%.2f%%) Digests, %u (%.2f%%) Salts",
+      digests_remain,
+      digests_remain_percent,
+      salts_remain,
+      salts_remain_percent);
   }
+  else
+  {
+    event_log_info (hashcat_ctx, "Remaining........: %u (%.2f%%) Digests", digests_remain, digests_remain_percent);
+  }
+
+  event_log_info (hashcat_ctx, "Recovered/Time...: %s", hashcat_status->cpt);
 
   // How far a protected run has got is itself worth withholding. On a job that takes days, handing
   // over the exact offset would let the operator restart without encryption and skip straight to

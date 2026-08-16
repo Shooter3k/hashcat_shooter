@@ -553,3 +553,24 @@ shrank from 4,343,248 bytes to 229,904 bytes. A live 12-GPU mode-0 test with
 window versus 2,919,628,800 before the final feed optimizations, a 39.1 percent
 increase. See [startup optimization](startup-optimization.md#large-wordlist-indexing-and-feed-throughput)
 for scope and verification details.
+
+## Status visibility
+
+### 60. Consistent remaining and recovery-rate status
+
+Every normal human-readable status display includes both of these lines:
+
+```text
+Remaining........: 33473 (99.93%) Digests
+Recovered/Time...: CUR:N/A,N/A,N/A AVG:N/A,N/A,N/A (Min,Hour,Day)
+```
+
+They are no longer suppressed when a job contains 1,000 or fewer digests.
+`Remaining` reports the live digest count and percentage; jobs with multiple
+salts continue to include the salt count and percentage on the same line.
+`Recovered/Time` uses `N/A` for time windows that have not elapsed yet, then
+fills in the minute, hour, and day rates as those windows become available.
+
+This affects the normal terminal display, including periodic and final status.
+Machine-readable and JSON status formats keep their existing structured
+fields and formats.

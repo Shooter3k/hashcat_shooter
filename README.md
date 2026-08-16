@@ -79,6 +79,7 @@ explanation.
 57. **[Slow-producing attacks can move on automatically](docs/shooter-enhancements.md#57-automatic-low-crack-rate-bypass)** — set a time window and minimum number of new cracks, then skip the current dictionary or mask when its yield falls below that minimum.
 58. **[Existing outfile results are removed before cracking starts](docs/shooter-enhancements.md#58-outfile-check-before-cracking-allocation)** — if every hash is already in `--outfile-check-dir`, the expensive attack-specific GPU and host-memory allocation is skipped.
 59. **[Huge wordlists index and feed faster](docs/shooter-enhancements.md#59-faster-large-wordlist-indexing-and-feed)** — first-use line counting uses the CPU cores and ordinary candidates reach the GPUs with less per-word overhead.
+60. **[Remaining hashes and recovery rates are always visible](docs/shooter-enhancements.md#60-consistent-remaining-and-recovery-rate-status)** — every normal status display includes `Remaining` and `Recovered/Time`, even for small hash lists.
 
 ## Download and run
 
@@ -127,6 +128,7 @@ Windows and Linux builds, Rust crates, and the sanitizer-backed parser fuzzer.
 | RTX 4090 autotune cache | [RTX_4090_AUTOTUNE_CACHE.md](RTX_4090_AUTOTUNE_CACHE.md) |
 | Multi-file combinations and complete-candidate rules | [docs/multi-file-combination.md](docs/multi-file-combination.md) and [docs/whole-candidate-rules.md](docs/whole-candidate-rules.md) |
 | Runtime and checkpoint controls | [docs/runtime-controls.md](docs/runtime-controls.md) and [docs/checkpoint-control.md](docs/checkpoint-control.md) |
+| Interactive status output | [consistent remaining and recovery-rate lines](docs/shooter-enhancements.md#60-consistent-remaining-and-recovery-rate-status) |
 | Automatic low-crack-rate bypass | [docs/bypass-rate-control.md](docs/bypass-rate-control.md) |
 | Resumable candidate output | [docs/stdout-sessions.md](docs/stdout-sessions.md) |
 | mdxfind modes | [docs/mdxfind-modules.md](docs/mdxfind-modules.md) and the [complete JSON registry](docs/mdxfind-modules.json) |

@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## v7.1.2-shooter.20260816.46
+
+Consistent status-visibility release.
+
+### Changed
+
+- Normal human-readable status now always includes `Remaining` and
+  `Recovered/Time`, including for jobs with 1,000 or fewer digests.
+- Early recovery-rate windows remain explicit as `N/A`; minute, hour, and day
+  values appear as enough run time becomes available.
+- Documented the status guarantee and its scope in the README and complete
+  Shooter feature inventory.
+
+### Verified
+
+- Built the production Windows x64 frontend and confirmed its version is
+  `v7.1.2-shooter.20260816.46`.
+- Confirmed a one-digest job includes both status lines in its final display.
+
 ## v7.1.2-shooter.20260815.45
 
 Large-wordlist indexing and feed-throughput release.
