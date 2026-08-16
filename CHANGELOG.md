@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v7.1.2-shooter.20260815.44
+
+Release-attestation follow-up for the `.43` clean-runner build.
+
+- Resolve and validate the single archive and SPDX SBOM after packaging, then
+  pass their exact paths to GitHub's provenance, SBOM, and upload actions.
+
 ## v7.1.2-shooter.20260815.43
 
 Clean-runner Rust setup follow-up for the `.42` reliability fixes.
