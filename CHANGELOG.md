@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+## v7.1.2-shooter.20260816.47
+
+Immediate minute-rate and shorter interactive-prompt release.
+
+### Changed
+
+- `Recovered/Time` now reports numeric current and average minute values from
+  the first status update instead of showing `N/A` for the first minute.
+- The interactive outfile-directory command is now labeled
+  `[i]gnore outfile`; its `i` key and `--outfile-check-dir` behavior are
+  unchanged.
+- Updated the README, complete feature inventory, change summary, and release
+  notes to describe both changes.
+
+### Verified
+
+- Built the complete production Windows x64 program and module set.
+- Confirmed live status output reports numeric minute values before 60 seconds.
+- Confirmed active outfile-check prompts display `[i]gnore outfile`.
+
 ## v7.1.2-shooter.20260816.46
 
 Consistent status-visibility release.
@@ -225,7 +245,7 @@ potfiles, a clearer outfile-check command, and a repaired Linux build.
 ### Changed
 
 - The interactive outfile-directory command is now
-  `[i]gnore outfile-check-dir` and uses the `i` key in every active and paused
+  `[i]gnore outfile` and uses the `i` key in every active and paused
   prompt.
 - Large unsalted lists build a compact 16-bit range index so normal potfile
   entries are searched within a narrow slice of the sorted hash array.
@@ -266,7 +286,7 @@ potfiles, a clearer outfile-check command, and a repaired Linux build.
 - The real 296,078-byte `--show` output was byte-identical to the previous
   release. Separate unsalted MD5 and salted mode-10 fixtures produced
   byte-identical `--show` and `--left` files.
-- A live 12-GPU session displayed `[i]gnore outfile-check-dir`; pressing `i`
+- A live 12-GPU session displayed `[i]gnore outfile`; pressing `i`
   printed `Ignoring --outfile-check-dir for the rest of this run.` and the
   command disappeared from the next prompt.
 - Clean Ubuntu 24.04 Clang builds completed with both `SHARED=0` and
@@ -1208,7 +1228,7 @@ Interactive ignore-outfile-check-dir control.
 
 ### Added
 
-- Added `[i]gnore outfile-check-dir` to the interactive menu whenever outfile-directory
+- Added `[i]gnore outfile` to the interactive menu whenever outfile-directory
   checking is active.
 - Pressing `i` stops further `--outfile-check-dir` processing for the current
   run without deleting, truncating, or modifying anything in that directory.

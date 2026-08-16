@@ -154,9 +154,9 @@ outfile access failures every 250 milliseconds for up to five seconds. A
 cooldown prevents persistent locks from adding the same long delay for every
 later result. See the [release notes](../CHANGELOG.md#v712-shooter202608127).
 
-### 21. Ignore outfile-check-dir
+### 21. Ignore outfile
 
-When `--outfile-check-dir` is active, `[i]gnore outfile-check-dir` stops further
+When `--outfile-check-dir` is active, `[i]gnore outfile` stops further
 directory checking for the current process without deleting or changing
 files. Press `i` to activate it; the command then disappears from the prompt.
 Hashes already processed remain recovered. See the
@@ -562,14 +562,15 @@ Every normal human-readable status display includes both of these lines:
 
 ```text
 Remaining........: 33473 (99.93%) Digests
-Recovered/Time...: CUR:N/A,N/A,N/A AVG:N/A,N/A,N/A (Min,Hour,Day)
+Recovered/Time...: CUR:0,N/A,N/A AVG:0.00,N/A,N/A (Min,Hour,Day)
 ```
 
 They are no longer suppressed when a job contains 1,000 or fewer digests.
 `Remaining` reports the live digest count and percentage; jobs with multiple
 salts continue to include the salt count and percentage on the same line.
-`Recovered/Time` uses `N/A` for time windows that have not elapsed yet, then
-fills in the minute, hour, and day rates as those windows become available.
+`Recovered/Time` reports the minute columns immediately. During the first
+minute, `CUR` is the recovered count so far and `AVG` is its live per-minute
+pace. The hour and day columns use `N/A` until those windows have elapsed.
 
 This affects the normal terminal display, including periodic and final status.
 Machine-readable and JSON status formats keep their existing structured

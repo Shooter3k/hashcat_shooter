@@ -37,11 +37,11 @@ static const char *const PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoin
 static const char *const RUNTIME_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower => ";
 static const char *const RUNTIME_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower => ";
 
-static const char *const OUTCHECK_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [i]gnore outfile-check-dir => ";
-static const char *const OUTCHECK_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [i]gnore outfile-check-dir => ";
+static const char *const OUTCHECK_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [i]gnore outfile => ";
+static const char *const OUTCHECK_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [i]gnore outfile => ";
 
-static const char *const RUNTIME_OUTCHECK_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower [i]gnore outfile-check-dir => ";
-static const char *const RUNTIME_OUTCHECK_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower [i]gnore outfile-check-dir => ";
+static const char *const RUNTIME_OUTCHECK_PROMPT_ACTIVE = "[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower [i]gnore outfile => ";
+static const char *const RUNTIME_OUTCHECK_PROMPT_PAUSED = "[s]tatus [r]esume [b]ypass [c]heckpoint [f]inish [q]uit [e]xtend [l]ower [i]gnore outfile => ";
 
 static const char *terminal_prompt (hashcat_ctx_t *hashcat_ctx)
 {

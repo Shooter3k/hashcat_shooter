@@ -1,6 +1,8 @@
 * changes v7.1.2 -> v7.1.x
 
 - Status: Always show Remaining and Recovered/Time in the normal status display, including for jobs with 1,000 or fewer digests
+- Status: Show live current and average minute recovery values during the first minute instead of reporting N/A
+- Terminal: Shorten the interactive outfile-directory command label to `[i]gnore outfile` without changing its key or behavior
 
 ##
 ## Backward Incompatible Changes

@@ -40,7 +40,7 @@ explanation.
 18. **[Multi-GPU checkpoints keep every GPU coordinated](docs/shooter-enhancements.md#18-coordinated-multi-gpu-checkpoints)** — checkpoint cancellation safely resumes all devices.
 19. **[CUDA startup failures retry without dropping GPUs](docs/shooter-enhancements.md#19-atomic-cuda-startup-retry)** — a failed device cannot silently produce a partial-GPU run.
 20. **[Temporarily locked output files are retried](docs/shooter-enhancements.md#20-windows-outfile-lock-recovery)** — brief Windows locks do not immediately lose results.
-21. **[`[i]gnore outfile-check-dir` stops directory checking](docs/shooter-enhancements.md#21-ignore-outfile-check-dir)** — stop checking it for the current run without changing the directory.
+21. **[`[i]gnore outfile` stops directory checking](docs/shooter-enhancements.md#21-ignore-outfile)** — stop checking `--outfile-check-dir` for the current run without changing the directory.
 22. **[Outfile-check-only cracks are labeled clearly](docs/shooter-enhancements.md#22-clear-outfile-check-completion-status)** — the final status identifies where the result came from.
 23. **[Loopback induction files clean up safely on Windows](docs/shooter-enhancements.md#23-reliable-loopback-cleanup)** — consumed files are not rediscovered forever.
 24. **[Quit shows shutdown progress](docs/shooter-enhancements.md#24-visible-quit-progress)** — the console explains what hashcat is still finishing.
@@ -79,7 +79,7 @@ explanation.
 57. **[Slow-producing attacks can move on automatically](docs/shooter-enhancements.md#57-automatic-low-crack-rate-bypass)** — set a time window and minimum number of new cracks, then skip the current dictionary or mask when its yield falls below that minimum.
 58. **[Existing outfile results are removed before cracking starts](docs/shooter-enhancements.md#58-outfile-check-before-cracking-allocation)** — if every hash is already in `--outfile-check-dir`, the expensive attack-specific GPU and host-memory allocation is skipped.
 59. **[Huge wordlists index and feed faster](docs/shooter-enhancements.md#59-faster-large-wordlist-indexing-and-feed)** — first-use line counting uses the CPU cores and ordinary candidates reach the GPUs with less per-word overhead.
-60. **[Remaining hashes and recovery rates are always visible](docs/shooter-enhancements.md#60-consistent-remaining-and-recovery-rate-status)** — every normal status display includes `Remaining` and `Recovered/Time`, even for small hash lists.
+60. **[Remaining hashes and recovery rates are always visible](docs/shooter-enhancements.md#60-consistent-remaining-and-recovery-rate-status)** — every normal status display includes `Remaining` and `Recovered/Time`, even for small hash lists, with live minute values from the first status update.
 
 ## Download and run
 

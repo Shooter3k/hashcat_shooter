@@ -2044,7 +2044,7 @@ double status_get_cpt_avg_min (const hashcat_ctx_t *hashcat_ctx)
 
   double cpt_avg_min = 0;
 
-  if (min_real > 1)
+  if (min_real > 0)
   {
     cpt_avg_min = (double) cpt_ctx->cpt_total / min_real;
   }
@@ -2130,7 +2130,9 @@ char *status_get_cpt (const hashcat_ctx_t *hashcat_ctx)
   }
   else
   {
-    hc_asprintf (&cpt, "CUR:N/A,N/A,N/A AVG:N/A,N/A,N/A (Min,Hour,Day)");
+    hc_asprintf (&cpt, "CUR:%u,N/A,N/A AVG:%.2f,N/A,N/A (Min,Hour,Day)",
+                 cpt_cur_min,
+                 cpt_avg_min);
   }
 
   return cpt;
