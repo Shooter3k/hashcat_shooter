@@ -1,0 +1,67 @@
+name: Sanitizers and parser fuzzing
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'include/**'
+      - 'src/**'
+      - 'tools/fuzz/**'
+      - 'Makefile'
+      - '.github/workflows/security.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'include/**'
+      - 'src/**'
+      - 'tools/fuzz/**'
+      - 'Makefile'
+      - '.github/workflows/security.yml'
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sanitize-and-fuzz:
+    name: ASan, UBSan, and parser fuzzers
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install compiler dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libssl-dev
+
+      - name: Build the sanitized core
+        env:
+          ASAN_OPTIONS: detect_leaks=0
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: |
+          make -j2 DEBUG=2 SHARED=0 ENABLE_LTO=0 CC=clang CXX=clang++ obj/combined.NATIVE.a
+
+      - name: Build and run parser fuzzers
+        env:
+          ASAN_OPTIONS: detect_leaks=0
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: |
+          make DEBUG=2 SHARED=0 ENABLE_LTO=0 CC=clang CXX=clang++ fuzz-parser
+          ./tools/fuzz/parser_fuzzer -max_total_time=90 -timeout=5 -rss_limit_mb=4096 tools/fuzz/corpus/parser
+
+      - name: Save crashing inputs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-fuzzer-crashes
+          path: |
+            crash-*
+            timeout-*
+            oom-*
+          if-no-files-found: ignore

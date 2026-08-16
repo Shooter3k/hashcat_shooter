@@ -214,6 +214,7 @@ try {
 
     $RequiredRuntimeFiles = @(
       'hashcat.exe'
+      'shooterctl.exe'
       'libiconv-2.dll'
       'libgcc_s_seh-1.dll'
       'libstdc++-6.dll'
@@ -254,12 +255,14 @@ try {
       "Packaged UTC: $([DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
       "Architecture: Windows x64 portable baseline"
       "Prebuilt executable: hashcat.exe"
+      "Companion executable: shooterctl.exe"
       "Module DLLs: $BuiltModuleCount"
       "Bridge DLLs: $BuiltBridgeCount"
       "Feed DLLs: $BuiltFeedCount"
       ''
       'Run the prebuilt program from this directory:'
       '  .\hashcat.exe --version'
+      '  .\shooterctl.exe doctor'
       ''
       'If an error occurs:'
       '  Find the path printed after "Error report saved to:".'
@@ -279,6 +282,16 @@ try {
 
     $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [IO.File]::WriteAllLines((Join-Path $PackageRoot 'BUILD-INFO.txt'), $BuildInfo, $Utf8NoBom)
+
+    $SbomName = "$PackageName.spdx.json"
+    $SbomPath = Join-Path $PackageRoot $SbomName
+    & (Join-Path $PackageRoot 'tools\generate-sbom.ps1') `
+      -Root $PackageRoot `
+      -OutputPath $SbomPath `
+      -Version $Version `
+      -Commit $Commit
+
+    Copy-Item -LiteralPath $SbomPath -Destination (Join-Path $OutputRoot $SbomName) -Force
 
     $ManifestPath = Join-Path $PackageRoot 'SHA256SUMS'
     $ManifestLines = New-Object System.Collections.Generic.List[string]
@@ -314,6 +327,7 @@ try {
     Write-Host "Version: $Version"
     Write-Host "Source commit: $Commit"
     Write-Host "SHA-256: $ArchiveHash"
+    Write-Host "SBOM: $(Join-Path $OutputRoot $SbomName)"
   }
   finally {
     $ResolvedStagingRoot = [IO.Path]::GetFullPath($StagingRoot)

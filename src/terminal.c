@@ -18,7 +18,14 @@
 #include "hashcat.h"
 #include "timer.h"
 #include "outfile_check.h"
+#include "backend.h"
 #include "terminal.h"
+
+#if defined (_WIN)
+#include <psapi.h>
+#else
+#include <sys/resource.h>
+#endif
 
 static const size_t MAXIMUM_EXAMPLE_HASH_LENGTH = 200;
 
@@ -161,6 +168,36 @@ void welcome_screen (hashcat_ctx_t *hashcat_ctx, const char *version_tag)
 void goodbye_screen (hashcat_ctx_t *hashcat_ctx, const time_t proc_start, const time_t proc_stop)
 {
   const user_options_t *user_options = hashcat_ctx->user_options;
+
+  u64 peak_memory_bytes = 0;
+
+  #if defined (_WIN)
+  PROCESS_MEMORY_COUNTERS_EX counters;
+
+  memset (&counters, 0, sizeof (counters));
+
+  counters.cb = sizeof (counters);
+
+  if (GetProcessMemoryInfo (GetCurrentProcess (), (PROCESS_MEMORY_COUNTERS *) &counters, sizeof (counters)) != 0)
+  {
+    peak_memory_bytes = (u64) counters.PeakWorkingSetSize;
+  }
+  #else
+  struct rusage usage;
+
+  memset (&usage, 0, sizeof (usage));
+
+  if (getrusage (RUSAGE_SELF, &usage) == 0)
+  {
+    #if defined (__APPLE__)
+    peak_memory_bytes = (u64) usage.ru_maxrss;
+    #else
+    peak_memory_bytes = (u64) usage.ru_maxrss * 1024;
+    #endif
+  }
+  #endif
+
+  pipe_profile_report (hashcat_ctx, peak_memory_bytes);
 
   if (user_options->quiet       == true) return;
   if (user_options->keyspace    == true) return;

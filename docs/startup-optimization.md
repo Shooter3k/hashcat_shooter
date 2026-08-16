@@ -251,6 +251,46 @@ change. Separate mixed cracked/uncracked fixtures produced byte-identical
 `--show` and `--left` files for unsalted MD5 and salted mode 10. Actual
 outfile time also depends on storage speed and the amount of selected output.
 
+## Existing outfile results before cracking allocation
+
+`--outfile-check-dir` now performs one immediate reconciliation pass after
+the target hashes have been parsed and sorted but before Hashcat creates
+bitmap tables or initializes the attack backend. Existing third-party output
+therefore behaves like existing potfile entries: matching targets are removed
+from the work that remains, and an all-found job exits before allocating the
+large attack-specific GPU buffers and host candidate-staging buffers.
+
+If only part of the target list is present, Shooter reports how many hashes
+were removed and starts the attack for the remainder. The preflight preserves
+its per-file offsets for the normal live watcher, avoiding an immediate second
+full pass over unchanged result files. Appended or replaced result files are
+still detected during the run using the normal `--outfile-check-timer`
+interval.
+
+No new option is required:
+
+```powershell
+.\hashcat.exe -m 0 hashes.txt words.txt `
+  --outfile-check-dir C:\results-from-other-workers `
+  --outfile-check-timer 30
+```
+
+Set `--outfile-check-timer=0` when neither the startup comparison nor live
+monitoring is wanted. Hash modes whose modules intentionally disable outfile
+checking remain excluded.
+
+Use a dedicated directory containing only trusted recovery output. The
+outfile-check format intentionally permits either `hash:plaintext` records or
+bare hash records, and every applicable file in the directory is scanned. Do
+not put the target hash file, unrelated hash lists, or untrusted files in that
+directory, because a matching bare hash is treated as an existing recovery.
+
+The initial bridge, backend-runtime, and device-enumeration messages still
+appear. That lightweight phase also precedes Hashcat's potfile all-found exit
+in the current architecture. The optimization prevents the later bitmap,
+kernel, autotune, GPU attack-buffer, and host staging allocation, which is the
+large startup and memory cost.
+
 The original v7.1.2-shooter.20260811.4 CUDA-only probe measurement is retained
 below for reference.
 

@@ -1,0 +1,12 @@
+[package]
+name = "shooterctl"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Operations, diagnostics, indexing, and scheduling companion for Shooter Hashcat"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"

@@ -204,6 +204,8 @@ static const struct option long_options[] =
   {"status",                    no_argument,       NULL, IDX_STATUS},
   {"status-json",               no_argument,       NULL, IDX_STATUS_JSON},
   {"status-restore-sub",        no_argument,       NULL, IDX_STATUS_RESTORE_SUB},
+  {"stage-profile",             no_argument,       NULL, IDX_STAGE_PROFILE},
+  {"stage-profile-json",        no_argument,       NULL, IDX_STAGE_PROFILE_JSON},
   {"status-timer",              required_argument, NULL, IDX_STATUS_TIMER},
   {"stdout",                    no_argument,       NULL, IDX_STDOUT_FLAG},
   {"stdin-timeout-abort",       required_argument, NULL, IDX_STDIN_TIMEOUT_ABORT},
@@ -375,6 +377,8 @@ int user_options_init (hashcat_ctx_t *hashcat_ctx)
   user_options->status                    = STATUS;
   user_options->status_json               = STATUS_JSON;
   user_options->status_restore_sub        = STATUS_RESTORE_SUB;
+  user_options->stage_profile             = STAGE_PROFILE;
+  user_options->stage_profile_json        = STAGE_PROFILE_JSON;
   user_options->status_timer              = STATUS_TIMER;
   user_options->stdin_timeout_abort       = STDIN_TIMEOUT_ABORT;
   user_options->stdout_flag               = STDOUT_FLAG;
@@ -571,6 +575,8 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
       case IDX_STATUS:                    user_options->status                    = true;                            break;
       case IDX_STATUS_JSON:               user_options->status_json               = true;                            break;
       case IDX_STATUS_RESTORE_SUB:        user_options->status_restore_sub        = true;                            break;
+      case IDX_STAGE_PROFILE:             user_options->stage_profile             = true;                            break;
+      case IDX_STAGE_PROFILE_JSON:        user_options->stage_profile_json        = true;                            break;
       case IDX_STATUS_TIMER:              user_options->status_timer              = hc_strtoul (optarg, NULL, 10);   break;
       case IDX_MACHINE_READABLE:          user_options->machine_readable          = true;                            break;
       case IDX_LOOPBACK:                  user_options->loopback                  = true;                            break;
@@ -719,6 +725,11 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
   {
     user_options->restore_enable = false;
   }
+
+  // JSON is the deterministic winner if both reporting forms were requested,
+  // regardless of their order on the command line.
+
+  pipe_profile_configure (user_options->stage_profile || user_options->stage_profile_json, user_options->stage_profile_json);
 
   user_options->hc_bin = argv[0];
 
@@ -4508,6 +4519,8 @@ void user_options_logger (hashcat_ctx_t *hashcat_ctx)
   logfile_top_uint   (user_options->status);
   logfile_top_uint   (user_options->status_json);
   logfile_top_uint   (user_options->status_restore_sub);
+  logfile_top_uint   (user_options->stage_profile);
+  logfile_top_uint   (user_options->stage_profile_json);
   logfile_top_uint   (user_options->status_timer);
   logfile_top_uint   (user_options->stdout_flag);
   logfile_top_uint   (user_options->usage);

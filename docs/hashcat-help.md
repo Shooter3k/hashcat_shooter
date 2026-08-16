@@ -22,6 +22,8 @@ Usage: hashcat [options]... hash|hashfile|hccapxfile [dictionary|mask|directory]
      --status                   |      | Enable automatic update of the status screen         |
      --status-json              |      | Enable JSON format for status output                 |
      --status-restore-sub       |      | Show per-device Restore.Sub details in status        |
+     --stage-profile            |      | Show final pipeline stage time and peak memory       |
+     --stage-profile-json       |      | Show final stage profile as one JSON object          |
      --status-timer             | Num  | Sets seconds between status screen updates to X      | --status-timer=1
      --stdin-timeout-abort      | Num  | Abort if there is no input from stdin for X seconds  | --stdin-timeout-abort=300
      --machine-readable         |      | Display the status view in a machine-readable format |
@@ -60,7 +62,7 @@ Usage: hashcat [options]... hash|hashfile|hccapxfile [dictionary|mask|directory]
      --debug-mode               | Num  | Defines the debug mode, requires -r or -g            | --debug-mode=4
      --debug-file               | File | Output file for debugging rules                      | --debug-file=good.log
      --induction-dir            | Dir  | Specify the induction directory to use for loopback  | --induction=inducts
-     --outfile-check-dir        | Dir  | Specify the directory to monitor 3rd party outfiles  | --outfile-check-dir=x
+     --outfile-check-dir        | Dir  | Apply existing and monitor third-party outfiles     | --outfile-check-dir=x
      --logfile-disable          |      | Disable the logfile                                  |
      --hccapx-message-pair      | Num  | Load only message pairs from hccapx matching X       | --hccapx-message-pair=2
      --nonce-error-corrections  | Num  | The BF size range to replace AP's nonce last bytes   | --nonce-error-corrections=16
@@ -133,8 +135,8 @@ Usage: hashcat [options]... hash|hashfile|hccapxfile [dictionary|mask|directory]
      --increment-min            | Num  | Start mask incrementing at X                         | --increment-min=4
      --increment-max            | Num  | Stop mask incrementing at X                          | --increment-max=8
  -S, --slow-candidates          |      | Enable slower (but advanced) candidate generators    |
-     --bypass-delay             | Num  | Seconds delay between checking bypass threshold      | --bypass-delay=5
-     --bypass-threshold         | Num  | Minimum amount of founds to avoid being bypassed     | --bypass-threshold=5
+     --bypass-delay             | Num  | Seconds between minimum-crack checks                  | --bypass-delay=300
+     --bypass-threshold         | Num  | Minimum new cracks required in each delay window      | --bypass-threshold=10
      --brain-server             |      | Enable brain server                                  |
      --brain-server-timer       | Num  | Update the brain server dump each X seconds (min:60) | --brain-server-timer=300
  -z, --brain-client             |      | Enable brain client, activates -S                    |

@@ -650,6 +650,24 @@ static void main_potfile_remove_parse_post (MAYBE_UNUSED hashcat_ctx_t *hashcat_
   event_log_info_nn (hashcat_ctx, "Compared hashes with potfile entries");
 }
 
+static void main_outfile_check_parse_pre (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
+{
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  if (user_options->quiet == true) return;
+
+  event_log_info_nn (hashcat_ctx, "Comparing hashes with outfile-check entries. Please be patient...");
+}
+
+static void main_outfile_check_parse_post (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
+{
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  if (user_options->quiet == true) return;
+
+  event_log_info_nn (hashcat_ctx, "Compared hashes with outfile-check entries");
+}
+
 static void main_rulesfiles_parse_pre (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
   const user_options_t *user_options = hashcat_ctx->user_options;
@@ -691,6 +709,7 @@ static void main_potfile_num_cracked (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, M
 {
   const user_options_t *user_options = hashcat_ctx->user_options;
   hashes_t             *hashes       = hashcat_ctx->hashes;
+  outcheck_ctx_t       *outcheck_ctx = hashcat_ctx->outcheck_ctx;
 
   if (user_options->quiet == true) return;
 
@@ -715,16 +734,36 @@ static void main_potfile_num_cracked (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, M
     event_log_info (hashcat_ctx, "INFO: Removed %d hashes found as potfile entries.", hashes->digests_done_pot);
     event_log_info (hashcat_ctx, NULL);
   }
+
+  if (outcheck_ctx->digests_done == 1)
+  {
+    event_log_info (hashcat_ctx, "INFO: Removed hash found in outfile-check entries.");
+    event_log_info (hashcat_ctx, NULL);
+  }
+  else if (outcheck_ctx->digests_done > 1)
+  {
+    event_log_info (hashcat_ctx, "INFO: Removed %u hashes found in outfile-check entries.", outcheck_ctx->digests_done);
+    event_log_info (hashcat_ctx, NULL);
+  }
 }
 
 static void main_potfile_all_cracked (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYBE_UNUSED const void *buf, MAYBE_UNUSED const size_t len)
 {
   const user_options_t *user_options = hashcat_ctx->user_options;
+  const outcheck_ctx_t *outcheck_ctx = hashcat_ctx->outcheck_ctx;
 
   if (user_options->quiet == true) return;
 
-  event_log_info (hashcat_ctx, "INFO: All hashes found as potfile and/or empty entries! Use --show to display them.");
-  event_log_info (hashcat_ctx, "      For more information, see https://hashcat.net/faq/potfile");
+  if (outcheck_ctx->digests_done > 0)
+  {
+    event_log_info (hashcat_ctx, "INFO: All hashes already found in potfile, outfile-check, and/or empty entries.");
+    event_log_info (hashcat_ctx, "      No cracking backend allocation is needed.");
+  }
+  else
+  {
+    event_log_info (hashcat_ctx, "INFO: All hashes found as potfile and/or empty entries! Use --show to display them.");
+    event_log_info (hashcat_ctx, "      For more information, see https://hashcat.net/faq/potfile");
+  }
   event_log_info (hashcat_ctx, NULL);
 }
 
@@ -1592,6 +1631,8 @@ static void event (const u32 id, hashcat_ctx_t *hashcat_ctx, const void *buf, co
     case EVENT_OUTERLOOP_FINISHED:        main_outerloop_finished        (hashcat_ctx, buf, len); break;
     case EVENT_OUTERLOOP_MAINSCREEN:      main_outerloop_mainscreen      (hashcat_ctx, buf, len); break;
     case EVENT_OUTERLOOP_STARTING:        main_outerloop_starting        (hashcat_ctx, buf, len); break;
+    case EVENT_OUTFILE_CHECK_PARSE_POST:  main_outfile_check_parse_post  (hashcat_ctx, buf, len); break;
+    case EVENT_OUTFILE_CHECK_PARSE_PRE:   main_outfile_check_parse_pre   (hashcat_ctx, buf, len); break;
     case EVENT_POTFILE_ALL_CRACKED:       main_potfile_all_cracked       (hashcat_ctx, buf, len); break;
     case EVENT_POTFILE_HASH_LEFT:         main_potfile_hash_left         (hashcat_ctx, buf, len); break;
     case EVENT_POTFILE_HASH_SHOW:         main_potfile_hash_show         (hashcat_ctx, buf, len); break;

@@ -10,6 +10,12 @@ import json
 import os
 import re
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+REPOSITORY_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+
 # Replace LUKS v1 hashes, they're too big: Github no longer shows the .md "(Sorry about that, but we can’t show files that are this big right now.)"
 EXAMPLE_HASH_REPLACEMENTS = {
     "14600": "https://hashcat.net/misc/example_hashes/hashcat_luks_testfiles.7z",
@@ -30,9 +36,9 @@ EXAMPLE_HASH_REPLACEMENTS = {
 # Retained private modes are intentionally omitted from the published index.
 EXCLUDED_PUBLIC_MODES = {"29960", "29970", "29990", "e1001"}
 
-OPENCL_DIR = "../../OpenCL"
-MODULES_DIR = "../../src/modules"
-TESTS_DIR = "../../tools/test_modules"
+OPENCL_DIR = os.path.join(REPOSITORY_ROOT, "OpenCL")
+MODULES_DIR = os.path.join(REPOSITORY_ROOT, "src", "modules")
+TESTS_DIR = os.path.join(REPOSITORY_ROOT, "tools", "test_modules")
 
 OPENCL_ABBREV = {
     "_a0-pure": "a0p",
@@ -68,7 +74,7 @@ def find_opencl(zfilled_key, visited=None):
             if zfilled_key in filename:
                 for key, abbr in OPENCL_ABBREV.items():
                     if key in filename:
-                        link = f"[{abbr}](/{OPENCL_DIR}/{filename})"
+                        link = f"[{abbr}](/OpenCL/{filename})"
                         kernels.append(link)
                         break
     if kernels:
@@ -145,7 +151,7 @@ def find_test(zfilled_key):
     if os.path.isdir(TESTS_DIR):
         for filename in sorted(os.listdir(TESTS_DIR)):
             if zfilled_key in filename:
-                return f"[:white_check_mark:](/{TESTS_DIR}/{filename})"
+                return f"[:white_check_mark:](/tools/test_modules/{filename})"
 
     #test not found
     return ":x:"
@@ -200,10 +206,6 @@ def main():
         zfilled_key = key.zfill(5)
         opencl_links = find_opencl(zfilled_key)
         test_link = find_test(zfilled_key)
-
-        # Make sure we refer to root for display
-        opencl_links = opencl_links.replace('/../../', '/')
-        test_link = test_link.replace('/../../', '/')
 
         name = md_remove_backticks_and_pipes(name)
         example_hash = md_remove_backticks_and_pipes(example_hash)

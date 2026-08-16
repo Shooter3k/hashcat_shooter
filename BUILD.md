@@ -36,10 +36,13 @@ cd shooter_hashcat
 make -j"$(nproc)" ENABLE_LTO=0 CC=clang CXX=clang++
 ```
 
-The executable is `hashcat` in the repository root. Confirm it starts:
+The main executable is `hashcat` and the operations companion is `shooterctl`
+in the repository root. Confirm both start:
 
 ```bash
 ./hashcat --version
+./shooterctl --version
+./shooterctl doctor
 ```
 
 Warnings about deprecated OpenSSL functions do not make the build fail. If
@@ -83,7 +86,11 @@ Shooter currently validates native Linux and Windows targets in CI. macOS and
 BSD are not currently claimed as supported targets for Shooter's additional
 bridges and feeds.
 
-## Reporting runtime errors
+## Support diagnostics
+
+`shooterctl support-bundle support-check` creates a manually requested,
+privacy-limited installation report. This complements the automatic error log
+described below. See [docs/shooterctl.md](docs/shooterctl.md).
 
 ## Shared core and package check
 

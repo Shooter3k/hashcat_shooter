@@ -33,6 +33,7 @@ env:
     tunings/
     example*
     hashcat*
+    shooterctl*
     libhashcat*
     !**/*.debug
 
@@ -45,6 +46,7 @@ on:
     paths:
       - 'OpenCL/**.h'
       - 'OpenCL/**.cl'
+      - 'Rust/**'
       - 'include/**.h'
       - 'src/**.c'
       - 'src/**.h'
@@ -53,12 +55,14 @@ on:
       - '**/Makefile'
       - '.github/workflows/build.yml'
       - '.github/workflows/generate_docs.sh'
+      - '.github/workflows/hashcat-example-hashes_machine-readable2md.py'
   pull_request:
     branches:
       - master
     paths:
       - 'OpenCL/**.h'
       - 'OpenCL/**.cl'
+      - 'Rust/**'
       - 'include/**.h'
       - 'src/**.c'
       - 'src/**.h'
@@ -67,6 +71,7 @@ on:
       - '**/Makefile'
       - '.github/workflows/build.yml'
       - '.github/workflows/generate_docs.sh'
+      - '.github/workflows/hashcat-example-hashes_machine-readable2md.py'
 
 jobs:
   build:
@@ -146,11 +151,13 @@ jobs:
           PATH: /mingw64/bin:$PATH
         run: |
           bash ./tools/test-error-report.sh ./hashcat.exe
+          ./shooterctl.exe --version
 
       - name: Verify automatic error reports (Linux)
         if: matrix.os_name_lowercase == 'linux' && matrix.shared == 0
         run: |
           bash ./tools/test-error-report.sh ./hashcat
+          ./shooterctl --version
 
       - name: Generate documentation
         if: matrix.os_name_lowercase == 'linux' && matrix.shared == 0

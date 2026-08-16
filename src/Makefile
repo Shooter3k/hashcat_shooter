@@ -29,7 +29,7 @@
 DEBUG                   := 0
 PRODUCTION              := 0
 SHOOTER_BUILD_DATE      ?= 20260815
-SHOOTER_BUILD_REVISION  ?= 40
+SHOOTER_BUILD_REVISION  ?= 41
 PRODUCTION_VERSION      := v7.1.2-shooter.$(SHOOTER_BUILD_DATE).$(SHOOTER_BUILD_REVISION)
 MACOS_UNIVERSAL_BINARY  ?= 0
 ENABLE_LTO              ?= 0
@@ -618,7 +618,7 @@ CFLAGS                  += -DDEBUG -Og -ggdb
 else
 CFLAGS                  += -DDEBUG -O0 -ggdb
 endif
-CFLAGS                  += -fsanitize=address -fno-omit-frame-pointer
+CFLAGS                  += -fsanitize=address,undefined -fno-omit-frame-pointer
 endif
 endif
 endif
@@ -1435,6 +1435,8 @@ $(FEEDS_DISABLE): ;
 TOOLS                   += $(wildcard tools/*hashcat.pl)
 TOOLS                   += $(wildcard tools/*hashcat.py)
 
+FUZZ_PARSER_BIN         := tools/fuzz/parser_fuzzer
+
 ##
 ## What a plugin that needs more than its own source says about itself
 ##
@@ -1793,17 +1795,53 @@ endef
 $(foreach P,$(PLUGIN_PLATFORMS),$(foreach B,$(BRIDGES_ALL), \
   $(if $(BRIDGE_SKIP_$(B)_$(P)),,$(eval $(call BRIDGE_RULES,$(P),$(B))))))
 
+.PHONY: fuzz-parser fuzz-parser-run
+
+fuzz-parser: $(FUZZ_PARSER_BIN)
+
+$(FUZZ_PARSER_BIN): tools/fuzz/parser_fuzzer.c obj/combined.NATIVE.a
+	$(CC) $(CCFLAGS) $(CFLAGS_NATIVE) -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer $< obj/combined.NATIVE.a -o $@ $(filter-out -s,$(LFLAGS_NATIVE))
+
+fuzz-parser-run: fuzz-parser
+	$(FUZZ_PARSER_BIN) -max_total_time=60 -timeout=5 tools/fuzz/corpus/parser
+
 ##
 ## Targets: native compilation
 ##
 
+ifeq ($(UNAME),MSYS2)
+SHOOTERCTL_BIN          := shooterctl.exe
+SHOOTERCTL_BUILT        := Rust/shooterctl/target/x86_64-pc-windows-gnu/$(RUST_BUILD_MODE)/shooterctl.exe
+SHOOTERCTL_TARGET_ARG   := --target x86_64-pc-windows-gnu
+SHOOTERCTL_RUSTFLAGS    := $(RUSTFLAGS_DLL)
+else
+SHOOTERCTL_BIN          := shooterctl
+SHOOTERCTL_BUILT        := Rust/shooterctl/target/$(RUST_BUILD_MODE)/shooterctl
+SHOOTERCTL_TARGET_ARG   :=
+SHOOTERCTL_RUSTFLAGS    := $(RUSTFLAGS_SO)
+endif
+
+.PHONY: shooterctl
+shooterctl: $(SHOOTERCTL_BIN)
+
+ifeq ($(CARGO_PRESENT),true)
+$(SHOOTERCTL_BIN): Rust/shooterctl/Cargo.toml Rust/shooterctl/src/main.rs FORCE
+	MAKEFLAGS= RUSTFLAGS="$(SHOOTERCTL_RUSTFLAGS)" $(RUST_CARGO) build --quiet $(RUST_MODE_FLAG) --manifest-path Rust/shooterctl/Cargo.toml $(SHOOTERCTL_TARGET_ARG)
+	@cmp -s $(SHOOTERCTL_BUILT) $@ 2>/dev/null || cp $(SHOOTERCTL_BUILT) $@
+else
+$(SHOOTERCTL_BIN):
+	@echo "ERROR: shooterctl requires a Rust toolchain. See BUILD.md."
+	@false
+endif
+
 .PHONY: default
-default: $(HASHCAT_FRONTEND) modules bridges feeds
+default: $(HASHCAT_FRONTEND) modules bridges feeds shooterctl
 
 .PHONY: clean
 clean:
 	$(RM) -f $(HASHCAT_FRONTEND)
 	$(RM) -f $(HASHCAT_LIBRARY)
+	$(RM) -f shooterctl shooterctl.exe
 	$(RM) -f libhashcat.so.*
 	$(RM) -f hashcat.dll
 	$(RM) -rf modules/*.dSYM
@@ -1839,6 +1877,7 @@ clean:
 	$(RM) -f *.su
 	$(RM) -rf Rust/bridges/*/target
 	$(RM) -rf Rust/feeds/*/target
+	$(RM) -rf Rust/shooterctl/target
 	$(RM) -rf Rust/hashcat-sys/src/bindings.rs
 
 .PHONY: distclean

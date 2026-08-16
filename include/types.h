@@ -176,6 +176,8 @@ typedef enum event_identifier
   EVENT_POTFILE_NUM_CRACKED       = 0x000000c3,
   EVENT_POTFILE_REMOVE_PARSE_POST = 0x000000c4,
   EVENT_POTFILE_REMOVE_PARSE_PRE  = 0x000000c5,
+  EVENT_OUTFILE_CHECK_PARSE_POST  = 0x000000c6,
+  EVENT_OUTFILE_CHECK_PARSE_PRE   = 0x000000c7,
   EVENT_RULESFILES_PARSE_POST     = 0x000000d4,
   EVENT_RULESFILES_PARSE_PRE      = 0x000000d5,
   EVENT_SELFTEST_FINISHED         = 0x000000e0,
@@ -887,6 +889,8 @@ typedef enum user_options_defaults
   STATUS                   = false,
   STATUS_JSON              = false,
   STATUS_RESTORE_SUB       = false,
+  STAGE_PROFILE            = false,
+  STAGE_PROFILE_JSON       = false,
   STATUS_TIMER             = 10,
   STDIN_TIMEOUT_ABORT      = 120,
   STDOUT_FLAG              = false,
@@ -1030,6 +1034,8 @@ typedef enum user_options_map
   IDX_STATUS                    = 0xff4a,
   IDX_STATUS_JSON               = 0xff4b,
   IDX_STATUS_RESTORE_SUB        = 0xff63,
+  IDX_STAGE_PROFILE             = 0xff64,
+  IDX_STAGE_PROFILE_JSON        = 0xff65,
   IDX_STATUS_TIMER              = 0xff4c,
   IDX_STDOUT_FLAG               = 0xff4d,
   IDX_STDIN_TIMEOUT_ABORT       = 0xff4e,
@@ -2724,6 +2730,8 @@ typedef struct user_options
   bool         status;
   bool         status_json;
   bool         status_restore_sub;
+  bool         stage_profile;
+  bool         stage_profile_json;
   bool         stdout_flag;
   bool         stdin_timeout_abort_chgd;
   bool         username;
@@ -2949,6 +2957,11 @@ typedef struct outcheck_ctx
   u32 digests_done;
 
   char *root_directory;
+
+  char           **out_files;
+  outfile_data_t  *out_info;
+  int              out_cnt;
+  time_t           folder_mtime;
 
   hc_thread_mutex_t mux_ignore;
 

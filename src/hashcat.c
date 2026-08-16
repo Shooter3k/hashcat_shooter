@@ -1031,6 +1031,17 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
   }
 
   /**
+   * Reconcile existing third-party outfile results before allocating the
+   * cracking backend. The same scan positions are reused by the runtime
+   * watcher, so a partial match does not immediately reread every file.
+   */
+
+  if (status_ctx->devices_status != STATUS_CRACKED)
+  {
+    if (outfile_check_preflight (hashcat_ctx) == -1) return -1;
+  }
+
+  /**
    * maybe all hashes were cracked, we can exit here
    */
 

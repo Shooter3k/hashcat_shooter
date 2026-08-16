@@ -20,6 +20,8 @@ HC_API_CALL void *thread_outfile_remove (void *p);
 int  outcheck_ctx_init    (hashcat_ctx_t *hashcat_ctx);
 void outcheck_ctx_destroy (hashcat_ctx_t *hashcat_ctx);
 
+int  outfile_check_preflight (hashcat_ctx_t *hashcat_ctx);
+
 bool outfile_check_ignore           (hashcat_ctx_t *hashcat_ctx);
 bool outfile_check_ignore_available (hashcat_ctx_t *hashcat_ctx);
 

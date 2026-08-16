@@ -1324,18 +1324,48 @@ int copy_pws_comp (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, 
 // files, so the split can only be seen by accumulating them in one place. The numbers are read as
 // proportions of a whole launch, which is why they are summed rather than sampled.
 //
-// Diagnostic only: the buckets are shared by every device thread without a lock, so a run with more
-// than one unit adds their times together instead of separating them.
+// The buckets intentionally combine all selected device threads. A small process-wide lock keeps
+// that aggregate exact and avoids data races while profiling is enabled.
 
 static double g_pipe_msec[PIPE_SLOTS];
 static u64    g_pipe_launches;
 static u64    g_pipe_cands;
+static bool   g_pipe_cli_enabled;
+static bool   g_pipe_json;
+
+#if defined (_WIN)
+static SRWLOCK g_pipe_mux = SRWLOCK_INIT;
+#define PIPE_PROFILE_LOCK()   AcquireSRWLockExclusive (&g_pipe_mux)
+#define PIPE_PROFILE_UNLOCK() ReleaseSRWLockExclusive (&g_pipe_mux)
+#else
+static pthread_mutex_t g_pipe_mux = PTHREAD_MUTEX_INITIALIZER;
+#define PIPE_PROFILE_LOCK()   pthread_mutex_lock (&g_pipe_mux)
+#define PIPE_PROFILE_UNLOCK() pthread_mutex_unlock (&g_pipe_mux)
+#endif
+
+static bool pipe_env_enabled (void)
+{
+  return (getenv ("HASHCAT_PIPE") != NULL);
+}
 
 static bool pipe_enabled (void)
 {
-  static int cache = -1;
+  return g_pipe_cli_enabled || pipe_env_enabled ();
+}
 
-  return hc_env_flag ("HASHCAT_PIPE", &cache);
+void pipe_profile_configure (const bool enabled, const bool json)
+{
+  PIPE_PROFILE_LOCK ();
+
+  g_pipe_cli_enabled = enabled;
+  g_pipe_json        = json;
+
+  memset (g_pipe_msec, 0, sizeof (g_pipe_msec));
+
+  g_pipe_launches = 0;
+  g_pipe_cands    = 0;
+
+  PIPE_PROFILE_UNLOCK ();
 }
 
 // How many launches between reports. HASHCAT_PIPE=1 keeps the fifty it always used, and any larger
@@ -1377,7 +1407,13 @@ void pipe_acc (const pipe_slot_t slot, hc_timer_t *timer)
 {
   if (pipe_enabled () == false) return;
 
-  g_pipe_msec[slot] += hc_timer_get (*timer);
+  const double msec = hc_timer_get (*timer);
+
+  PIPE_PROFILE_LOCK ();
+
+  g_pipe_msec[slot] += msec;
+
+  PIPE_PROFILE_UNLOCK ();
 
   hc_timer_set (timer);
 }
@@ -1386,10 +1422,27 @@ void pipe_launch_done (const u64 cands)
 {
   if (pipe_enabled () == false) return;
 
+  PIPE_PROFILE_LOCK ();
+
   g_pipe_launches++;
   g_pipe_cands += cands;
 
-  if ((g_pipe_launches % pipe_every ()) != 0) return;
+  // The legacy environment diagnostic remains periodic. The command-line profiles are concise
+  // final reports, which makes them suitable for support bundles and scripted JSON collection.
+
+  if (pipe_env_enabled () == false)
+  {
+    PIPE_PROFILE_UNLOCK ();
+
+    return;
+  }
+
+  if ((g_pipe_launches % pipe_every ()) != 0)
+  {
+    PIPE_PROFILE_UNLOCK ();
+
+    return;
+  }
 
   static const char *names[PIPE_SLOTS] = { "feed", "copy", "init", "xfer", "launch", "comp" };
 
@@ -1400,7 +1453,12 @@ void pipe_launch_done (const u64 cands)
 
   for (int i = PIPE_COPY; i < PIPE_SLOTS; i++) total += g_pipe_msec[i];
 
-  if (total <= 0.0) return;
+  if (total <= 0.0)
+  {
+    PIPE_PROFILE_UNLOCK ();
+
+    return;
+  }
 
   fprintf (stderr, "[host] %" PRIu64 " launches, %.0f ms total", g_pipe_launches, total);
 
@@ -1410,7 +1468,65 @@ void pipe_launch_done (const u64 cands)
   }
 
   fprintf (stderr, ", effective %.0f H/s\n", (double) g_pipe_cands / (total / 1000.0));
+
+  PIPE_PROFILE_UNLOCK ();
 }
+
+void pipe_profile_report (hashcat_ctx_t *hashcat_ctx, const u64 peak_memory_bytes)
+{
+  if (g_pipe_cli_enabled == false) return;
+
+  static const char *names[PIPE_SLOTS] = { "feed", "copy", "init", "xfer", "launch", "comp" };
+
+  double pipe_msec[PIPE_SLOTS];
+  u64 pipe_launches;
+  u64 pipe_cands;
+  bool pipe_json;
+
+  PIPE_PROFILE_LOCK ();
+
+  memcpy (pipe_msec, g_pipe_msec, sizeof (pipe_msec));
+
+  pipe_launches = g_pipe_launches;
+  pipe_cands    = g_pipe_cands;
+  pipe_json     = g_pipe_json;
+
+  PIPE_PROFILE_UNLOCK ();
+
+  double total = 0;
+
+  for (int i = PIPE_COPY; i < PIPE_SLOTS; i++) total += pipe_msec[i];
+
+  if (pipe_json == true)
+  {
+    printf ("{\"schema\":\"shooter-stage-profile-v1\",\"launches\":%" PRIu64 ",\"candidates\":%" PRIu64 ",\"measured_pipeline_ms\":%.3f,\"peak_memory_bytes\":%" PRIu64 ",\"stages_ms\":{", pipe_launches, pipe_cands, total, peak_memory_bytes);
+
+    for (int i = 0; i < PIPE_SLOTS; i++)
+    {
+      printf ("%s\"%s\":%.3f", (i == 0) ? "" : ",", names[i], pipe_msec[i]);
+    }
+
+    printf ("}}\n");
+
+    return;
+  }
+
+  event_log_info (hashcat_ctx, "Stage Profile:");
+
+  for (int i = 0; i < PIPE_SLOTS; i++)
+  {
+    const double share = (total > 0.0) ? (100.0 * pipe_msec[i] / total) : 0.0;
+
+    event_log_info (hashcat_ctx, "  %-8s %12.3f ms  %6.2f%%", names[i], pipe_msec[i], share);
+  }
+
+  event_log_info (hashcat_ctx, "  measured %12.3f ms across %" PRIu64 " launches", total, pipe_launches);
+  event_log_info (hashcat_ctx, "  peak RAM %12.2f MiB", (double) peak_memory_bytes / (1024.0 * 1024.0));
+  event_log_info (hashcat_ctx, NULL);
+}
+
+#undef PIPE_PROFILE_LOCK
+#undef PIPE_PROFILE_UNLOCK
 
 int choose_kernel (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, const u32 highest_pw_len, const u64 pws_pos, const u64 pws_cnt, const u32 fast_iteration, const u32 salt_pos, const bool is_autotune)
 {

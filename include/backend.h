@@ -81,6 +81,8 @@ typedef enum pipe_slot
 void pipe_mark                              (hc_timer_t *timer);
 void pipe_acc                               (const pipe_slot_t slot, hc_timer_t *timer);
 void pipe_launch_done                       (const u64 cands);
+void pipe_profile_configure                 (const bool enabled, const bool json);
+void pipe_profile_report                    (hashcat_ctx_t *hashcat_ctx, const u64 peak_memory_bytes);
 
 int gidd_to_pw_t                            (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, const u64 gidd, pw_t *pw);
 

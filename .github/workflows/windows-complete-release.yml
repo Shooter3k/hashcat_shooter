@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
 
 jobs:
   package:
@@ -31,6 +34,17 @@ jobs:
           name: shooter_hashcat-windows-x64-complete
           path: dist/*.7z
           if-no-files-found: error
+
+      - name: Attest release provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/*.7z
+
+      - name: Attest release SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/*.7z
+          sbom-path: dist/*.spdx.json
 
       - name: Publish the tagged release
         if: startsWith(github.ref, 'refs/tags/')
@@ -64,11 +78,13 @@ jobs:
 
           Complete Windows x64 source and prebuilt distribution.
 
-          The single `.7z` asset contains the complete tagged source, `hashcat.exe`, every module/bridge/feed DLL, required MinGW runtime DLLs, build scripts, build metadata, and an internal `SHA256SUMS` manifest.
+          The single `.7z` asset contains the complete tagged source, `hashcat.exe`, `shooterctl.exe`, every module/bridge/feed DLL, required MinGW runtime DLLs, build scripts, build metadata, an SPDX SBOM, and an internal `SHA256SUMS` manifest.
 
           Run the included binary immediately with `.\hashcat.exe`. To rebuild from the included source, run `.\build-windows.ps1 -Action Rebuild`.
 
           Archive SHA-256: `__ARCHIVE_SHA256__`
+
+          Verify the signed GitHub provenance and SBOM attestations with `gh attestation verify <archive.7z> --repo Shooter3k/shooter_hashcat`.
 
           See the tagged `CHANGELOG.md` for implementation and verification details.
           '@

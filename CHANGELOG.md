@@ -2,12 +2,97 @@
 
 ## Unreleased
 
+## v7.1.2-shooter.20260815.41
+
+The twelve-part reliability, observability, large-input, automation, fleet,
+and release-security upgrade.
+
+### Added
+
+- The included, dependency-free `shooterctl` companion provides installation
+  checks, privacy-limited support bundles, target manifests, rule reports,
+  persistent line indexes, streaming, direct pipelines, multi-GPU fleet
+  scheduling, and local hash-mode discovery.
+- `shooterctl doctor` (also accepted as `shooterctl --doctor`) checks the
+  executable, runtime directories, backend probe, and optional zstd support.
+  `support-bundle` records those results without collecting hashes,
+  candidates, potfiles, environment values, or command lines.
+- `--stage-profile` and `--stage-profile-json` report pipeline-stage time,
+  launch counts, and process peak memory in human-readable or stable
+  `shooter-stage-profile-v1` JSON form.
+- `--bypass-delay` and `--bypass-threshold` can automatically leave the
+  current dictionary or mask when it produces fewer than the requested number
+  of new cracks during a time window. The paired options use the current
+  Hashcat new-digest counter and do not count paused time against the window.
+- Existing records in `--outfile-check-dir` are now applied before bitmap
+  creation, candidate-source setup, attack-kernel initialization, autotune,
+  and attack-specific GPU and host-memory allocation. An all-found job exits
+  at that point; a partial match sends only the remaining hashes to cracking.
+- `shooterctl rule-report` (also accepted as `--rule-report`) inspects enormous
+  rule sets with bounded memory, supports skip/limit ranges, recognizes
+  multibyte content, and estimates duplicates. Manifest plans run multiple
+  rule files sequentially instead of multiplying them together.
+- `.hcidx` persistent indexes store sparse line offsets, source identity, and
+  counts. Seekable streaming resumes use a matching index to jump close to the
+  requested line instead of scanning from byte zero.
+- Streaming accepts partial files, standard input, and zstd input, with line
+  ranges, explicit progress counts, and source-position checkpoints. The
+  pipeline command directly connects a Hashcat candidate producer to a
+  cracking consumer without a shell or temporary candidate file.
+- Versioned `shooter-target-v1` JSON manifests can be created directly or
+  imported from existing Hashcat arguments, reviewed, planned, and run.
+- Fleet mode distributes manifest work from a shared queue across up to 12 or
+  more selected GPUs. It reassigns finished work, retries failed chunks,
+  quarantines repeatedly failing devices, and writes JSON Lines telemetry.
+- Installed standard and mdxfind hash modes can be searched, explained, or
+  identified locally through `shooterctl mode`.
+- Release packages contain an SPDX 2.3 SBOM. GitHub release workflows create
+  cryptographically verifiable provenance and SBOM attestations for the one
+  complete Windows archive.
+- Linux Clang AddressSanitizer, UndefinedBehaviorSanitizer, and coverage-guided
+  parser fuzzing run in CI and retain reproducing inputs after failures.
+
 ### Changed
 
+- Merged official upstream Hashcat changes through commit
+  `eba388d2ef8d2dc6f184cb2effdc1a99493d888d`, including shared parser/core
+  refactoring and newer correctness and security fixes.
+- Windows and Linux builds now include `shooterctl`; the complete Windows
+  package treats it as a required prebuilt program.
 - Renamed the final goodbye-summary label from `Total Time` to
   `Total Run Time` so its start-to-stop elapsed duration is immediately clear.
+- The outfile-check preflight hands its file offsets to the normal live
+  watcher, preventing an unchanged large result file from being reread
+  immediately when some hashes still need cracking. The feature remains
+  disabled when `--outfile-check-timer=0` or the selected module disables
+  outfile checking.
 - Replaced developer-specific absolute paths in public documentation with
   portable commands and clearly marked placeholder paths.
+
+### Security
+
+- Fixed an out-of-bounds read when the CPU rule parser receives a truncated
+  character-class rule.
+- Release archives can be checked against both their internal SHA-256 manifest
+  and GitHub's signed build-provenance/SBOM attestations.
+
+### Verified
+
+- A clean portable Windows x64 production build completed successfully.
+- The full no-device module/package suite passed all 1,601 module tests.
+- Stage-profile JSON, rule reporting, indexing/resume, manifests, mode lookup,
+  streaming, direct pipelines, doctor/support-bundle privacy, and SPDX output
+  were exercised locally.
+- A live GPU mask run with no recovered hashes confirmed that the paired
+  bypass options stop the current queue entry after the configured window.
+- Unsalted MD5 all-found and salted mode-10 all-found fixtures exited before
+  bitmap, kernel, autotune, GPU attack-buffer, and host staging allocation. A
+  mixed MD5 fixture removed one outfile result, initialized cracking only for
+  the remaining digest, and recovered it normally. A timer-zero control run
+  skipped the preflight and retained the original cracking behavior. A bare
+  hash record was recognized, and `--remove` correctly rewrote an all-found
+  target file to empty. The touched core sources also passed a Linux GCC
+  syntax check.
 
 ## v7.1.2-shooter.20260815.40
 

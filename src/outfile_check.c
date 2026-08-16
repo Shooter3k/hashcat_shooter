@@ -61,7 +61,7 @@ bool outfile_check_ignore (hashcat_ctx_t *hashcat_ctx)
   return changed;
 }
 
-static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
+static int outfile_remove (hashcat_ctx_t *hashcat_ctx, const bool preflight)
 {
   // some hash-dependent constants
 
@@ -111,35 +111,66 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
     hash_buf.hook_salt = hcmalloc (hashconfig->hook_salt_size);
   }
 
-  outfile_data_t *out_info = NULL;
+  outfile_data_t *out_info = outcheck_ctx->out_info;
 
-  char **out_files = NULL;
+  char **out_files = outcheck_ctx->out_files;
 
-  time_t folder_mtime = 0;
+  time_t folder_mtime = outcheck_ctx->folder_mtime;
 
-  int out_cnt = 0;
+  int out_cnt = outcheck_ctx->out_cnt;
+
+  // A preflight hands these positions to the runtime watcher. The watcher
+  // takes ownership and releases them when it exits.
+
+  outcheck_ctx->out_info     = NULL;
+  outcheck_ctx->out_files    = NULL;
+  outcheck_ctx->out_cnt      = 0;
+  outcheck_ctx->folder_mtime = 0;
+
+  // Refresh the directory listing when the live watcher starts. Existing
+  // files keep their saved seek positions, while a file created during the
+  // same filesystem timestamp tick as the preflight is still discovered.
+
+  if (preflight == false) folder_mtime = 0;
 
   u32 check_left = 1; // or outfile_check_timer if we want to check it after the --outfile-check-timer delay
 
-  while (status_ctx->shutdown_inner == false)
+  bool preflight_event_started = false;
+
+  int rc = 0;
+
+  while ((preflight == true) || (status_ctx->shutdown_inner == false))
   {
-    sleep (1);
+    if (preflight == false) sleep (1);
 
     if (outfile_check_ignore_requested (hashcat_ctx) == true) break;
 
-    if (status_ctx->devices_status != STATUS_RUNNING) continue;
+    if ((preflight == false) && (status_ctx->devices_status != STATUS_RUNNING)) continue;
 
-    check_left--;
+    if (preflight == false)
+    {
+      check_left--;
 
-    if (check_left != 0) continue;
+      if (check_left != 0) continue;
 
-    check_left = outfile_check_timer;
+      check_left = outfile_check_timer;
+    }
 
-    if (hc_path_exist (root_directory) == false) continue;
+    if (hc_path_exist (root_directory) == false)
+    {
+      if (preflight == true) break;
+
+      continue;
+    }
 
     const bool is_dir = hc_path_is_directory (root_directory);
 
-    if (is_dir == false) continue;
+    if (is_dir == false)
+    {
+      if (preflight == true) break;
+
+      continue;
+    }
 
     struct stat outfile_check_stat;
 
@@ -147,10 +178,9 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
     {
       event_log_error (hashcat_ctx, "%s: %s", root_directory, strerror (errno));
 
-      hcfree (out_files);
-      hcfree (out_info);
+      rc = -1;
 
-      return -1;
+      break;
     }
 
     if (outfile_check_stat.st_mtime > folder_mtime)
@@ -195,6 +225,13 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
       out_info  = out_info_new;
 
       folder_mtime = outfile_check_stat.st_mtime;
+    }
+
+    if ((preflight == true) && (out_cnt > 0))
+    {
+      EVENT (EVENT_OUTFILE_CHECK_PARSE_PRE);
+
+      preflight_event_started = true;
     }
 
     for (int j = 0; j < out_cnt; j++)
@@ -356,6 +393,8 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
         }
 
         hc_thread_mutex_unlock (outcheck_ctx->mux_ignore);
+
+        if (status_ctx->devices_status == STATUS_CRACKED) break;
       }
 
       hcfree (line_buf);
@@ -366,9 +405,12 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
 
       hc_fclose (&fp);
 
+      if (status_ctx->devices_status == STATUS_CRACKED) break;
       if (status_ctx->shutdown_inner == true) break;
       if (outfile_check_ignore_requested (hashcat_ctx) == true) break;
     }
+
+    if (preflight == true) break;
   }
 
   hcfree (hash_buf.esalt);
@@ -378,11 +420,33 @@ static int outfile_remove (hashcat_ctx_t *hashcat_ctx)
 
   hcfree (hash_buf.digest);
 
-  hcfree (out_info);
+  if (preflight == true)
+  {
+    outcheck_ctx->out_info     = out_info;
+    outcheck_ctx->out_files    = out_files;
+    outcheck_ctx->out_cnt      = out_cnt;
+    outcheck_ctx->folder_mtime = folder_mtime;
 
-  hcfree (out_files);
+    if (preflight_event_started == true) EVENT (EVENT_OUTFILE_CHECK_PARSE_POST);
+  }
+  else
+  {
+    hcfree (out_info);
+    hcfree (out_files);
+  }
 
-  return 0;
+  return rc;
+}
+
+int outfile_check_preflight (hashcat_ctx_t *hashcat_ctx)
+{
+  const hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
+  const outcheck_ctx_t *outcheck_ctx = hashcat_ctx->outcheck_ctx;
+
+  if (hashconfig->outfile_check_disable == true) return 0;
+  if (outcheck_ctx->enabled == false) return 0;
+
+  return outfile_remove (hashcat_ctx, true);
 }
 
 #if defined (_WIN32) || defined (__WIN32__)
@@ -400,7 +464,7 @@ HC_API_CALL void *thread_outfile_remove (void *p)
 
   if (outcheck_ctx->enabled == false) return 0;
 
-  outfile_remove (hashcat_ctx);
+  outfile_remove (hashcat_ctx, false);
 
   return 0;
 }
@@ -416,6 +480,10 @@ int outcheck_ctx_init (hashcat_ctx_t *hashcat_ctx)
   outcheck_ctx->ignore = false;
   outcheck_ctx->digests_done = 0;
   outcheck_ctx->root_directory = NULL;
+  outcheck_ctx->out_files = NULL;
+  outcheck_ctx->out_info = NULL;
+  outcheck_ctx->out_cnt = 0;
+  outcheck_ctx->folder_mtime = 0;
 
   if (user_options->backend_info   > 0)    return 0;
   if (user_options->hash_info      > 0)    return 0;
@@ -454,12 +522,10 @@ int outcheck_ctx_init (hashcat_ctx_t *hashcat_ctx)
 
 void outcheck_ctx_destroy (hashcat_ctx_t *hashcat_ctx)
 {
-  hashconfig_t   *hashconfig   = hashcat_ctx->hashconfig;
   outcheck_ctx_t *outcheck_ctx = hashcat_ctx->outcheck_ctx;
   user_options_t *user_options = hashcat_ctx->user_options;
 
-  if (outcheck_ctx->enabled == false)            return;
-  if (hashconfig->outfile_check_disable == true) return;
+  if (outcheck_ctx->enabled == false) return;
 
   if (rmdir (outcheck_ctx->root_directory) == -1)
   {
@@ -484,8 +550,15 @@ void outcheck_ctx_destroy (hashcat_ctx_t *hashcat_ctx)
     hcfree (outcheck_ctx->root_directory);
   }
 
+  hcfree (outcheck_ctx->out_info);
+  hcfree (outcheck_ctx->out_files);
+
   outcheck_ctx->enabled = false;
   outcheck_ctx->ignore = false;
   outcheck_ctx->digests_done = 0;
   outcheck_ctx->root_directory = NULL;
+  outcheck_ctx->out_files = NULL;
+  outcheck_ctx->out_info = NULL;
+  outcheck_ctx->out_cnt = 0;
+  outcheck_ctx->folder_mtime = 0;
 }

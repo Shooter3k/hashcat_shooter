@@ -684,6 +684,8 @@ int cpu_rule_to_kernel_rule (char *rule_buf, u32 rule_len, kernel_rule_t *rule)
         break;
 
       case RULE_OP_CLASS_BASED: // ~
+        if ((rule_pos + 1) >= rule_len) return -1;
+
         switch (rule_buf[rule_pos+1])
         {
           case RULE_OP_MANGLE_REPLACE: // ~s?CY

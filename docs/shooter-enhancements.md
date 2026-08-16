@@ -285,12 +285,12 @@ requested tag.
 ### 39. Newer upstream correctness fixes
 
 Shooter synchronized with official hashcat through commit
-[`9c735bade`](https://github.com/hashcat/hashcat/commit/9c735badebda0792b78010a5b94e3c8733bc1825).
-That range includes feed-to-device mapping, yescrypt layout and address-space
-fixes, PDF mode-10500 empty-ID support, full-length combinator buffers, and
-several overflow, double-free, and out-of-bounds corrections. These fixes are
-included but not claimed as Shooter-authored work. See the
-[integration release notes](../CHANGELOG.md#v712-shooter2026081218).
+[`eba388d2e`](https://github.com/hashcat/hashcat/commit/eba388d2ef8d2dc6f184cb2effdc1a99493d888d).
+In addition to the earlier feed, yescrypt, PDF, combinator, overflow,
+double-free, and bounds fixes, the current merge includes the shared plugin
+core and ABI checks, LM parsing and corruption fixes, secp256k1 zero-scalar
+and bounds fixes, updated zlib, Windows CI, and Android build corrections.
+These fixes are included but not claimed as Shooter-authored work.
 
 ## Rule loading
 
@@ -393,3 +393,135 @@ argument list. `--brain-password` values are automatically replaced with
 can quote an individual malformed input line. Other arguments and paths may
 also be private, so users should review the text file before sharing it. See
 the [error-report guide](error-reports.md).
+
+## Testing and companion operations
+
+### 46. Sanitizers and parser fuzzing
+
+The Security workflow compiles the shared parser core with AddressSanitizer
+and UndefinedBehaviorSanitizer and runs a coverage-guided libFuzzer target over
+the common tokenizer and multibyte rule compiler. Scheduled and change-based
+runs retain any crash input as a workflow artifact. See
+[security-testing.md](security-testing.md).
+
+### 47. `shooterctl` companion
+
+Normal Windows and Linux builds now produce `shooterctl` beside Hashcat. It is
+a dependency-free Rust companion for installation checks, support bundles,
+large text indexes, rule reports, target manifests, streaming, GPU work
+distribution, and mode discovery. The complete release contains both its
+source and prebuilt executable. See [shooterctl.md](shooterctl.md).
+
+### 48. Doctor and support bundles
+
+`shooterctl doctor` checks the neighboring Hashcat version, plugin directories,
+backend discovery, and optional tools. Human and JSON output are available.
+`support-bundle` writes a manually requested environment bundle that excludes
+command lines, hashes, candidates, potfile contents, and environment values,
+and redacts the home-directory prefix. See
+[the companion guide](shooterctl.md#doctor-and-privacy-safe-support-bundles).
+
+### 49. Stage time and peak memory
+
+`--stage-profile` prints final time for feed, copy, initialization, temporary
+transfer, main launch, and comparison stages together with measured launches
+and peak process RAM. `--stage-profile-json` emits the same fields as one
+`shooter-stage-profile-v1` object. Profiling is disabled by default. See
+[stage-profile.md](stage-profile.md).
+
+### 50. Rule-list intelligence
+
+`shooterctl rule-report` reads multi-gigabyte files with bounded memory and
+reports selected ranges, comments, blank lines, multibyte and invalid UTF-8
+lines, longest rule, common operation bytes, per-file order, and a fixed-memory
+duplicate estimate. Manifests can run several rule files sequentially instead
+of multiplying them together. See
+[the rule-report guide](shooterctl.md#rule-reports-ranges-and-rule-series).
+
+### 51. Persistent line indexes
+
+`shooterctl index` creates a `.hcidx` sidecar for a line-oriented wordlist,
+rule list, potfile, or similar file. It stores source identity, counts,
+fingerprint, and sampled offsets with bounded memory. `shooterctl stream`
+automatically uses a valid sidecar to jump near a requested or restored line;
+stale indexes are ignored. See
+[the index guide](shooterctl.md#persistent-hcidx-indexes).
+
+### 52. Streaming pipeline
+
+`shooterctl stream` handles stdin, regular files, zstd decoding, line ranges,
+periodic resume checkpoints, explicit progress counts, and `.hcidx` seek
+acceleration. `shooterctl pipeline` directly connects a mask, hybrid,
+combination, or ruled `--stdout` producer to a Hashcat stdin consumer without
+a shell or temporary candidate file. See
+[the streaming guide](shooterctl.md#partial-compressed-and-resumable-streams).
+
+### 53. Target manifests and import
+
+The `shooter-target-v1` JSON format records a mode, attack type, hash source,
+wordlists, masks, rules, output, potfile, total work, and extra options.
+`manifest import-command` converts an existing common Hashcat command;
+`show`, `plan`, and `run` make it reviewable and repeatable. See
+[the manifest guide](shooterctl.md#target-manifests-and-command-import).
+
+### 54. Adaptive GPU fleet
+
+Fleet mode splits an explicitly sized job into a shared queue for up to all
+twelve GPUs. Devices take another chunk as they finish, failed chunks are
+requeued, and repeatedly failing devices are quarantined. JSON Lines telemetry
+records duration and effective work rate for every chunk. See
+[the fleet guide](shooterctl.md#adaptive-multi-gpu-fleet).
+
+### 55. Mode search and explanation
+
+`shooterctl mode search`, `mode explain`, and `mode identify` query the
+installed binary rather than a hard-coded list. They cover both standard
+numeric modes and Shooter's complete mdxfind `eN` namespace. See
+[the mode guide](shooterctl.md#mode-search-explanation-and-identification).
+
+### 56. SBOM and signed release attestations
+
+The Windows package contains an SPDX 2.3 inventory of the executables and
+plugin DLLs with SHA-256 checksums and principal dependencies. The release
+workflow creates Sigstore-backed GitHub attestations for both build provenance
+and the SBOM while retaining one public `.7z` download asset. See
+[release-security.md](release-security.md).
+
+## Attack automation
+
+### 57. Automatic low-crack-rate bypass
+
+`--bypass-delay` and `--bypass-threshold` work together to measure how many
+new hashes the current dictionary or mask cracks during each time window. If
+the number is below the threshold, Hashcat selects the next queued dictionary
+or mask. A single-entry queue ends with `Status: Bypass`. Already-recovered
+hashes do not inflate the measurement, and time spent paused does not consume
+the delay window. See [bypass-rate-control.md](bypass-rate-control.md).
+
+## Outfile-check startup
+
+### 58. Outfile-check before cracking allocation
+
+Before building bitmap tables, loading the candidate source, initializing
+attack kernels, allocating attack-specific GPU and host buffers, or running
+autotune, Shooter compares the loaded hashes with every existing result in
+`--outfile-check-dir`. Matching hashes are marked recovered immediately. If
+the directory accounts for the complete target list, Shooter exits without
+starting the cracking allocation. If hashes remain, only those remaining
+hashes continue into the normal attack.
+
+The same file positions are handed to the live outfile watcher, so a partial
+preflight does not immediately reread unchanged files from the beginning.
+`--outfile-check-timer=0` disables both this preflight and the live watcher.
+Modes that intentionally disable outfile checking retain that behavior.
+
+The directory must contain only trusted recovered-result files. Hashcat's
+existing outfile reader scans the files in that directory and intentionally
+accepts entries with or without a plaintext, so a target hash list must not be
+stored there.
+
+Like Hashcat's existing all-found potfile shortcut, the check happens after
+the lightweight backend-runtime and device-enumeration phase needed by the
+current session architecture. It avoids the much larger per-attack GPU and
+host allocation; it does not suppress the initial device list. See
+[startup optimization](startup-optimization.md#existing-outfile-results-before-cracking-allocation).
