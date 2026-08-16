@@ -13,7 +13,7 @@ but most of its additions also work on other hardware.
 Use this software only on passwords and systems you own or are explicitly
 authorized to audit.
 
-## Improvements at a glance
+## What shooter_hashcat can do that the original Hashcat baseline cannot
 
 This is the public feature inventory for the current branch.
 Items 14 and 39 came from newer official hashcat work included after the fork;
@@ -78,6 +78,7 @@ explanation.
 56. **[Releases include an SBOM and signed attestations](docs/shooter-enhancements.md#56-sbom-and-signed-release-attestations)** — verify archive contents, provenance, and the software inventory.
 57. **[Slow-producing attacks can move on automatically](docs/shooter-enhancements.md#57-automatic-low-crack-rate-bypass)** — set a time window and minimum number of new cracks, then skip the current dictionary or mask when its yield falls below that minimum.
 58. **[Existing outfile results are removed before cracking starts](docs/shooter-enhancements.md#58-outfile-check-before-cracking-allocation)** — if every hash is already in `--outfile-check-dir`, the expensive attack-specific GPU and host-memory allocation is skipped.
+59. **[Huge wordlists index and feed faster](docs/shooter-enhancements.md#59-faster-large-wordlist-indexing-and-feed)** — first-use line counting uses the CPU cores and ordinary candidates reach the GPUs with less per-word overhead.
 
 ## Download and run
 
@@ -121,6 +122,7 @@ Windows and Linux builds, Rust crates, and the sanitizer-backed parser fuzzer.
 | --- | --- |
 | Complete Shooter feature inventory | [docs/shooter-enhancements.md](docs/shooter-enhancements.md) |
 | Startup, memory, parsing, and sorting | [docs/startup-optimization.md](docs/startup-optimization.md) |
+| Large-wordlist indexing and feed speed | [wordlist I/O optimization](docs/startup-optimization.md#large-wordlist-indexing-and-feed-throughput) |
 | Existing `--outfile-check-dir` results before cracking | [outfile-check startup](docs/startup-optimization.md#existing-outfile-results-before-cracking-allocation) |
 | RTX 4090 autotune cache | [RTX_4090_AUTOTUNE_CACHE.md](RTX_4090_AUTOTUNE_CACHE.md) |
 | Multi-file combinations and complete-candidate rules | [docs/multi-file-combination.md](docs/multi-file-combination.md) and [docs/whole-candidate-rules.md](docs/whole-candidate-rules.md) |

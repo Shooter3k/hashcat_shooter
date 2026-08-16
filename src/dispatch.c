@@ -483,6 +483,7 @@ typedef struct generic_fill_state
   // it only happens for a candidate that would otherwise have been thrown away.
 
   bool  can_shrink;
+  bool  transform_simple;
   int   scratch_size;
   u8   *scratch;
 
@@ -604,7 +605,34 @@ static int fill_generic (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_p
 
       // Everything that happens to a base word, in the one order every producer uses.
 
-      pw_len = pw_transform_apply (&gf->transform, work_buf, pw_len, (work_buf == pw_buf) ? PW_MAX : gf->scratch_size);
+      bool transform_needed = true;
+
+      if (gf->transform_simple == true)
+      {
+        transform_needed = false;
+
+        // The normal MD5 wordlist path has no inline rule, case conversion or encoding conversion.
+        // Autohex is its only possible transform, and almost every real candidate can reject that
+        // possibility from the six-byte prefix. Avoid two core calls for every ordinary email or
+        // password while still sending actual $HEX[...] entries through the complete transform.
+
+        if ((gf->transform.wordlist_autohex == true)
+         && (pw_len >= 6)
+         && ((pw_len & 1) == 0)
+         && (work_buf[0] == '$')
+         && (work_buf[1] == 'H')
+         && (work_buf[2] == 'E')
+         && (work_buf[3] == 'X')
+         && (work_buf[4] == '['))
+        {
+          transform_needed = true;
+        }
+      }
+
+      if (transform_needed == true)
+      {
+        pw_len = pw_transform_apply (&gf->transform, work_buf, pw_len, (work_buf == pw_buf) ? PW_MAX : gf->scratch_size);
+      }
 
       if (pw_len < 0)
       {
@@ -1660,6 +1688,10 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
       gf.reject_fatal  = (user_options->attack_mode == ATTACK_MODE_ASSOCIATION);
 
       gf.can_shrink   = pw_transform_shrinks (&gf.transform);
+      gf.transform_simple = ((gf.transform.pt_uppercase == false)
+                          && (gf.transform.pt_hex == false)
+                          && (gf.transform.rule_len == 0)
+                          && (gf.transform.iconv_enabled == false));
       gf.scratch_size = HCBUFSIZ_TINY;
       gf.scratch      = (gf.can_shrink == true) ? (u8 *) hcmalloc (gf.scratch_size) : NULL;
 

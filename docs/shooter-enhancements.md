@@ -525,3 +525,31 @@ the lightweight backend-runtime and device-enumeration phase needed by the
 current session architecture. It avoids the much larger per-attack GPU and
 host allocation; it does not suppress the initial device list. See
 [startup optimization](startup-optimization.md#existing-outfile-results-before-cracking-allocation).
+
+## Wordlist I/O
+
+### 59. Faster large-wordlist indexing and feed
+
+The first time Shooter sees a wordlist, it builds the sparse line index used
+for multi-GPU distribution, `--skip`, and restore. Very large files now use up
+to 64 CPU workers and SIMD newline counting, allowing the storage queue and
+the available processor cores to work together. The new byte-spaced index is
+also much smaller. Existing seek databases still load, so no cache cleanup or
+conversion step is required.
+
+During cracking, each wordlist reader caches its selected SIMD line scanner.
+The common path also avoids the complete candidate-transform function when no
+inline rule, encoding conversion, hexadecimal input mode, or forced-uppercase
+mode is active and an ordinary candidate cannot be `$HEX[...]`. Actual
+`$HEX[...]` entries and every configured transformation retain their original
+behavior.
+
+No option is required. On the supplied 60,256,380,643-byte email list, the
+first-use index pass fell from 57.376 seconds to 11.756 seconds, or 4.88 times
+faster. The optimized pass read at 4.77 GiB/s, about 90 percent of a separate
+5.28 GiB/s sequential-read measurement on the same system, while the index
+shrank from 4,343,248 bytes to 229,904 bytes. A live 12-GPU mode-0 test with
+112 loaded rules processed 4,060,086,272 base words in its 10-second cracking
+window versus 2,919,628,800 before the final feed optimizations, a 39.1 percent
+increase. See [startup optimization](startup-optimization.md#large-wordlist-indexing-and-feed-throughput)
+for scope and verification details.

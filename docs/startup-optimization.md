@@ -219,6 +219,56 @@ Separate fixtures confirmed matching diagnostics and output for invalid
 rules, BOM and CRLF input, comments, blank lines, a missing final newline, and
 two-file rule chaining.
 
+## Large wordlist indexing and feed throughput
+
+Wordlists are memory-mapped and use a sparse seek database so multiple GPUs,
+`--skip`, and restored sessions can begin at exact line positions. Creating
+that database used to walk every line on one CPU core and call the line-search
+function once per word. Short email-style records made that CPU loop much
+slower than the NVMe storage itself.
+
+For large inputs, the first-use scan now splits byte ranges across up to 64
+CPU workers. SIMD code counts newline bytes over each range, and only the
+sparse checkpoint boundaries need individual newline searches. Checkpoints
+are stored as explicit line/byte-offset pairs near four-MiB input boundaries,
+which permits independent scans and reduces index size. The `SHSEEK01` format
+is validated when loaded. Existing databases using one offset per 8,192 lines
+are converted in memory and remain usable without being regenerated.
+
+The live feed caches its chosen line-scanning function instead of selecting it
+for every candidate. When autohex is the only possible word transformation,
+ordinary words bypass the complete transformation call after a cheap prefix
+check. Candidates that can be `$HEX[...]`, as well as inline rules, encoding
+conversion, forced-hexadecimal input, and forced-uppercase modes, continue
+through the complete transformation path.
+
+No option is required. An internal `HASHCAT_SEEKDB_THREADS` environment value
+from 1 through 64 is available for controlled A/B testing; normal use should
+leave it unset so Shooter selects a worker count from the file size and CPU
+count.
+
+On the supplied 60,256,380,643-byte file containing 4,447,464,444 lines:
+
+- The original first-use seek pass took 57.376 seconds.
+- The parallel SIMD pass took 11.756 seconds, a 4.88-times speedup and 79.5
+  percent less time.
+- Index throughput was 4.77 GiB/s. A separate sequential read of the same file
+  measured 5.28 GiB/s, so indexing reached about 90 percent of the measured
+  read ceiling.
+- The seek database fell from 4,343,248 bytes to 229,904 bytes. Loading either
+  the old or new cached format took less than 0.07 seconds and returned the
+  same 4,447,464,444-line keyspace.
+- A seek to line 2,345,678,901 followed by four candidates matched the legacy
+  index exactly and in order.
+
+In a 12-GPU mode-0 run using the same wordlist and 112 rules, the final restore
+point in a 10-second cracking window increased from 2,919,628,800 base words
+to 4,060,086,272, a 39.1 percent improvement. Aggregate speed rose from roughly
+37-38 GH/s to roughly 49-53 GH/s in those short runs. Task Manager may still
+show less than 100-percent disk activity when the GPUs, host candidate
+pipeline, filesystem cache, or per-candidate work becomes the limiting stage;
+the reader intentionally consumes only as fast as downstream work requires.
+
 ## Large `--show` and `--left` workloads
 
 Normal potfile formats use a narrower lookup path after the hash list has been

@@ -22,6 +22,8 @@
 #include "memchr.h"
 #include "timer.h"
 #include "event.h"
+#include "thread.h"
+#include "system.h"
 #include "generic.h"
 #include "feed_wordlist.h"
 
@@ -70,11 +72,11 @@ static void thread_error_set (generic_thread_ctx_t *thread_ctx, const char *fmt,
 // taking the line ending off is hc_line_next () in memchr.h, which is the same code the stdin feed and
 // the line counter use.
 
-static size_t process_word (const u8 *buf, const size_t max_len, u8 *out_buf, const size_t out_size, size_t *out_len)
+static size_t process_word (hc_memchr_t line_memchr, const u8 *buf, const size_t max_len, u8 *out_buf, const size_t out_size, size_t *out_len)
 {
   size_t word_len = 0;
 
-  const size_t step = hc_line_next (buf, max_len, &word_len);
+  const size_t step = hc_line_next_with (line_memchr, buf, max_len, &word_len);
 
   // hashcat hands out a pointer straight into the buffer it uploads, so there is no room past
   // out_size. Write no more than that, and still report the real length: hashcat rejects an
@@ -422,6 +424,17 @@ u64 global_keyspace (MAYBE_UNUSED generic_global_ctx_t *global_ctx, MAYBE_UNUSED
 
     source->seek_db = seekdb_build (feed_thread, seekdb_file, source->path, &source->seek_count, &source->line_count, &source->size, hashcat_ctx);
 
+    if (source->seek_db == NULL)
+    {
+      error_set (global_ctx, "%s: could not build the wordlist seek database", source->path);
+
+      hcfree (seekdb_file);
+
+      thread_term (global_ctx, thread_ctx[0]);
+
+      return GENERIC_KEYSPACE_UNKNOWN;
+    }
+
     cache_generate_t cache_generate;
 
     cache_generate.dictfile    = source->path;
@@ -478,6 +491,7 @@ bool thread_init (MAYBE_UNUSED generic_global_ctx_t *global_ctx, MAYBE_UNUSED ge
 
   feed_thread->source_idx  = 0;
   feed_thread->source_open = false;
+  feed_thread->line_memchr = hc_memchr_get ();
 
   thread_ctx->thrdata = feed_thread;
 
@@ -548,7 +562,7 @@ int thread_next (MAYBE_UNUSED generic_global_ctx_t *global_ctx, MAYBE_UNUSED gen
 
   size_t word_len = 0;
 
-  const size_t step = process_word (fd_mem + fd_off, remaining, out_buf, out_size, &word_len);
+  const size_t step = process_word (feed_thread->line_memchr, fd_mem + fd_off, remaining, out_buf, out_size, &word_len);
 
   // a word with no line ending after it is the last one in the file, and it runs to the end
 
@@ -583,15 +597,31 @@ bool thread_seek (MAYBE_UNUSED generic_global_ctx_t *global_ctx, MAYBE_UNUSED ge
 
   const u64 local = offset - source->first_line;
 
-  // The checkpoints land on every SEEKDB_STEP'th line, so the nearest one at or before the target
-  // gets the scan down to at most SEEKDB_STEP lines.
+  // New databases are spaced by input bytes and legacy databases are converted to the same explicit
+  // line/offset pairs when loaded. Find the nearest point at or before the target; the live scan only
+  // has to cover the small gap after it.
 
-  const u64 db_idx = local / SEEKDB_STEP;
-
-  if ((source->seek_db) && (db_idx < source->seek_count))
+  if ((source->seek_db != NULL) && (source->seek_count > 0))
   {
-    feed_thread->fd_off  = source->seek_db[db_idx];
-    feed_thread->fd_line = db_idx * SEEKDB_STEP;
+    u64 lo = 0;
+    u64 hi = source->seek_count;
+
+    while (lo + 1 < hi)
+    {
+      const u64 mid = lo + ((hi - lo) / 2);
+
+      if (source->seek_db[mid].line <= local)
+      {
+        lo = mid;
+      }
+      else
+      {
+        hi = mid;
+      }
+    }
+
+    feed_thread->fd_off  = source->seek_db[lo].offset;
+    feed_thread->fd_line = source->seek_db[lo].line;
   }
   else if (feed_thread->fd_line > local)
   {

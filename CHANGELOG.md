@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## v7.1.2-shooter.20260815.45
+
+Large-wordlist indexing and feed-throughput release.
+
+### Changed
+
+- Large wordlists now build their first-use seek database with up to 64 CPU
+  workers and SIMD newline counting instead of one function call per line.
+  The new byte-spaced `SHSEEK01` format is smaller, supports direct seeks, and
+  continues to load existing line-spaced seek databases.
+- The regular wordlist feed caches its selected line scanner and bypasses the
+  full transform pipeline for ordinary candidates when autohex is the only
+  possible transformation. Valid `$HEX[...]` candidates and every configured
+  rule, encoding, hexadecimal, or uppercase transformation retain the full
+  path.
+- Renamed the README feature-list heading so visitors can immediately see
+  that it compares Shooter with the original Hashcat baseline.
+
 ## v7.1.2-shooter.20260815.44
 
 Release-attestation follow-up for the `.43` clean-runner build.

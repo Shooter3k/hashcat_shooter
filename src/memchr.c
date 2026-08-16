@@ -29,6 +29,20 @@ size_t hc_memchr_generic (const u8 *ptr, int ch, size_t max_len)
   return found ? (size_t)(found - ptr) : max_len;
 }
 
+u64 hc_memcount_generic (const u8 *ptr, int ch, size_t max_len)
+{
+  u64 count = 0;
+
+  const u8 needle = (u8) ch;
+
+  for (size_t i = 0; i < max_len; i++)
+  {
+    if (ptr[i] == needle) count++;
+  }
+
+  return count;
+}
+
 #if defined (__x86_64__) || defined (_M_X64) || defined (__i386__) || defined (_M_IX86) || defined (__aarch64__)
 #if !defined (__aarch64__)
 __attribute__((target("avx2")))
@@ -75,6 +89,54 @@ size_t hc_memchr_avx2 (const u8 *ptr, int ch, size_t max_len)
   size_t tail = hc_memchr_generic (ptr, ch, max_len);
 
   return offset + tail;
+}
+
+#if !defined (__aarch64__)
+__attribute__((target("avx2")))
+#endif
+u64 hc_memcount_avx2 (const u8 *ptr, int ch, size_t max_len)
+{
+  u64 count = 0;
+
+  #if defined (__aarch64__)
+
+  const __m128i needle = _mm_set1_epi8 (ch);
+
+  while (max_len >= 32)
+  {
+    const __m128i block1 = _mm_loadu_si128 ((const __m128i *) ptr);
+    const __m128i block2 = _mm_loadu_si128 ((const __m128i *) (ptr + 16));
+
+    const unsigned int mask1 = (unsigned int) _mm_movemask_epi8 (_mm_cmpeq_epi8 (block1, needle));
+    const unsigned int mask2 = (unsigned int) _mm_movemask_epi8 (_mm_cmpeq_epi8 (block2, needle));
+
+    count += (u64) __builtin_popcount (mask1);
+    count += (u64) __builtin_popcount (mask2);
+
+    ptr     += 32;
+    max_len -= 32;
+  }
+
+  #else
+
+  const __m256i needle = _mm256_set1_epi8 (ch);
+
+  while (max_len >= 32)
+  {
+    const __m256i block = _mm256_loadu_si256 ((const __m256i *) ptr);
+    const __m256i cmp   = _mm256_cmpeq_epi8 (block, needle);
+
+    const unsigned int mask = (unsigned int) _mm256_movemask_epi8 (cmp);
+
+    count += (u64) __builtin_popcount (mask);
+
+    ptr     += 32;
+    max_len -= 32;
+  }
+
+  #endif
+
+  return count + hc_memcount_generic (ptr, ch, max_len);
 }
 
 #if !defined (__aarch64__)
@@ -129,6 +191,7 @@ size_t hc_memchr_avx512 (const u8 *ptr, int ch, size_t max_len)
 #endif // __x86_64__ || _M_X64 || __i386__ || _M_IX86 || __aarch64__
 
 static hc_memchr_t hc_memchr_cached = hc_memchr_generic;
+static hc_memcount_t hc_memcount_cached = hc_memcount_generic;
 
 __attribute__((constructor))
 static void hc_memchr_init (void)
@@ -152,10 +215,12 @@ static void hc_memchr_init (void)
   if (cpu_supports_avx2 ())
   {
     hc_memchr_cached = hc_memchr_avx2;
+    hc_memcount_cached = hc_memcount_avx2;
   }
   else
   {
     hc_memchr_cached = hc_memchr_generic;
+    hc_memcount_cached = hc_memcount_generic;
   }
 
   #elif defined (__aarch64__)
@@ -165,10 +230,12 @@ static void hc_memchr_init (void)
 
   // Use 32-byte NEON-mapped function for Apple Silicon by default
   hc_memchr_cached   = hc_memchr_avx2;
+  hc_memcount_cached = hc_memcount_avx2;
 
   #else
 
   hc_memchr_cached   = hc_memchr_generic;
+  hc_memcount_cached = hc_memcount_generic;
 
   #endif
 }
@@ -176,4 +243,9 @@ static void hc_memchr_init (void)
 hc_memchr_t hc_memchr_get (void)
 {
   return hc_memchr_cached;
+}
+
+hc_memcount_t hc_memcount_get (void)
+{
+  return hc_memcount_cached;
 }

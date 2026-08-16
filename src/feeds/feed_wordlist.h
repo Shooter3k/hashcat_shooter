@@ -10,6 +10,16 @@
 #define O_BINARY 0
 #endif
 
+// One sparse seek point. New databases use byte-spaced points so independent ranges of a very large
+// file can be indexed in parallel. Legacy databases are converted to this form when they are loaded.
+
+typedef struct feed_seek
+{
+  u64 line;
+  u64 offset;
+
+} feed_seek_t;
+
 // One wordlist. Several of them are laid end to end into a single keyspace, so line 0 of the second
 // file is offset line_count-of-the-first. first_line is where that source starts in the global
 // numbering, which is what turns a global offset back into a file and a line inside it.
@@ -18,10 +28,10 @@ typedef struct feed_source
 {
   char *path;
 
-  u64  *seek_db;
-  u64   seek_count;
-  u64   line_count;
-  u64   size;
+  feed_seek_t *seek_db;
+  u64          seek_count;
+  u64          line_count;
+  u64          size;
 
   u64   first_line;
 
@@ -48,6 +58,8 @@ typedef struct feed_thread
   size_t fd_len;
   void  *fd_mem;
   u64    fd_line;
+
+  hc_memchr_t line_memchr;
 
   u64    source_idx;
   bool   source_open;

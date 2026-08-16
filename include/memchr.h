@@ -9,12 +9,18 @@
 #include <string.h>
 
 typedef size_t (*hc_memchr_t) (const u8 *ptr, int ch, size_t max_len);
+typedef u64    (*hc_memcount_t) (const u8 *ptr, int ch, size_t max_len);
 
 HC_PLUGIN_API size_t hc_memchr_generic      (const u8 *ptr, int ch, size_t max_len);
 HC_PLUGIN_API size_t hc_memchr_avx2         (const u8 *ptr, int ch, size_t max_len);
 HC_PLUGIN_API size_t hc_memchr_avx512       (const u8 *ptr, int ch, size_t max_len);
 
 HC_PLUGIN_API hc_memchr_t hc_memchr_get     (void);
+
+HC_PLUGIN_API u64 hc_memcount_generic       (const u8 *ptr, int ch, size_t max_len);
+HC_PLUGIN_API u64 hc_memcount_avx2          (const u8 *ptr, int ch, size_t max_len);
+
+HC_PLUGIN_API hc_memcount_t hc_memcount_get (void);
 
 // Where the next line ends inside a buffer, and how long it is once the line ending is off.
 //
@@ -35,10 +41,8 @@ HC_PLUGIN_API hc_memchr_t hc_memchr_get     (void);
 // hashcat library cannot be inlined away. Measured on the stdin feed, that call cost 13 percent: at a
 // hundred million candidates a second there is no room for one that does this little.
 
-static inline size_t hc_line_next (const u8 *buf, const size_t max_len, size_t *out_len)
+static inline size_t hc_line_next_with (hc_memchr_t hc_memchr, const u8 *buf, const size_t max_len, size_t *out_len)
 {
-  hc_memchr_t hc_memchr = hc_memchr_get ();
-
   const size_t step = hc_memchr (buf, '\n', max_len);
 
   size_t line_len = step;
@@ -48,6 +52,11 @@ static inline size_t hc_line_next (const u8 *buf, const size_t max_len, size_t *
   *out_len = line_len;
 
   return step;
+}
+
+static inline size_t hc_line_next (const u8 *buf, const size_t max_len, size_t *out_len)
+{
+  return hc_line_next_with (hc_memchr_get (), buf, max_len, out_len);
 }
 
 #endif // HC_MEMCHR_H
