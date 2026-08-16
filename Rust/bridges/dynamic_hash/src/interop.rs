@@ -4,7 +4,7 @@
  */
 use std::{
     cell::OnceCell,
-    ffi::{c_char, c_int, c_void, CStr},
+    ffi::{CStr, c_char, c_int, c_void},
     mem,
     path::Path,
     process, ptr, slice,
@@ -13,7 +13,7 @@ use std::{
 
 use hashcat_sys::{bridge_context_t, generic_io_t, generic_io_tmp_t, salt_t};
 
-use crate::{eval::EvalContext, parse, Expr};
+use crate::{Expr, eval::EvalContext, parse};
 
 thread_local! {
     static AST: OnceCell<Expr> = OnceCell::new();

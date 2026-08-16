@@ -109,7 +109,7 @@ static void tokenizer_error_capture (const u32 parser_status, const char *reason
 
   escaped[0] = 0;
 
-  if (len > 0)
+  if ((buf != NULL) && (len > 0))
   {
     const int cap = MIN (len, TOKENIZER_ERROR_SNIPPET_LEN);
 
@@ -404,9 +404,18 @@ int input_tokenizer (const u8 *input_buf, const int input_len, hc_token_t *token
     {
       const int len = token->len[token_idx];
 
+      token->buf[token_idx + 1] = token->buf[token_idx];
+
       if (len)
       {
-        token->buf[token_idx + 1] = token->buf[token_idx] + len;
+        if (len_left < len)
+        {
+          tokenizer_error_capture (PARSER_TOKEN_LENGTH, PA_035, token->buf[token_idx], len_left, len, len_left, 0);
+
+          return (PARSER_TOKEN_LENGTH);
+        }
+
+        token->buf[token_idx + 1] += len;
 
         len_left -= len;
 

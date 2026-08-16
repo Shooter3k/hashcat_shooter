@@ -29,7 +29,7 @@
 DEBUG                   := 0
 PRODUCTION              := 0
 SHOOTER_BUILD_DATE      ?= 20260815
-SHOOTER_BUILD_REVISION  ?= 41
+SHOOTER_BUILD_REVISION  ?= 42
 PRODUCTION_VERSION      := v7.1.2-shooter.$(SHOOTER_BUILD_DATE).$(SHOOTER_BUILD_REVISION)
 MACOS_UNIVERSAL_BINARY  ?= 0
 ENABLE_LTO              ?= 0
@@ -1814,18 +1814,24 @@ SHOOTERCTL_BIN          := shooterctl.exe
 SHOOTERCTL_BUILT        := Rust/shooterctl/target/x86_64-pc-windows-gnu/$(RUST_BUILD_MODE)/shooterctl.exe
 SHOOTERCTL_TARGET_ARG   := --target x86_64-pc-windows-gnu
 SHOOTERCTL_RUSTFLAGS    := $(RUSTFLAGS_DLL)
+ifeq ($(RUSTUP_PRESENT),true)
+SHOOTERCTL_TARGET_DEPS  := rust-windows-target
+else
+SHOOTERCTL_TARGET_DEPS  :=
+endif
 else
 SHOOTERCTL_BIN          := shooterctl
 SHOOTERCTL_BUILT        := Rust/shooterctl/target/$(RUST_BUILD_MODE)/shooterctl
 SHOOTERCTL_TARGET_ARG   :=
 SHOOTERCTL_RUSTFLAGS    := $(RUSTFLAGS_SO)
+SHOOTERCTL_TARGET_DEPS  :=
 endif
 
 .PHONY: shooterctl
 shooterctl: $(SHOOTERCTL_BIN)
 
 ifeq ($(CARGO_PRESENT),true)
-$(SHOOTERCTL_BIN): Rust/shooterctl/Cargo.toml Rust/shooterctl/src/main.rs FORCE
+$(SHOOTERCTL_BIN): Rust/shooterctl/Cargo.toml Rust/shooterctl/src/main.rs FORCE $(SHOOTERCTL_TARGET_DEPS)
 	MAKEFLAGS= RUSTFLAGS="$(SHOOTERCTL_RUSTFLAGS)" $(RUST_CARGO) build --quiet $(RUST_MODE_FLAG) --manifest-path Rust/shooterctl/Cargo.toml $(SHOOTERCTL_TARGET_ARG)
 	@cmp -s $(SHOOTERCTL_BUILT) $@ 2>/dev/null || cp $(SHOOTERCTL_BUILT) $@
 else

@@ -110,6 +110,11 @@ the local `.build-tools` directory. Allow internet access and at least 5 GB of
 free disk space. Nothing is installed system-wide, and the system or user
 `PATH` is not changed. GPU vendor drivers remain an external requirement.
 
+Tagged Windows releases are rebuilt on a clean GitHub runner. The release is
+published only after the executable version, archive layout, source manifest,
+and package-integrity checks pass. Separate CI jobs exercise static and shared
+Windows and Linux builds, Rust crates, and the sanitizer-backed parser fuzzer.
+
 ## Technical details
 
 | Topic | Documentation |

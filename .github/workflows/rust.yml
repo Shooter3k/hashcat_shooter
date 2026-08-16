@@ -7,7 +7,6 @@ env:
   # Change to specific Rust release to pin
   rust_stable: stable
   rust_nightly: nightly-2025-01-25
-  rust_edition: '2021'
   rust_clippy: '1.88'
   rust_min: '1.88'
 
@@ -49,14 +48,14 @@ jobs:
         with:
           toolchain: ${{ env.rust_stable }}
           components: rustfmt
-      # Check fmt
-      - name: "rustfmt --check"
-        # Workaround for rust-lang/cargo#7732
+      - name: "cargo fmt --check"
         run: |
-          if ! rustfmt --check --edition ${{ env.rust_edition }} $(git ls-files '*.rs'); then
-            printf "Please run \`rustfmt --edition ${{ env.rust_edition }} \$(git ls-files '*.rs')\` to fix rustfmt errors.\nSee CONTRIBUTING.md for more details.\n" >&2
-            exit 1
-          fi
+          while IFS= read -r manifest; do
+            cargo fmt --all --check --manifest-path "$manifest" || {
+              printf "Please run \`cargo fmt --all --manifest-path %s\` to fix rustfmt errors.\nSee CONTRIBUTING.md for more details.\n" "$manifest" >&2
+              exit 1
+            }
+          done < <(git ls-files 'Rust/**/Cargo.toml')
 
   cargo-check:
     name: cargo check

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## v7.1.2-shooter.20260815.42
+
+Release-build reliability follow-up for the `.41` feature set.
+
+- Serialized Windows Rust target setup so parallel clean builds cannot race
+  while Rust is installing `rust-src`.
+- Made the Rust formatting workflow honor each crate's declared edition,
+  including the Rust 2024 `shooterctl` crate.
+- Hardened tokenizer bounds handling for truncated configured-length fields,
+  zero-length intermediate fields, and missing diagnostic snippet buffers.
+
 ## v7.1.2-shooter.20260815.41
 
 The twelve-part reliability, observability, large-input, automation, fleet,

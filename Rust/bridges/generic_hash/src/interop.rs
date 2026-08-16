@@ -3,7 +3,7 @@
  * License.....: MIT
  */
 use std::{
-    ffi::{c_char, c_int, c_void, CStr},
+    ffi::{CStr, c_char, c_int, c_void},
     mem,
     path::Path,
     ptr, slice,
