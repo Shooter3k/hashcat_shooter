@@ -66,20 +66,12 @@ explanation.
 44. **[Linux builds complete successfully](docs/shooter-enhancements.md#44-working-linux-builds)** — Shooter's mdxfind bridge now links in both static and shared Linux builds.
 45. **[Errors are saved in one support file](docs/shooter-enhancements.md#45-automatic-error-reports)** — the file records recent warnings, every normal error, later warnings, and the details needed to investigate the problem.
 46. **[Parser bugs are hunted automatically](docs/shooter-enhancements.md#46-sanitizers-and-parser-fuzzing)** — scheduled sanitizer and coverage-guided fuzz tests retain crash inputs.
-47. **[`shooterctl` handles repeatable operations](docs/shooter-enhancements.md#47-shooterctl-companion)** — one included companion covers diagnostics, plans, streams, indexes, and GPU fleets.
-48. **[`doctor` creates a privacy-limited support bundle](docs/shooter-enhancements.md#48-doctor-and-support-bundles)** — check an installation without collecting hashes, candidates, potfiles, or command lines.
-49. **[Pipeline time and peak RAM can be measured](docs/shooter-enhancements.md#49-stage-time-and-peak-memory)** — opt-in human and JSON reports show where a run spent its time.
-50. **[Huge rule sets can be inspected in ranges and run sequentially](docs/shooter-enhancements.md#50-rule-list-intelligence)** — report selected ranges, then run separate rule files one after another.
-51. **[Huge line files have persistent indexes](docs/shooter-enhancements.md#51-persistent-line-indexes)** — `.hcidx` sidecars make seekable stream resumes jump near the saved line.
-52. **[Partial, zstd, resumable, and piped attacks work](docs/shooter-enhancements.md#52-streaming-pipeline)** — stream slices directly or connect a hybrid/combinator producer to a cracking consumer.
-53. **[Commands can become reviewable target manifests](docs/shooter-enhancements.md#53-target-manifests-and-import)** — import, inspect, plan, and run `shooter-target-v1` JSON jobs.
-54. **[Twelve GPUs can share an adaptive work queue](docs/shooter-enhancements.md#54-adaptive-gpu-fleet)** — finished devices take more work while failed devices retry and quarantine.
-55. **[Hash modes can be searched and explained locally](docs/shooter-enhancements.md#55-mode-search-and-explanation)** — find standard and mdxfind modes from the installed binary.
-56. **[Releases include an SBOM and signed attestations](docs/shooter-enhancements.md#56-sbom-and-signed-release-attestations)** — verify archive contents, provenance, and the software inventory.
-57. **[Slow-producing attacks can move on automatically](docs/shooter-enhancements.md#57-automatic-low-crack-rate-bypass)** — set a time window and minimum number of new cracks, then skip the current dictionary or mask when its yield falls below that minimum.
-58. **[Existing outfile results are removed before cracking starts](docs/shooter-enhancements.md#58-outfile-check-before-cracking-allocation)** — if every hash is already in `--outfile-check-dir`, the expensive attack-specific GPU and host-memory allocation is skipped.
-59. **[Huge wordlists index and feed faster](docs/shooter-enhancements.md#59-faster-large-wordlist-indexing-and-feed)** — first-use line counting uses the CPU cores and ordinary candidates reach the GPUs with less per-word overhead.
-60. **[Remaining hashes and recovery rates are always visible](docs/shooter-enhancements.md#60-consistent-remaining-and-recovery-rate-status)** — every normal status display includes `Remaining` and `Recovered/Time`, even for small hash lists, with live minute values from the first status update.
+47. **[Pipeline time and peak RAM can be measured](docs/shooter-enhancements.md#47-stage-time-and-peak-memory)** — opt-in human and JSON reports show where a run spent its time.
+48. **[Releases include an SBOM and signed attestations](docs/shooter-enhancements.md#48-sbom-and-signed-release-attestations)** — verify archive contents, provenance, and the software inventory.
+49. **[Slow-producing attacks can move on automatically](docs/shooter-enhancements.md#49-automatic-low-crack-rate-bypass)** — set a time window and minimum number of new cracks, then skip the current dictionary or mask when its yield falls below that minimum.
+50. **[Existing outfile results are removed before cracking starts](docs/shooter-enhancements.md#50-outfile-check-before-cracking-allocation)** — if every hash is already in `--outfile-check-dir`, the expensive attack-specific GPU and host-memory allocation is skipped.
+51. **[Huge wordlists index and feed faster](docs/shooter-enhancements.md#51-faster-large-wordlist-indexing-and-feed)** — first-use line counting uses the CPU cores and ordinary candidates reach the GPUs with less per-word overhead.
+52. **[Remaining hashes and recovery rates are always visible](docs/shooter-enhancements.md#52-consistent-remaining-and-recovery-rate-status)** — every normal status display includes `Remaining` and `Recovered/Time`, even for small hash lists, with live minute values from the first status update.
 
 ## Download and run
 
@@ -93,7 +85,6 @@ Verify the package and check the version:
 ```powershell
 .\verify-windows-package.ps1
 .\hashcat.exe --version
-.\shooterctl.exe doctor
 ```
 
 If a run reports an error, look for `Error report saved to:` in the console.
@@ -128,14 +119,13 @@ Windows and Linux builds, Rust crates, and the sanitizer-backed parser fuzzer.
 | RTX 4090 autotune cache | [RTX_4090_AUTOTUNE_CACHE.md](RTX_4090_AUTOTUNE_CACHE.md) |
 | Multi-file combinations and complete-candidate rules | [docs/multi-file-combination.md](docs/multi-file-combination.md) and [docs/whole-candidate-rules.md](docs/whole-candidate-rules.md) |
 | Runtime and checkpoint controls | [docs/runtime-controls.md](docs/runtime-controls.md) and [docs/checkpoint-control.md](docs/checkpoint-control.md) |
-| Interactive status output | [consistent remaining and recovery-rate lines](docs/shooter-enhancements.md#60-consistent-remaining-and-recovery-rate-status) |
+| Interactive status output | [consistent remaining and recovery-rate lines](docs/shooter-enhancements.md#52-consistent-remaining-and-recovery-rate-status) |
 | Automatic low-crack-rate bypass | [docs/bypass-rate-control.md](docs/bypass-rate-control.md) |
 | Resumable candidate output | [docs/stdout-sessions.md](docs/stdout-sessions.md) |
 | mdxfind modes | [docs/mdxfind-modules.md](docs/mdxfind-modules.md) and the [complete JSON registry](docs/mdxfind-modules.json) |
 | Windows builds | [how_to_compile.txt](how_to_compile.txt) |
 | Linux builds | [BUILD.md](BUILD.md) |
 | Error reports and privacy | [docs/error-reports.md](docs/error-reports.md) |
-| Companion commands, manifests, streams, indexes, and fleets | [docs/shooterctl.md](docs/shooterctl.md) |
 | Stage timing and peak memory | [docs/stage-profile.md](docs/stage-profile.md) |
 | Sanitizers and parser fuzzing | [docs/security-testing.md](docs/security-testing.md) |
 | SBOM and signed release attestations | [docs/release-security.md](docs/release-security.md) |

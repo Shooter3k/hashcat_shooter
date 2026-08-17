@@ -33,7 +33,6 @@ env:
     tunings/
     example*
     hashcat*
-    shooterctl*
     libhashcat*
     !**/*.debug
 
@@ -151,13 +150,11 @@ jobs:
           PATH: /mingw64/bin:$PATH
         run: |
           bash ./tools/test-error-report.sh ./hashcat.exe
-          ./shooterctl.exe --version
 
       - name: Verify automatic error reports (Linux)
         if: matrix.os_name_lowercase == 'linux' && matrix.shared == 0
         run: |
           bash ./tools/test-error-report.sh ./hashcat
-          ./shooterctl --version
 
       - name: Generate documentation
         if: matrix.os_name_lowercase == 'linux' && matrix.shared == 0

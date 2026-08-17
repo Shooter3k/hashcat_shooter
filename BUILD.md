@@ -36,13 +36,10 @@ cd shooter_hashcat
 make -j"$(nproc)" ENABLE_LTO=0 CC=clang CXX=clang++
 ```
 
-The main executable is `hashcat` and the operations companion is `shooterctl`
-in the repository root. Confirm both start:
+The main executable is `hashcat` in the repository root. Confirm it starts:
 
 ```bash
 ./hashcat --version
-./shooterctl --version
-./shooterctl doctor
 ```
 
 Warnings about deprecated OpenSSL functions do not make the build fail. If
@@ -85,12 +82,6 @@ Without custom XDG variables, session files are stored under
 Shooter currently validates native Linux and Windows targets in CI. macOS and
 BSD are not currently claimed as supported targets for Shooter's additional
 bridges and feeds.
-
-## Support diagnostics
-
-`shooterctl support-bundle support-check` creates a manually requested,
-privacy-limited installation report. This complements the automatic error log
-described below. See [docs/shooterctl.md](docs/shooterctl.md).
 
 ## Shared core and package check
 

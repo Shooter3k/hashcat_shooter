@@ -96,7 +96,7 @@ jobs:
 
           Complete Windows x64 source and prebuilt distribution.
 
-          The single `.7z` asset contains the complete tagged source, `hashcat.exe`, `shooterctl.exe`, every module/bridge/feed DLL, required MinGW runtime DLLs, build scripts, build metadata, an SPDX SBOM, and an internal `SHA256SUMS` manifest.
+          The single `.7z` asset contains the complete tagged source, `hashcat.exe`, every module/bridge/feed DLL, required MinGW runtime DLLs, build scripts, build metadata, an SPDX SBOM, and an internal `SHA256SUMS` manifest.
 
           Run the included binary immediately with `.\hashcat.exe`. To rebuild from the included source, run `.\build-windows.ps1 -Action Rebuild`.
 

@@ -69,7 +69,6 @@ test_edge*
 
 Rust/feeds/*/target
 Rust/bridges/*/target
-Rust/shooterctl/target
 
 # Left behind by builds from before the bindings moved into OUT_DIR
 Rust/hashcat-sys/src/bindings.rs

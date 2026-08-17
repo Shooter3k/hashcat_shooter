@@ -24,7 +24,7 @@ $FileIndex = 0
 
 $RuntimeFiles = @(Get-ChildItem -LiteralPath $ResolvedRoot -File -Recurse |
   Where-Object {
-    $_.Name -in @('hashcat.exe', 'shooterctl.exe') -or
+    $_.Name -eq 'hashcat.exe' -or
     $_.Extension -eq '.dll'
   } |
   Sort-Object FullName)

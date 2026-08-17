@@ -214,7 +214,6 @@ try {
 
     $RequiredRuntimeFiles = @(
       'hashcat.exe'
-      'shooterctl.exe'
       'libiconv-2.dll'
       'libgcc_s_seh-1.dll'
       'libstdc++-6.dll'
@@ -255,14 +254,12 @@ try {
       "Packaged UTC: $([DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
       "Architecture: Windows x64 portable baseline"
       "Prebuilt executable: hashcat.exe"
-      "Companion executable: shooterctl.exe"
       "Module DLLs: $BuiltModuleCount"
       "Bridge DLLs: $BuiltBridgeCount"
       "Feed DLLs: $BuiltFeedCount"
       ''
       'Run the prebuilt program from this directory:'
       '  .\hashcat.exe --version'
-      '  .\shooterctl.exe doctor'
       ''
       'If an error occurs:'
       '  Find the path printed after "Error report saved to:".'

@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+## v7.1.2-shooter.20260816.48
+
+Standard-edition simplification release.
+
+### Removed
+
+- Removed the standalone `shooterctl` companion from standard
+  `shooter_hashcat`, including its Rust source, default build target, CI checks,
+  prebuilt executable, package requirement, SBOM entry, and current companion
+  documentation.
+- Removed companion-only claims for doctor/support bundles, rule reports,
+  persistent line indexes, streaming pipelines, target manifests, adaptive GPU
+  fleets, and local mode discovery from the standard feature inventory.
+
+### Unchanged
+
+- `hashcat.exe` does not link to or launch `shooterctl`, so the cracking engine
+  and its native Shooter features are unchanged.
+- Native stage profiling, automatic error reports, release SBOMs, and signed
+  public-release attestations remain part of standard `shooter_hashcat`.
+
+### Verified
+
+- Built and validated the complete production Windows x64 archive without a
+  `shooterctl` executable or source tree.
+- Confirmed the packaged `hashcat.exe` reports this exact release version.
+
 ## v7.1.2-shooter.20260816.47
 
 Immediate minute-rate and shorter interactive-prompt release.
