@@ -366,6 +366,7 @@ typedef enum attack_mode
   ATTACK_MODE_GENERIC     = 8,
   ATTACK_MODE_ASSOCIATION = 9,
   ATTACK_MODE_HYBRID      = 12,
+  ATTACK_MODE_MULTI_HYBRID = 13,
   ATTACK_MODE_NONE        = 100
 
 } attack_mode_t;
@@ -776,6 +777,7 @@ typedef enum guess_mode
   GUESS_MODE_HYBRID_Q                   = 20,
   GUESS_MODE_HYBRID_Q_CS                = 21,
   GUESS_MODE_COMBINATOR_MULTI           = 22,
+  GUESS_MODE_MULTI_HYBRID               = 23,
 
 } guess_mode_t;
 
@@ -3045,6 +3047,12 @@ typedef struct mask_ctx
   bool   has_q;
   u32    pre_len;
   u32    mid_len;
+
+  // Attack-mode 13 maps each ?w, from left to right, to the wordlist in the same command-line
+  // position. The markers are removed from css_buf, so these are positions in the generated mask.
+
+  u32    w_pos[256];
+  u32    w_cnt;
 
   hcstat_table_t *root_table_buf;
   hcstat_table_t *markov_table_buf;

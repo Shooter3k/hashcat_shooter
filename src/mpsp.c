@@ -393,11 +393,28 @@ static int mp_set_w_marker (hashcat_ctx_t *hashcat_ctx, const char *mask_buf, co
   // that are rewritten into attack-mode 12 carry a ?w this put there. A user who writes their own ?w
   // into an aliased mode's mask ends up with two of them and the check below says so.
 
-  if (user_options->attack_mode != ATTACK_MODE_HYBRID)
+  if ((user_options->attack_mode != ATTACK_MODE_HYBRID)
+   && (user_options->attack_mode != ATTACK_MODE_MULTI_HYBRID))
   {
-    event_log_error (hashcat_ctx, "?w is supported in attack-mode 12 only. Failed mask: %s", mask_buf);
+    event_log_error (hashcat_ctx, "?w is supported in attack-modes 12 and 13 only. Failed mask: %s", mask_buf);
 
     return -1;
+  }
+
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    if (mask_ctx->w_cnt >= 256)
+    {
+      event_log_error (hashcat_ctx, "Attack-mode 13 supports at most 256 ?w markers. Failed mask: %s", mask_buf);
+
+      return -1;
+    }
+
+    mask_ctx->w_pos[mask_ctx->w_cnt] = (u32) css_pos;
+    mask_ctx->w_cnt++;
+    mask_ctx->has_w = true;
+
+    return 0;
   }
 
   if (mask_ctx->has_w == true)
@@ -521,6 +538,7 @@ static int mp_gen_css (hashcat_ctx_t *hashcat_ctx, char *mask_buf, size_t mask_l
   mask_ctx->has_q   = false;
   mask_ctx->pre_len = 0;
   mask_ctx->mid_len = 0;
+  mask_ctx->w_cnt   = 0;
 
   size_t mask_pos;
   size_t css_pos;
@@ -657,6 +675,18 @@ static int mp_gen_css (hashcat_ctx_t *hashcat_ctx, char *mask_buf, size_t mask_l
     event_log_error (hashcat_ctx, "Attack-mode 12 needs a ?w in the mask to say where the word goes. Failed mask: %s", mask_buf);
 
     return -1;
+  }
+
+  if (hashcat_ctx->user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    const u32 wordlists_cnt = (u32) (hashcat_ctx->user_options_extra->hc_workc - 1);
+
+    if (mask_ctx->w_cnt != wordlists_cnt)
+    {
+      event_log_error (hashcat_ctx, "Attack-mode 13 maps wordlists to ?w markers in command-line order, but this mask has %u marker(s) for %u wordlist(s). Failed mask: %s", mask_ctx->w_cnt, wordlists_cnt, mask_buf);
+
+      return -1;
+    }
   }
 
   // A mask of ?w alone is a plain wordlist run with extra steps, but it is not a syntax error and the
@@ -1743,6 +1773,14 @@ int mask_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
   user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
   user_options_t       *user_options       = hashcat_ctx->user_options;
 
+  // Mode 13 builds the complete mask-and-wordlist candidate on the host. Parse the full mask here
+  // without splitting it into device-side mask kernels.
+
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    return mask_ctx_update_loop_whole_rules (hashcat_ctx);
+  }
+
   if ((user_options_extra->whole_candidate_rules == true)
    && ((user_options->attack_mode == ATTACK_MODE_BF)
     || (user_options->attack_mode == ATTACK_MODE_HYBRID1)
@@ -2185,7 +2223,8 @@ int mask_ctx_init (hashcat_ctx_t *hashcat_ctx)
   }
   else if ((user_options->attack_mode == ATTACK_MODE_HYBRID1)
         || (user_options->attack_mode == ATTACK_MODE_HYBRID2)
-        || (user_options->attack_mode == ATTACK_MODE_HYBRID))
+        || (user_options->attack_mode == ATTACK_MODE_HYBRID)
+        || (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID))
   {
     // display
 

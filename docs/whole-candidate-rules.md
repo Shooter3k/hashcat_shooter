@@ -1,7 +1,7 @@
 # Whole-candidate rules for attack modes
 
 The Shooter build can apply ordinary hashcat rules to the completed candidate
-from attack modes 1, 3, 6, 7, and 8. No extra attack mode is needed.
+from attack modes 1, 3, 6, 7, 8, and 13.
 
 | Attack mode | Base candidate before `-r`/`-g` |
 | --- | --- |
@@ -10,6 +10,7 @@ from attack modes 1, 3, 6, 7, and 8. No extra attack mode is needed.
 | `-a 6` | `word + mask` |
 | `-a 7` | `mask + word` |
 | `-a 8` | complete candidate supplied by the feed |
+| `-a 13` | mask with each `?w` replaced by its command-line wordlist entry |
 
 Mode 8 already has native upstream rule support. Shooter adds the same final
 whole-candidate rule behavior to the other modes in the table. Mode 9 keeps
@@ -25,6 +26,7 @@ hashcat.exe -m 0 -a 1 hashes.txt one.txt two.txt three.txt four.txt -r rules\bes
 hashcat.exe -m 0 -a 3 hashes.txt "?u?l?l?l?d?d" -r rules\best66.rule
 hashcat.exe -m 1000 -a 6 hashes.txt words.txt "?d?d?d?d" -r rules\best66.rule
 hashcat.exe -m 1000 -a 7 hashes.txt "?d?d?d?d" words.txt -g 1000
+hashcat.exe -m 0 -a 13 hashes.txt "?w-?d?d-?w" left.txt right.txt -r rules\best66.rule
 ```
 
 For mode 1, words `pass`, `word`, and `2026`, followed by rule `$!`, test
@@ -39,8 +41,9 @@ base      = first + remaining
 tested candidate = each -r/-g rule applied to base
 ```
 
-Rules are optional. With no `-r` or `-g`, each attack uses its original native
-fast path and tests the unruled candidates exactly as before this feature.
+Rules are optional. With no `-r` or `-g`, each attack tests the unruled
+candidate. Existing modes retain their original native fast paths; mode 13
+uses the same host assembly with the straight kernel's no-op rule.
 
 ## Counting, output, and restore
 

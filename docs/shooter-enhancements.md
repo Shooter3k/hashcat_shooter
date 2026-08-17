@@ -85,7 +85,7 @@ all combinations assigned to earlier devices. See the
 ### 11. Whole-candidate rules
 
 `-r` and `-g` can transform the fully assembled candidate in attack modes 1,
-3, 6, and 7. Existing `-j` and `-k` side rules still run before concatenation.
+3, 6, 7, and 13. Existing `-j` and `-k` side rules still run before assembly.
 See the [whole-candidate rule guide](whole-candidate-rules.md).
 
 ### 12. Parallel stdout rule generation
@@ -525,3 +525,26 @@ the last round, avoiding duplicate pages between dictionaries or masks.
 Automatic pages are suppressed for `--quiet`, machine-readable and JSON
 output, benchmarks, speed-only and progress-only modes, and `--stdout`, so
 their established output formats remain unchanged.
+
+## Ordered multi-hybrid candidates
+
+### 52. Ordered multi-hybrid mode 13
+
+Attack mode 13 accepts a mask followed by any number of wordlists. The first
+`?w` in the mask receives an entry from the first wordlist, the second `?w`
+receives an entry from the second wordlist, and so on. Every mask must contain
+exactly as many `?w` markers as the command names wordlists, which makes the
+mapping explicit and prevents silent reordering.
+
+Wordlists and their Cartesian positions retain command-line order; no
+dictionary is swapped merely because it is larger. A mask file supplies any
+number of masks in file order. Within each mask, hashcat's normal mask order
+is used, including normal Markov behavior unless `--markov-disable` is given.
+Multiple `-r` files retain option order and run only after the complete
+mask-and-wordlist candidate has been assembled. `-j` applies to the first
+wordlist and `-k` applies to every remaining wordlist before assembly.
+
+The mode supports normal cracking, `--stdout`, keyspace and total-candidate
+counts, skip/limit accounting, restores, status, potfiles, and outfiles. See
+the [attack-mode 13 guide](multi-hybrid-mode13.md) for syntax, examples,
+ordering, counting, and limits.

@@ -196,6 +196,7 @@ Usage: hashcat [options]... hash|hashfile|hccapxfile [dictionary|mask|directory]
   8 | Generic + rules
   9 | Association + rules
  12 | Hybrid, mask says where the word goes
+ 13 | Multi-hybrid, ordered wordlists + masks + rules
 
 - [ Built-in Charsets ] -
 
@@ -216,6 +217,12 @@ Usage: hashcat [options]... hash|hashfile|hccapxfile [dictionary|mask|directory]
  ===+========
   w | the word from the wordlist, required, once
   q | a word from a second wordlist, optional, after ?w
+
+- [ Attack-Mode 13 Markers ] -
+
+  ? | Marker
+ ===+========
+  w | next wordlist in command-line order, once per wordlist
 
 - [ OpenCL Device Types ] -
 
@@ -255,6 +262,7 @@ Hardware reached through an assimilation bridge is selected by the hash-mode, ne
   Association      | $1$   | hashcat -a 9 -m 500 user500.hash -r rules/best66.rule
   Hybrid           | MD5   | hashcat -a 12 -m 0 example0.hash ?d?w?d?d example.dict
   Hybrid, two dict | MD5   | hashcat -a 12 -m 0 example0.hash ?w-?q! example.dict example.dict
+  Multi-hybrid     | MD5   | hashcat -a 13 -m 0 example0.hash ?w-?d?w example.dict example.dict -r rules/best66.rule
 
 If you still have no idea what just happened, try the following pages:
 

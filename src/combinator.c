@@ -60,7 +60,7 @@ static int combinator_count_dicts (hashcat_ctx_t *hashcat_ctx, const char *dictf
   return 0;
 }
 
-static int combinator_ctx_init_multi (hashcat_ctx_t *hashcat_ctx, const int dicts_cnt)
+static int combinator_ctx_init_multi (hashcat_ctx_t *hashcat_ctx, const int dicts_from, const int dicts_cnt)
 {
   combinator_ctx_t     *combinator_ctx     = hashcat_ctx->combinator_ctx;
   user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
@@ -73,7 +73,7 @@ static int combinator_ctx_init_multi (hashcat_ctx_t *hashcat_ctx, const int dict
 
   for (int i = 0; i < dicts_cnt; i++)
   {
-    combinator_ctx->dicts[i] = user_options_extra->hc_workv[i];
+    combinator_ctx->dicts[i] = user_options_extra->hc_workv[dicts_from + i];
 
     if (generic_wordlist_keyspace (hashcat_ctx, combinator_ctx->dicts[i], &combinator_ctx->combs_counts[i]) == -1) return -1;
 
@@ -94,8 +94,8 @@ static int combinator_ctx_init_multi (hashcat_ctx_t *hashcat_ctx, const int dict
     total *= combinator_ctx->combs_counts[i];
   }
 
-  combinator_ctx->dict1 = combinator_ctx->dicts[0];
-  combinator_ctx->dict2 = combinator_ctx->dicts[1];
+  combinator_ctx->dict1 = (dicts_cnt >= 1) ? combinator_ctx->dicts[0] : NULL;
+  combinator_ctx->dict2 = (dicts_cnt >= 2) ? combinator_ctx->dicts[1] : NULL;
   combinator_ctx->dict3 = (dicts_cnt >= 3) ? combinator_ctx->dicts[2] : NULL;
   combinator_ctx->dict4 = (dicts_cnt >= 4) ? combinator_ctx->dicts[3] : NULL;
   combinator_ctx->dict5 = (dicts_cnt >= 5) ? combinator_ctx->dicts[4] : NULL;
@@ -103,8 +103,8 @@ static int combinator_ctx_init_multi (hashcat_ctx_t *hashcat_ctx, const int dict
 
   combinator_ctx->combs_mode = COMBINATOR_MODE_BASE_LEFT;
   combinator_ctx->combs_cnt  = combinator_ctx->combs_counts[dicts_cnt - 1];
-  combinator_ctx->combs1_cnt = combinator_ctx->combs_counts[0];
-  combinator_ctx->combs2_cnt = combinator_ctx->combs_counts[1];
+  combinator_ctx->combs1_cnt = (dicts_cnt >= 1) ? combinator_ctx->combs_counts[0] : 0;
+  combinator_ctx->combs2_cnt = (dicts_cnt >= 2) ? combinator_ctx->combs_counts[1] : 0;
   combinator_ctx->combs3_cnt = (dicts_cnt >= 3) ? combinator_ctx->combs_counts[2] : 0;
   combinator_ctx->combs4_cnt = (dicts_cnt >= 4) ? combinator_ctx->combs_counts[3] : 0;
   combinator_ctx->combs5_cnt = (dicts_cnt >= 5) ? combinator_ctx->combs_counts[4] : 0;
@@ -131,13 +131,21 @@ int combinator_ctx_init (hashcat_ctx_t *hashcat_ctx)
   if (user_options->version      == true) return 0;
 
   if ((user_options->attack_mode != ATTACK_MODE_COMBI)
-   && (user_options->attack_mode != ATTACK_MODE_HYBRID)) return 0;
+   && (user_options->attack_mode != ATTACK_MODE_HYBRID)
+   && (user_options->attack_mode != ATTACK_MODE_MULTI_HYBRID)) return 0;
 
   combinator_ctx->enabled = true;
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {
-    if (combinator_ctx_init_multi (hashcat_ctx, user_options_extra->hc_workc) == -1) return -1;
+    if (combinator_ctx_init_multi (hashcat_ctx, 0, user_options_extra->hc_workc) == -1) return -1;
+
+    return 0;
+  }
+
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    if (combinator_ctx_init_multi (hashcat_ctx, 1, user_options_extra->hc_workc - 1) == -1) return -1;
 
     return 0;
   }

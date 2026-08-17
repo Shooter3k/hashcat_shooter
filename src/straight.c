@@ -251,6 +251,40 @@ int straight_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
   // A pipe comes here too and is the one whose keyspace is never known, so it leaves below with
   // words_cnt set to GENERIC_KEYSPACE_UNKNOWN and the run has no denominator.
 
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    u64 base_candidates = mask_ctx->bfs_cnt;
+
+    logfile_sub_string (mask_ctx->mask);
+
+    for (int i = 0; i < combinator_ctx->dicts_cnt; i++)
+    {
+      logfile_sub_string (combinator_ctx->dicts[i]);
+
+      if (overflow_check_u64_mul (base_candidates, combinator_ctx->combs_counts[i]) == true)
+      {
+        event_log_error (hashcat_ctx, "Integer overflow detected in attack-mode 13 keyspace.");
+
+        return -1;
+      }
+
+      base_candidates *= combinator_ctx->combs_counts[i];
+    }
+
+    for (u32 i = 0; i < user_options->rp_files_cnt; i++) logfile_sub_var_string ("rulefile", user_options->rp_files[i]);
+
+    if (overflow_check_u64_mul (base_candidates, straight_ctx->kernel_rules_cnt) == true)
+    {
+      event_log_error (hashcat_ctx, "Integer overflow detected after applying attack-mode 13 rules.");
+
+      return -1;
+    }
+
+    status_ctx->words_cnt = base_candidates * straight_ctx->kernel_rules_cnt;
+
+    return 0;
+  }
+
   if (user_options_extra->whole_candidate_rules == true)
   {
     u64 base_candidates = 0;

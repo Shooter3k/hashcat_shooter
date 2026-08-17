@@ -771,6 +771,11 @@ static int multi_fill_seek_position (hashcat_ctx_t *hashcat_ctx, multi_fill_stat
 
 static int multi_fill_position (hashcat_ctx_t *hashcat_ctx, multi_fill_state_t *mf, const u64 pos)
 {
+  // Mode 13 emits every mask value for one word tuple before advancing the tuple. Reuse the cached
+  // words while only the mask position changes.
+
+  if ((mf->positioned == true) && (pos == mf->position)) return 0;
+
   int rc = 0;
 
   if ((mf->positioned == true) && (pos == mf->position + 1))
@@ -925,6 +930,110 @@ static int fill_multi (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_par
 
         combined_pos += mf->word_len[i];
       }
+
+      pw_add (batch, device_param->kernel_power, combined_buf, combined_len);
+
+      if (status_ctx->run_thread_level1 == false) break;
+    }
+
+    if (work_cur > 0) batch->words_fin = words_off + work_cur;
+
+    if (status_ctx->run_thread_level1 == false) break;
+  }
+
+  return 0;
+}
+
+// Assemble an attack-mode 13 candidate in the exact order expressed by the mask. Marker N receives
+// wordlist N, with both markers and wordlists numbered from left to right / command-line order.
+
+static int fill_multi_hybrid (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, pw_batch_t *batch, void *state)
+{
+  const hashconfig_t *hashconfig = hashcat_ctx->hashconfig;
+  const mask_ctx_t   *mask_ctx   = hashcat_ctx->mask_ctx;
+  const status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  multi_fill_state_t *mf = (multi_fill_state_t *) state;
+
+  u64 words_extra = -1U;
+
+  while (words_extra)
+  {
+    const u64 work_cnt = get_work (hashcat_ctx, device_param, words_extra);
+
+    if (work_cnt == 0) break;
+
+    words_extra = 0;
+
+    const u64 words_off = device_param->words_off;
+
+    batch->words_off = words_off;
+
+    u64 work_cur = 0;
+
+    for (work_cur = 0; work_cur < work_cnt; work_cur++)
+    {
+      const u64 candidate_pos = words_off + work_cur;
+      const u64 word_pos      = candidate_pos / mask_ctx->bfs_cnt;
+      const u64 mask_pos      = candidate_pos % mask_ctx->bfs_cnt;
+
+      if (multi_fill_position (hashcat_ctx, mf, word_pos) == -1)
+      {
+        event_log_error (hashcat_ctx, "Unexpected end of attack-mode 13 wordlist.");
+
+        return -1;
+      }
+
+      int combined_len = (int) mask_ctx->css_cnt;
+      bool invalid = false;
+
+      for (int i = 0; i < mf->base_cnt; i++)
+      {
+        if (mf->word_len[i] < 0)
+        {
+          invalid = true;
+
+          break;
+        }
+
+        combined_len += mf->word_len[i];
+      }
+
+      if ((invalid == true)
+       || (combined_len < (int) hashconfig->pw_min)
+       || (combined_len > (int) hashconfig->pw_max))
+      {
+        if (fill_reject (hashcat_ctx, false, batch, &words_extra, candidate_pos) == -1) return -1;
+
+        continue;
+      }
+
+      u8 mask_buf[PW_MAX + 1] = { 0 };
+      u8 combined_buf[PW_MAX + 1] = { 0 };
+
+      sp_exec (mask_pos, (char *) mask_buf, mask_ctx->root_css_buf, mask_ctx->markov_css_buf, 0, mask_ctx->css_cnt);
+
+      u32 mask_from = 0;
+      u32 combined_pos = 0;
+
+      for (int i = 0; i < mf->base_cnt; i++)
+      {
+        const u32 mask_to = mask_ctx->w_pos[i];
+        const u32 mask_len = mask_to - mask_from;
+
+        memcpy (combined_buf + combined_pos, mask_buf + mask_from, mask_len);
+
+        combined_pos += mask_len;
+
+        memcpy (combined_buf + combined_pos, mf->word_buf + (i * (PW_MAX + 1)), mf->word_len[i]);
+
+        combined_pos += mf->word_len[i];
+        mask_from = mask_to;
+      }
+
+      const u32 mask_tail_len = mask_ctx->css_cnt - mask_from;
+
+      memcpy (combined_buf + combined_pos, mask_buf + mask_from, mask_tail_len);
 
       pw_add (batch, device_param->kernel_power, combined_buf, combined_len);
 
@@ -1556,7 +1665,28 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
     // mask ends in ?w use the mask as their base source. Shooter's multi-file -a 1 path is handled
     // explicitly below.
 
-    if ((user_options_extra->whole_candidate_rules == true) && (attack_mode == ATTACK_MODE_COMBI))
+    if (attack_mode == ATTACK_MODE_MULTI_HYBRID)
+    {
+      multi_fill_state_t mf;
+
+      if (multi_fill_init (hashcat_ctx, &mf, combinator_ctx->dicts_cnt, BASE_LENGTH_NONE, true) == -1)
+      {
+        multi_fill_destroy (&mf);
+
+        return -1;
+      }
+
+      pw_pipe_t pipe;
+
+      pw_pipe_start (&pipe, hashcat_ctx, device_param, fill_multi_hybrid, &mf, false);
+
+      const int rc_final = pipe_run (hashcat_ctx, device_param, &pipe, false, straight_ctx->kernel_rules_cnt);
+
+      multi_fill_destroy (&mf);
+
+      if (rc_final == -1) return -1;
+    }
+    else if ((user_options_extra->whole_candidate_rules == true) && (attack_mode == ATTACK_MODE_COMBI))
     {
       multi_fill_state_t mf;
 

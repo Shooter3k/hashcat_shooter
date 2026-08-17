@@ -499,6 +499,11 @@ int status_get_guess_mode (const hashcat_ctx_t *hashcat_ctx)
     return GUESS_MODE_COMBINATOR_BASE_RIGHT;
   }
 
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    return GUESS_MODE_MULTI_HYBRID;
+  }
+
   if (user_options->attack_mode == ATTACK_MODE_BF)
   {
     if (has_mask_cs == true)
@@ -726,6 +731,13 @@ char *status_get_guess_base (const hashcat_ctx_t *hashcat_ctx)
     return strdup (combinator_ctx->dict2);
   }
 
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+
+    return strdup (combinator_ctx->dicts[0]);
+  }
+
   if (user_options_extra->base_source == BASE_SOURCE_FEED)
   {
     return status_get_guess_feed (hashcat_ctx);
@@ -766,6 +778,8 @@ int status_get_guess_base_offset (const hashcat_ctx_t *hashcat_ctx)
 
     return mask_ctx->masks_pos + 1;
   }
+
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID) return 1;
 
   if (user_options_extra->base_source == BASE_SOURCE_FEED)
   {
@@ -814,6 +828,8 @@ int status_get_guess_base_count (const hashcat_ctx_t *hashcat_ctx)
 
     return mask_ctx->masks_cnt;
   }
+
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID) return 1;
 
   if (user_options_extra->base_source == BASE_SOURCE_FEED)
   {
@@ -897,6 +913,11 @@ char *status_get_guess_mod (const hashcat_ctx_t *hashcat_ctx)
     return strdup (combinator_ctx->dict1);
   }
 
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    return status_get_guess_mask (hashcat_ctx);
+  }
+
   if (user_options->attack_mode == ATTACK_MODE_BF)
   {
 
@@ -972,6 +993,13 @@ int status_get_guess_mod_offset (const hashcat_ctx_t *hashcat_ctx)
     return 1;
   }
 
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    const mask_ctx_t *mask_ctx = hashcat_ctx->mask_ctx;
+
+    return mask_ctx->masks_pos + 1;
+  }
+
   if (user_options->attack_mode == ATTACK_MODE_HYBRID)
   {
     // -a 7 with the mask in Guess.Base counts wordlists here rather than masks, and a feed is one
@@ -1007,6 +1035,13 @@ int status_get_guess_mod_count (const hashcat_ctx_t *hashcat_ctx)
   if (user_options->attack_mode == ATTACK_MODE_BF)
   {
     return 1;
+  }
+
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    const mask_ctx_t *mask_ctx = hashcat_ctx->mask_ctx;
+
+    return mask_ctx->masks_cnt;
   }
 
   if (user_options->attack_mode == ATTACK_MODE_HYBRID)
@@ -1088,7 +1123,8 @@ int status_get_guess_mask_length (const hashcat_ctx_t *hashcat_ctx)
   // mp_get_length counts every ?x pair as one character, but ?w and ?q are positions rather than
   // charsets and contribute nothing to the mask. css_cnt is what the mask actually produces.
 
-  if (user_options->attack_mode == ATTACK_MODE_HYBRID) return (int) mask_ctx->css_cnt;
+  if ((user_options->attack_mode == ATTACK_MODE_HYBRID)
+   || (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)) return (int) mask_ctx->css_cnt;
 
   return mp_get_length (mask_ctx->mask, hashconfig->opts_type);
 }

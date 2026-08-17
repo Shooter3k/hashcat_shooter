@@ -69,6 +69,7 @@ static bool attack_mode_uses_whole_candidate_rules (const u32 attack_mode)
   if (attack_mode == ATTACK_MODE_BF)      return true;
   if (attack_mode == ATTACK_MODE_HYBRID1) return true;
   if (attack_mode == ATTACK_MODE_HYBRID2) return true;
+  if (attack_mode == ATTACK_MODE_MULTI_HYBRID) return true;
 
   return false;
 }
@@ -980,6 +981,7 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
      && (user_options->attack_mode != ATTACK_MODE_HYBRID1)
      && (user_options->attack_mode != ATTACK_MODE_HYBRID2)
      && (user_options->attack_mode != ATTACK_MODE_HYBRID)
+     && (user_options->attack_mode != ATTACK_MODE_MULTI_HYBRID)
      && (user_options->attack_mode != ATTACK_MODE_GENERIC)
      && (user_options->attack_mode != ATTACK_MODE_ASSOCIATION)
      && (user_options->attack_mode != ATTACK_MODE_NONE))
@@ -1254,6 +1256,13 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
     return -1;
   }
 
+  if ((user_options->increment != INCREMENT_NONE) && (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID))
+  {
+    event_log_error (hashcat_ctx, "Attack-mode 13 does not support -i/--increment. Every ?w has a fixed command-line wordlist mapping.");
+
+    return -1;
+  }
+
   if ((user_options->rp_files_cnt > 0) && (user_options->rp_gen > 0))
   {
     event_log_error (hashcat_ctx, "Combining -r/--rules-file and -g/--rules-generate is not supported.");
@@ -1268,6 +1277,7 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
      && (user_options->attack_mode != ATTACK_MODE_BF)
      && (user_options->attack_mode != ATTACK_MODE_HYBRID1)
      && (user_options->attack_mode != ATTACK_MODE_HYBRID2)
+     && (user_options->attack_mode != ATTACK_MODE_MULTI_HYBRID)
      && (user_options->attack_mode != ATTACK_MODE_GENERIC)
      && (user_options->attack_mode != ATTACK_MODE_ASSOCIATION))
     {
@@ -2167,6 +2177,15 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
         show_error = false;
       }
     }
+    else if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+    {
+      // the mask, followed by one or more wordlists
+
+      if (user_options->hc_argc >= 2)
+      {
+        show_error = false;
+      }
+    }
     else if (user_options->attack_mode == ATTACK_MODE_HYBRID2)
     {
       if (user_options->hc_argc == 2)
@@ -2227,6 +2246,15 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
       // the mask, the wordlist the ?w names, and the wordlist the ?q names when the mask has one
 
       if ((user_options->hc_argc == 2) || (user_options->hc_argc == 3))
+      {
+        show_error = false;
+      }
+    }
+    else if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+    {
+      // the mask, followed by one or more wordlists
+
+      if (user_options->hc_argc >= 2)
       {
         show_error = false;
       }
@@ -2314,6 +2342,15 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
       // mask has one
 
       if ((user_options->hc_argc == 3) || (user_options->hc_argc == 4))
+      {
+        show_error = false;
+      }
+    }
+    else if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+    {
+      // the hash file, the mask, and one or more wordlists
+
+      if (user_options->hc_argc >= 3)
       {
         show_error = false;
       }
@@ -2704,6 +2741,10 @@ void user_options_preprocess (hashcat_ctx_t *hashcat_ctx)
     else if ((user_options->attack_mode == ATTACK_MODE_HYBRID1) || (user_options->attack_mode == ATTACK_MODE_HYBRID))
     {
       user_options->kernel_loops = KERNEL_COMBS;
+    }
+    else if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+    {
+      user_options->kernel_loops = KERNEL_RULES;
     }
     else if (user_options->attack_mode == ATTACK_MODE_HYBRID2)
     {
@@ -3096,6 +3137,7 @@ static u32 user_options_extra_base_source (hashcat_ctx_t *hashcat_ctx)
 
   if (attack_mode == ATTACK_MODE_BF)      return BASE_SOURCE_MASK;
   if (attack_mode == ATTACK_MODE_GENERIC) return BASE_SOURCE_FEED;
+  if (attack_mode == ATTACK_MODE_MULTI_HYBRID) return BASE_SOURCE_NONE;
 
   const bool reads_words = (attack_mode == ATTACK_MODE_STRAIGHT) || (attack_mode == ATTACK_MODE_COMBI) || (attack_mode == ATTACK_MODE_HYBRID1) || (attack_mode == ATTACK_MODE_HYBRID2) || (attack_mode == ATTACK_MODE_HYBRID) || (attack_mode == ATTACK_MODE_ASSOCIATION);
 
@@ -3238,6 +3280,7 @@ void user_options_extra_init (hashcat_ctx_t *hashcat_ctx)
     case ATTACK_MODE_HYBRID1:       user_options_extra->attack_kern = (user_options_extra->whole_candidate_rules == true) ? ATTACK_KERN_STRAIGHT : ATTACK_KERN_COMBI; break;
     case ATTACK_MODE_HYBRID2:       user_options_extra->attack_kern = (user_options_extra->whole_candidate_rules == true) ? ATTACK_KERN_STRAIGHT : ATTACK_KERN_COMBI; break;
     case ATTACK_MODE_HYBRID:        user_options_extra->attack_kern = ATTACK_KERN_COMBI;    break;
+    case ATTACK_MODE_MULTI_HYBRID:  user_options_extra->attack_kern = ATTACK_KERN_STRAIGHT; break;
     case ATTACK_MODE_GENERIC:       user_options_extra->attack_kern = ATTACK_KERN_STRAIGHT; break;
     case ATTACK_MODE_ASSOCIATION:   user_options_extra->attack_kern = ATTACK_KERN_STRAIGHT; break;
   }
@@ -3676,6 +3719,79 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
       }
     }
   }
+  else if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    char *maskfile = user_options_extra->hc_workv[0];
+
+    // If the mask argument names a file, it is an hcmask-style ordered list of masks.
+
+    if (hc_path_exist (maskfile) == true)
+    {
+      if (hc_path_is_directory (maskfile) == true)
+      {
+        event_log_error (hashcat_ctx, "%s: A directory cannot be used as a maskfile argument.", maskfile);
+
+        return -1;
+      }
+
+      if (hc_path_read (maskfile) == false)
+      {
+        event_log_error (hashcat_ctx, "%s: %s", maskfile, strerror (errno));
+
+        return -1;
+      }
+
+      if (hc_path_has_bom (maskfile) == true)
+      {
+        event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", maskfile);
+      }
+
+      if ((user_options->custom_charset_1)
+       || (user_options->custom_charset_2)
+       || (user_options->custom_charset_3)
+       || (user_options->custom_charset_4)
+       || (user_options->custom_charset_5)
+       || (user_options->custom_charset_6)
+       || (user_options->custom_charset_7)
+       || (user_options->custom_charset_8))
+      {
+        event_log_error (hashcat_ctx, "Using --custom-charsetX with mask files is misleading. Put custom charsets in the mask file instead.");
+
+        return -1;
+      }
+    }
+
+    for (int i = 1; i < user_options_extra->hc_workc; i++)
+    {
+      char *dictfile = user_options_extra->hc_workv[i];
+
+      if (hc_path_exist (dictfile) == false)
+      {
+        event_log_error (hashcat_ctx, "%s: %s", dictfile, strerror (errno));
+
+        return -1;
+      }
+
+      if (hc_path_is_directory (dictfile) == true)
+      {
+        event_log_error (hashcat_ctx, "%s: A directory cannot be used as an attack-mode 13 wordlist.", dictfile);
+
+        return -1;
+      }
+
+      if (hc_path_read (dictfile) == false)
+      {
+        event_log_error (hashcat_ctx, "%s: %s", dictfile, strerror (errno));
+
+        return -1;
+      }
+
+      if (hc_path_has_bom (dictfile) == true)
+      {
+        event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", dictfile);
+      }
+    }
+  }
   else if (user_options->attack_mode == ATTACK_MODE_BF)
   {
     // if the file exist it's a maskfile and then it must be readable
@@ -4064,7 +4180,8 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
       }
     }
   }
-  else if (user_options->attack_mode == ATTACK_MODE_HYBRID)
+  else if ((user_options->attack_mode == ATTACK_MODE_HYBRID)
+        || (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID))
   {
     // The mask is the first work argument and everything behind it is a wordlist: one of them, or two
     // when the mask carries a ?q.

@@ -11,7 +11,10 @@ The former private Shooter attack modes 11, 12, 13, and 14 are removed. Their
 3-, 4-, 5-, and 6-file attacks are now ordinary mode-1 commands, and mode 1 is
 not limited to six files. Official hashcat attack mode 12 is now present too,
 but it is a separate general multi-hybrid mode using `?w` and optional `?q` in
-a mask; it does not replace this multi-file mode-1 extension.
+a mask; it does not replace this multi-file mode-1 extension. Shooter now
+reuses number 13 for a different ordered multi-hybrid syntax documented in
+[multi-hybrid-mode13.md](multi-hybrid-mode13.md); the old fixed three-file
+mode-13 syntax remains removed.
 
 ## Windows examples
 

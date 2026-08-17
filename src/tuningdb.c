@@ -429,6 +429,7 @@ static tuning_db_entry_t *tuning_db_search_real (hashcat_ctx_t *hashcat_ctx, con
   if (attack_mode ==  6) attack_mode = 1;
   if (attack_mode ==  7) attack_mode = 1;
   if (attack_mode == 12) attack_mode = 1;
+  if (attack_mode == 13) attack_mode = 0;
   if (attack_mode ==  8) attack_mode = 0;
   if (attack_mode ==  9) attack_mode = 0;
 

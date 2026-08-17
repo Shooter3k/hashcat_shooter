@@ -3759,6 +3759,27 @@ void status_display (hashcat_ctx_t *hashcat_ctx)
 
       break;
 
+    case GUESS_MODE_MULTI_HYBRID:
+
+      event_log_info (hashcat_ctx,
+        "Guess.Mask.......: %s [%u]",
+        hashcat_ctx->mask_ctx->mask,
+        hashcat_status->guess_mask_length);
+
+      event_log_info (hashcat_ctx,
+        "Guess.Wordlists..: %d, mapped to ?w markers in command-line order",
+        hashcat_ctx->combinator_ctx->dicts_cnt);
+
+      for (int i = 0; i < hashcat_ctx->combinator_ctx->dicts_cnt; i++)
+      {
+        event_log_info (hashcat_ctx,
+          "Guess.?w.#%02d....: %s",
+          i + 1,
+          hashcat_ctx->combinator_ctx->dicts[i]);
+      }
+
+      break;
+
     case GUESS_MODE_MASK:
 
       event_log_info (hashcat_ctx,

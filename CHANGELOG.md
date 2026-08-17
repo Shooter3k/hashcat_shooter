@@ -1,5 +1,26 @@
 # shooter_hashcat release notes
 
+## v7.1.2-shooter.20260817.50
+
+### Added
+
+- Attack mode 13 accepts a mask plus any number of wordlists. Each `?w` marker
+  maps to the next wordlist in command-line order, and every mask must contain
+  exactly one marker per wordlist.
+- Mode 13 supports hcmask files for ordered mask sequences and applies `-r` or
+  `-g` rules only after the complete mask-and-wordlist candidate is assembled.
+- Mode 13 works with normal cracking, `--stdout`, `--keyspace`,
+  `--total-candidates`, skip/limit accounting, restore positions, status,
+  potfiles, and outfiles.
+
+### Verified
+
+- Built the portable Windows x64 executable.
+- Confirmed three wordlists retain command-line order, hcmask lines retain
+  file order, reversing two `-r` options reverses their rule effect, marker
+  count mismatches fail clearly, and a ruled mode-13 candidate cracks a known
+  MD5 target.
+
 ## v7.1.2-shooter.20260817.49
 
 Automatic endpoint-status and task-timing release.
