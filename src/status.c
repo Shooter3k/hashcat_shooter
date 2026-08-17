@@ -733,9 +733,11 @@ char *status_get_guess_base (const hashcat_ctx_t *hashcat_ctx)
 
   if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
   {
-    const combinator_ctx_t *combinator_ctx = hashcat_ctx->combinator_ctx;
+    const mask_ctx_t *mask_ctx = hashcat_ctx->mask_ctx;
 
-    return strdup (combinator_ctx->dicts[0]);
+    if (mask_ctx->attack13_stages_cnt == 0) return strdup ("ordered pipeline");
+
+    return strdup (mask_ctx->attack13_stages[0].source);
   }
 
   if (user_options_extra->base_source == BASE_SOURCE_FEED)
@@ -915,7 +917,11 @@ char *status_get_guess_mod (const hashcat_ctx_t *hashcat_ctx)
 
   if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
   {
-    return status_get_guess_mask (hashcat_ctx);
+    const mask_ctx_t *mask_ctx = hashcat_ctx->mask_ctx;
+
+    if (mask_ctx->attack13_stages_cnt == 0) return strdup ("ordered pipeline");
+
+    return strdup (mask_ctx->attack13_stages[mask_ctx->attack13_stages_cnt - 1].source);
   }
 
   if (user_options->attack_mode == ATTACK_MODE_BF)

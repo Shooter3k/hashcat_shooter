@@ -17,6 +17,8 @@
 #include "generic.h"
 #include "ext_lzma.h"
 #include "mpsp.h"
+#include "rp.h"
+#include "rp_cpu.h"
 
 static const char *const DEF_MASK = "?1?2?2?2?2?2?2?3?3?3?3?d?d?d?d";
 
@@ -393,28 +395,11 @@ static int mp_set_w_marker (hashcat_ctx_t *hashcat_ctx, const char *mask_buf, co
   // that are rewritten into attack-mode 12 carry a ?w this put there. A user who writes their own ?w
   // into an aliased mode's mask ends up with two of them and the check below says so.
 
-  if ((user_options->attack_mode != ATTACK_MODE_HYBRID)
-   && (user_options->attack_mode != ATTACK_MODE_MULTI_HYBRID))
+  if (user_options->attack_mode != ATTACK_MODE_HYBRID)
   {
-    event_log_error (hashcat_ctx, "?w is supported in attack-modes 12 and 13 only. Failed mask: %s", mask_buf);
+    event_log_error (hashcat_ctx, "?w is supported in attack-mode 12 only. In attack-mode 13, put the wordlist itself at this pipeline position. Failed mask: %s", mask_buf);
 
     return -1;
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
-  {
-    if (mask_ctx->w_cnt >= 256)
-    {
-      event_log_error (hashcat_ctx, "Attack-mode 13 supports at most 256 ?w markers. Failed mask: %s", mask_buf);
-
-      return -1;
-    }
-
-    mask_ctx->w_pos[mask_ctx->w_cnt] = (u32) css_pos;
-    mask_ctx->w_cnt++;
-    mask_ctx->has_w = true;
-
-    return 0;
   }
 
   if (mask_ctx->has_w == true)
@@ -538,7 +523,6 @@ static int mp_gen_css (hashcat_ctx_t *hashcat_ctx, char *mask_buf, size_t mask_l
   mask_ctx->has_q   = false;
   mask_ctx->pre_len = 0;
   mask_ctx->mid_len = 0;
-  mask_ctx->w_cnt   = 0;
 
   size_t mask_pos;
   size_t css_pos;
@@ -675,18 +659,6 @@ static int mp_gen_css (hashcat_ctx_t *hashcat_ctx, char *mask_buf, size_t mask_l
     event_log_error (hashcat_ctx, "Attack-mode 12 needs a ?w in the mask to say where the word goes. Failed mask: %s", mask_buf);
 
     return -1;
-  }
-
-  if (hashcat_ctx->user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
-  {
-    const u32 wordlists_cnt = (u32) (hashcat_ctx->user_options_extra->hc_workc - 1);
-
-    if (mask_ctx->w_cnt != wordlists_cnt)
-    {
-      event_log_error (hashcat_ctx, "Attack-mode 13 maps wordlists to ?w markers in command-line order, but this mask has %u marker(s) for %u wordlist(s). Failed mask: %s", mask_ctx->w_cnt, wordlists_cnt, mask_buf);
-
-      return -1;
-    }
   }
 
   // A mask of ?w alone is a plain wordlist run with extra steps, but it is not a syntax error and the
@@ -1762,6 +1734,58 @@ bool mask_arg_ends_with_marker (const char *arg, const char marker)
   return all;
 }
 
+attack13_stage_type_t attack13_classify_arg (const char *arg, const char **source, bool *mask_file)
+{
+  *source    = arg;
+  *mask_file = false;
+
+  if (strncmp (arg, "wordlist:", 9) == 0)
+  {
+    *source = arg + 9;
+
+    return ATTACK13_STAGE_WORDLIST;
+  }
+
+  if (strncmp (arg, "maskfile:", 9) == 0)
+  {
+    *source    = arg + 9;
+    *mask_file = true;
+
+    return ATTACK13_STAGE_MASK;
+  }
+
+  if (strncmp (arg, "mask:", 5) == 0)
+  {
+    *source = arg + 5;
+
+    return ATTACK13_STAGE_MASK;
+  }
+
+  if (strchr (arg, '?') != NULL) return ATTACK13_STAGE_MASK;
+
+  const size_t len = strlen (arg);
+
+  if (len >= 7)
+  {
+    const char *suffix = arg + len - 7;
+
+    if ((tolower ((unsigned char) suffix[0]) == '.')
+     && (tolower ((unsigned char) suffix[1]) == 'h')
+     && (tolower ((unsigned char) suffix[2]) == 'c')
+     && (tolower ((unsigned char) suffix[3]) == 'm')
+     && (tolower ((unsigned char) suffix[4]) == 'a')
+     && (tolower ((unsigned char) suffix[5]) == 's')
+     && (tolower ((unsigned char) suffix[6]) == 'k'))
+    {
+      *mask_file = true;
+
+      return ATTACK13_STAGE_MASK;
+    }
+  }
+
+  return ATTACK13_STAGE_WORDLIST;
+}
+
 int mask_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
 {
   combinator_ctx_t     *combinator_ctx     = hashcat_ctx->combinator_ctx;
@@ -1773,12 +1797,12 @@ int mask_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
   user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
   user_options_t       *user_options       = hashcat_ctx->user_options;
 
-  // Mode 13 builds the complete mask-and-wordlist candidate on the host. Parse the full mask here
-  // without splitting it into device-side mask kernels.
+  // Mode 13 builds its complete ordered-stage candidate on the host. The pipeline is initialized
+  // once, without splitting any of its masks into device-side mask kernels.
 
   if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
   {
-    return mask_ctx_update_loop_whole_rules (hashcat_ctx);
+    return 0;
   }
 
   if ((user_options_extra->whole_candidate_rules == true)
@@ -2067,6 +2091,433 @@ int mask_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
   return 0;
 }
 
+static int attack13_stage_cmp (const void *p1, const void *p2)
+{
+  const attack13_stage_t *s1 = (const attack13_stage_t *) p1;
+  const attack13_stage_t *s2 = (const attack13_stage_t *) p2;
+
+  if (s1->command_pos < s2->command_pos) return -1;
+  if (s1->command_pos > s2->command_pos) return  1;
+
+  return 0;
+}
+
+static int attack13_split_mask_line (hashcat_ctx_t *hashcat_ctx, const char *line, mf_t parts[MAX_MFS], u32 *parts_cnt)
+{
+  memset (parts, 0, MAX_MFS * sizeof (mf_t));
+
+  u32 part = 0;
+  bool escaped = false;
+
+  for (size_t i = 0; line[i] != 0; i++)
+  {
+    if (escaped == true)
+    {
+      escaped = false;
+    }
+    else if (line[i] == '\\')
+    {
+      escaped = true;
+
+      continue;
+    }
+    else if (line[i] == ',')
+    {
+      parts[part].mf_buf[parts[part].mf_len] = 0;
+
+      if (++part == MAX_MFS)
+      {
+        event_log_error (hashcat_ctx, "Invalid attack-mode 13 mask-file line '%s'.", line);
+
+        return -1;
+      }
+
+      continue;
+    }
+
+    if (parts[part].mf_len == (int) sizeof (parts[part].mf_buf) - 1)
+    {
+      event_log_error (hashcat_ctx, "Attack-mode 13 mask-file field is too long in line '%s'.", line);
+
+      return -1;
+    }
+
+    parts[part].mf_buf[parts[part].mf_len++] = line[i];
+  }
+
+  parts[part].mf_buf[parts[part].mf_len] = 0;
+  *parts_cnt = part + 1;
+
+  return 0;
+}
+
+static void attack13_root_css (hashcat_ctx_t *hashcat_ctx, attack13_mask_t *attack_mask)
+{
+  const mask_ctx_t     *mask_ctx     = hashcat_ctx->mask_ctx;
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  const u32 threshold = (user_options->markov_threshold == 0) ? CHARSIZ : user_options->markov_threshold;
+
+  memset (attack_mask->root_css_buf, 0, SP_PW_MAX * sizeof (cs_t));
+
+  for (u32 pos = 0; pos < attack_mask->css_cnt; pos++)
+  {
+    bool allowed[CHARSIZ] = { false };
+
+    for (u32 i = 0; i < attack_mask->css_buf[pos].cs_len; i++)
+    {
+      allowed[attack_mask->css_buf[pos].cs_buf[i] & 0xff] = true;
+    }
+
+    const hcstat_table_t *table = mask_ctx->root_table_buf + (pos * CHARSIZ);
+    cs_t *root = &attack_mask->root_css_buf[pos];
+
+    for (u32 i = 0; (i < CHARSIZ) && (root->cs_len < threshold); i++)
+    {
+      const u32 key = table[i].key;
+
+      if (allowed[key] == false) continue;
+
+      root->cs_buf[root->cs_len++] = key;
+    }
+  }
+}
+
+static int attack13_mask_init_one (hashcat_ctx_t *hashcat_ctx, attack13_mask_t *attack_mask, const char *line, const bool mask_file_line)
+{
+  mask_ctx_t *mask_ctx = hashcat_ctx->mask_ctx;
+
+  cs_t mp_usr[8];
+
+  memcpy (mp_usr, mask_ctx->mp_usr, sizeof (mp_usr));
+
+  const char *mask = line;
+
+  mf_t parts[MAX_MFS];
+  u32 parts_cnt = 0;
+
+  if (mask_file_line == true)
+  {
+    if (attack13_split_mask_line (hashcat_ctx, line, parts, &parts_cnt) == -1) return -1;
+
+    mask = parts[parts_cnt - 1].mf_buf;
+
+    if (parts_cnt > 1)
+    {
+      memset (mp_usr, 0, sizeof (mp_usr));
+
+      for (u32 i = 0; i < parts_cnt - 1; i++)
+      {
+        if (mp_setup_usr (hashcat_ctx, mask_ctx->mp_sys, mp_usr, parts[i].mf_buf, i) == -1) return -1;
+      }
+    }
+  }
+
+  attack_mask->mask         = hcstrdup (mask);
+  attack_mask->css_buf      = (cs_t *) hccalloc (SP_PW_MAX, sizeof (cs_t));
+  attack_mask->root_css_buf = (cs_t *) hccalloc (SP_PW_MAX, sizeof (cs_t));
+
+  if (mp_gen_css (hashcat_ctx, attack_mask->mask, strlen (attack_mask->mask), mask_ctx->mp_sys, mp_usr, attack_mask->css_buf, &attack_mask->css_cnt) == -1) return -1;
+
+  attack13_root_css (hashcat_ctx, attack_mask);
+
+  if (sp_get_sum (0, attack_mask->css_cnt, attack_mask->root_css_buf, &attack_mask->candidates) == -1)
+  {
+    event_log_error (hashcat_ctx, "Integer overflow detected in attack-mode 13 mask stage: %s", attack_mask->mask);
+
+    return -1;
+  }
+
+  return 0;
+}
+
+static int attack13_mask_stage_init (hashcat_ctx_t *hashcat_ctx, attack13_stage_t *stage, const char *source, const bool mask_file)
+{
+  stage->source = hcstrdup (source);
+
+  if (mask_file == false)
+  {
+    stage->masks     = (attack13_mask_t *) hccalloc (1, sizeof (attack13_mask_t));
+    stage->masks_cnt = 1;
+
+    if (attack13_mask_init_one (hashcat_ctx, &stage->masks[0], source, false) == -1) return -1;
+
+    stage->candidates = stage->masks[0].candidates;
+
+    return 0;
+  }
+
+  HCFILE fp;
+
+  if (hc_fopen (&fp, source, "r") == false)
+  {
+    event_log_error (hashcat_ctx, "%s: %s", source, strerror (errno));
+
+    return -1;
+  }
+
+  char *line_buf = (char *) hcmalloc (HCBUFSIZ_LARGE);
+
+  while (hc_feof (&fp) == 0)
+  {
+    const size_t line_len = fgetl (&fp, line_buf, HCBUFSIZ_LARGE);
+
+    if (line_len == 0) continue;
+    if (line_buf[0] == '#') continue;
+
+    stage->masks_cnt++;
+  }
+
+  hc_rewind (&fp);
+
+  stage->masks = (attack13_mask_t *) hccalloc (stage->masks_cnt, sizeof (attack13_mask_t));
+
+  u32 mask_pos = 0;
+
+  while (hc_feof (&fp) == 0)
+  {
+    const size_t line_len = fgetl (&fp, line_buf, HCBUFSIZ_LARGE);
+
+    if (line_len == 0) continue;
+    if (line_buf[0] == '#') continue;
+
+    attack13_mask_t *attack_mask = &stage->masks[mask_pos++];
+
+    attack_mask->offset = stage->candidates;
+
+    if (attack13_mask_init_one (hashcat_ctx, attack_mask, line_buf, true) == -1)
+    {
+      hcfree (line_buf);
+      hc_fclose (&fp);
+
+      return -1;
+    }
+
+    if (overflow_check_u64_add (stage->candidates, attack_mask->candidates) == true)
+    {
+      event_log_error (hashcat_ctx, "Integer overflow detected in attack-mode 13 mask file: %s", source);
+
+      hcfree (line_buf);
+      hc_fclose (&fp);
+
+      return -1;
+    }
+
+    stage->candidates += attack_mask->candidates;
+  }
+
+  hcfree (line_buf);
+  hc_fclose (&fp);
+
+  if (stage->masks_cnt == 0)
+  {
+    event_log_error (hashcat_ctx, "%s: Attack-mode 13 mask file contains no masks.", source);
+
+    return -1;
+  }
+
+  return 0;
+}
+
+static int attack13_rule_valid (const char *rule, const int rule_len)
+{
+  char in[RP_PASSWORD_SIZE]  = { 0 };
+  char out[RP_PASSWORD_SIZE] = { 0 };
+
+  return _old_apply_rule (rule, rule_len, in, 1, out) != RULE_RC_SYNTAX_ERROR;
+}
+
+static int attack13_rule_stage_init (hashcat_ctx_t *hashcat_ctx, attack13_stage_t *stage, const char *source)
+{
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  stage->source = hcstrdup (source);
+
+  HCFILE fp;
+
+  if (hc_fopen (&fp, source, "r") == false)
+  {
+    event_log_error (hashcat_ctx, "%s: %s", source, strerror (errno));
+
+    return -1;
+  }
+
+  char *rule_buf = (char *) hcmalloc (HCBUFSIZ_LARGE);
+  u32 rule_line = 0;
+
+  while (hc_feof (&fp) == 0)
+  {
+    const int rule_len = (int) fgetl (&fp, rule_buf, HCBUFSIZ_LARGE);
+
+    rule_line++;
+
+    if (rule_len == 0) continue;
+    if (rule_buf[0] == '#') continue;
+
+    if (attack13_rule_valid (rule_buf, rule_len) == false)
+    {
+      if (user_options->quiet == false) event_log_warning (hashcat_ctx, "Skipping invalid or unsupported rule in file %s on line %u: %s", source, rule_line, rule_buf);
+
+      continue;
+    }
+
+    stage->rules_cnt++;
+  }
+
+  hc_rewind (&fp);
+
+  stage->rules     = (char **) hccalloc (stage->rules_cnt, sizeof (char *));
+  stage->rule_lens = (u32 *)   hccalloc (stage->rules_cnt, sizeof (u32));
+
+  u32 rule_pos = 0;
+
+  while (hc_feof (&fp) == 0)
+  {
+    const int rule_len = (int) fgetl (&fp, rule_buf, HCBUFSIZ_LARGE);
+
+    if (rule_len == 0) continue;
+    if (rule_buf[0] == '#') continue;
+    if (attack13_rule_valid (rule_buf, rule_len) == false) continue;
+
+    stage->rules[rule_pos]     = hcstrdup (rule_buf);
+    stage->rule_lens[rule_pos] = (u32) rule_len;
+
+    rule_pos++;
+  }
+
+  hcfree (rule_buf);
+  hc_fclose (&fp);
+
+  if (stage->rules_cnt == 0)
+  {
+    event_log_error (hashcat_ctx, "%s: No valid rules left for attack-mode 13 stage.", source);
+
+    return -1;
+  }
+
+  stage->candidates = stage->rules_cnt;
+
+  return 0;
+}
+
+static int attack13_pipeline_init (hashcat_ctx_t *hashcat_ctx)
+{
+  mask_ctx_t                 *mask_ctx           = hashcat_ctx->mask_ctx;
+  const user_options_t       *user_options       = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+
+  const u32 generated_cnt = (user_options->rp_gen > 0) ? 1 : 0;
+  const u32 stages_cnt    = (u32) user_options_extra->hc_workc + user_options->rp_files_cnt + generated_cnt;
+
+  if (stages_cnt == 0)
+  {
+    event_log_error (hashcat_ctx, "Attack-mode 13 needs at least one wordlist, mask or rule stage.");
+
+    return -1;
+  }
+
+  mask_ctx->attack13_stages     = (attack13_stage_t *) hccalloc (stages_cnt, sizeof (attack13_stage_t));
+  mask_ctx->attack13_stages_cnt = stages_cnt;
+
+  u32 stage_pos = 0;
+
+  const ptrdiff_t work_offset = user_options_extra->hc_workv - user_options->hc_argv;
+
+  for (int i = 0; i < user_options_extra->hc_workc; i++)
+  {
+    attack13_stage_t *stage = &mask_ctx->attack13_stages[stage_pos++];
+
+    const char *source = NULL;
+    bool mask_file = false;
+
+    stage->type        = attack13_classify_arg (user_options_extra->hc_workv[i], &source, &mask_file);
+    stage->command_pos = user_options->hc_argv_pos[work_offset + i];
+
+    if (source[0] == 0)
+    {
+      event_log_error (hashcat_ctx, "Attack-mode 13 stage source must not be empty.");
+
+      return -1;
+    }
+
+    if (stage->type == ATTACK13_STAGE_WORDLIST)
+    {
+      stage->source = hcstrdup (source);
+
+      if (generic_wordlist_keyspace (hashcat_ctx, source, &stage->candidates) == -1) return -1;
+    }
+    else
+    {
+      if (attack13_mask_stage_init (hashcat_ctx, stage, source, mask_file) == -1) return -1;
+    }
+  }
+
+  for (u32 i = 0; i < user_options->rp_files_cnt; i++)
+  {
+    attack13_stage_t *stage = &mask_ctx->attack13_stages[stage_pos++];
+
+    stage->type        = ATTACK13_STAGE_RULES;
+    stage->command_pos = user_options->rp_files_pos[i];
+
+    if (attack13_rule_stage_init (hashcat_ctx, stage, user_options->rp_files[i]) == -1) return -1;
+  }
+
+  if (generated_cnt != 0)
+  {
+    attack13_stage_t *stage = &mask_ctx->attack13_stages[stage_pos++];
+
+    stage->type        = ATTACK13_STAGE_RULES;
+    stage->source      = hcstrdup ("--rules-generate");
+    stage->command_pos = user_options->rp_gen_pos;
+    stage->generated   = true;
+
+    if (kernel_rules_generate (hashcat_ctx, &stage->generated_rules, &stage->rules_cnt, user_options->rp_gen_func_sel) == -1) return -1;
+
+    stage->candidates = stage->rules_cnt;
+  }
+
+  qsort (mask_ctx->attack13_stages, stages_cnt, sizeof (attack13_stage_t), attack13_stage_cmp);
+
+  u32 wordlist_ordinal = 0;
+  u64 candidates = 1;
+
+  for (int i = (int) stages_cnt - 1; i >= 0; i--)
+  {
+    attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
+
+    stage->stride = candidates;
+
+    if (overflow_check_u64_mul (candidates, stage->candidates) == true)
+    {
+      event_log_error (hashcat_ctx, "Integer overflow detected in attack-mode 13 ordered pipeline.");
+
+      return -1;
+    }
+
+    candidates *= stage->candidates;
+  }
+
+  for (u32 i = 0; i < stages_cnt; i++)
+  {
+    attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
+
+    if (stage->type != ATTACK13_STAGE_WORDLIST) continue;
+
+    stage->wordlist_ordinal = wordlist_ordinal++;
+  }
+
+  mask_ctx->attack13_wordlists_cnt = wordlist_ordinal;
+  mask_ctx->attack13_candidates    = candidates;
+  mask_ctx->bfs_cnt                = candidates;
+
+  mask_ctx->masks     = (char **) hccalloc (1, sizeof (char *));
+  mask_ctx->masks[0]  = hcstrdup ("ordered-pipeline");
+  mask_ctx->masks_cnt = 1;
+  mask_ctx->mask      = mask_ctx->masks[0];
+
+  return 0;
+}
+
 int mask_ctx_init (hashcat_ctx_t *hashcat_ctx)
 {
   const hashconfig_t         *hashconfig         = hashcat_ctx->hashconfig;
@@ -2130,6 +2581,13 @@ int mask_ctx_init (hashcat_ctx_t *hashcat_ctx)
     {
       if (mp_setup_usr (hashcat_ctx, mask_ctx->mp_sys, mask_ctx->mp_usr, hashconfig->benchmark_charset, 0) == -1) return -1;
     }
+  }
+
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    if (attack13_pipeline_init (hashcat_ctx) == -1) return -1;
+
+    return 0;
   }
 
   if (user_options->attack_mode == ATTACK_MODE_BF)
@@ -2223,8 +2681,7 @@ int mask_ctx_init (hashcat_ctx_t *hashcat_ctx)
   }
   else if ((user_options->attack_mode == ATTACK_MODE_HYBRID1)
         || (user_options->attack_mode == ATTACK_MODE_HYBRID2)
-        || (user_options->attack_mode == ATTACK_MODE_HYBRID)
-        || (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID))
+        || (user_options->attack_mode == ATTACK_MODE_HYBRID))
   {
     // display
 
@@ -2382,6 +2839,32 @@ void mask_ctx_destroy (hashcat_ctx_t *hashcat_ctx)
 
   hcfree (mask_ctx->root_table_buf);
   hcfree (mask_ctx->markov_table_buf);
+
+  for (u32 stage_pos = 0; stage_pos < mask_ctx->attack13_stages_cnt; stage_pos++)
+  {
+    attack13_stage_t *stage = &mask_ctx->attack13_stages[stage_pos];
+
+    hcfree (stage->source);
+
+    for (u32 mask_pos = 0; mask_pos < stage->masks_cnt; mask_pos++)
+    {
+      hcfree (stage->masks[mask_pos].mask);
+      hcfree (stage->masks[mask_pos].css_buf);
+      hcfree (stage->masks[mask_pos].root_css_buf);
+    }
+
+    if (stage->rules != NULL)
+    {
+      for (u32 rule_pos = 0; rule_pos < stage->rules_cnt; rule_pos++) hcfree (stage->rules[rule_pos]);
+    }
+
+    hcfree (stage->masks);
+    hcfree (stage->rules);
+    hcfree (stage->rule_lens);
+    hcfree (stage->generated_rules);
+  }
+
+  hcfree (mask_ctx->attack13_stages);
 
   for (u32 mask_pos = 0; mask_pos < mask_ctx->masks_cnt; mask_pos++)
   {

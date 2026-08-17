@@ -253,34 +253,15 @@ int straight_ctx_update_loop (hashcat_ctx_t *hashcat_ctx)
 
   if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
   {
-    u64 base_candidates = mask_ctx->bfs_cnt;
-
-    logfile_sub_string (mask_ctx->mask);
-
-    for (int i = 0; i < combinator_ctx->dicts_cnt; i++)
+    for (u32 i = 0; i < mask_ctx->attack13_stages_cnt; i++)
     {
-      logfile_sub_string (combinator_ctx->dicts[i]);
+      const attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
 
-      if (overflow_check_u64_mul (base_candidates, combinator_ctx->combs_counts[i]) == true)
-      {
-        event_log_error (hashcat_ctx, "Integer overflow detected in attack-mode 13 keyspace.");
-
-        return -1;
-      }
-
-      base_candidates *= combinator_ctx->combs_counts[i];
+      if (stage->type == ATTACK13_STAGE_RULES) logfile_sub_var_string ("rule-stage", stage->source);
+      else                                     logfile_sub_string (stage->source);
     }
 
-    for (u32 i = 0; i < user_options->rp_files_cnt; i++) logfile_sub_var_string ("rulefile", user_options->rp_files[i]);
-
-    if (overflow_check_u64_mul (base_candidates, straight_ctx->kernel_rules_cnt) == true)
-    {
-      event_log_error (hashcat_ctx, "Integer overflow detected after applying attack-mode 13 rules.");
-
-      return -1;
-    }
-
-    status_ctx->words_cnt = base_candidates * straight_ctx->kernel_rules_cnt;
+    status_ctx->words_cnt = mask_ctx->attack13_candidates;
 
     return 0;
   }
@@ -527,7 +508,8 @@ int straight_ctx_init (hashcat_ctx_t *hashcat_ctx)
    * generate NOP rules
    */
 
-  if ((user_options->rp_files_cnt == 0) && (user_options->rp_gen == 0))
+  if ((user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+   || ((user_options->rp_files_cnt == 0) && (user_options->rp_gen == 0)))
   {
     straight_ctx->kernel_rules_buf = (kernel_rule_t *) hcmalloc (sizeof (kernel_rule_t));
 

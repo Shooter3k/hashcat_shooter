@@ -27,6 +27,8 @@ bool  mask_ends_with_marker (const char *mask, const char marker);
 bool  mask_starts_with_marker (const char *mask, const char marker);
 bool  mask_arg_ends_with_marker (const char *arg, const char marker);
 
+attack13_stage_type_t attack13_classify_arg (const char *arg, const char **source, bool *mask_file);
+
 u32   hybrid_amp_mask (hashcat_ctx_t *hashcat_ctx, const u64 off, char *mask_buf);
 u32   hybrid_amp_rebuild (hashcat_ctx_t *hashcat_ctx, const hc_device_param_t *device_param, const u32 il_pos, u8 *out_buf, const u8 *base_buf, const u32 base_len);
 u32   hybrid_assemble (hashcat_ctx_t *hashcat_ctx, u8 *out_buf, const char *mask_buf, const u8 *base_buf, const u32 base_len, const u8 *word_buf, const u32 word_len);

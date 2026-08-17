@@ -1,6 +1,46 @@
 # shooter_hashcat release notes
 
+## v7.1.2-shooter.20260817.51
+
+Corrective ordered-pipeline release for attack mode 13.
+
+### Changed
+
+- Mode 13 now accepts any number of wordlist, mask, and rule stages in any
+  order and processes them from left to right.
+- Each `-r` file is a stage at its exact command-line position. It transforms
+  the complete candidate assembled to its left; later wordlists and masks
+  append after that transformation.
+- Positional files default to wordlists, tokens containing `?` are masks, and
+  `.hcmask` files are mask-file stages. The explicit `wordlist:`, `mask:`, and
+  `maskfile:` prefixes resolve ambiguous inputs.
+- `?w` and `?q` remain mode-12 markers and are no longer part of mode-13
+  syntax.
+- The Shooter enhancement inventory counts only Shooter-authored changes;
+  official mode 12, upstream maintenance fixes, and stock low-rate bypass
+  flags are not presented as Shooter features.
+- Keyspace, skip/limit, checkpoints, and restores use the complete ordered
+  Cartesian product, including each rule stage. Restore files retain the
+  original command-line stage order.
+
+### Fixed
+
+- Commands such as `wordlist -r rules ?d?d wordlist` no longer interpret the
+  first wordlist as a mask or reject the later mask as a filename.
+
+### Verified
+
+- Built the affected Linux core and linked `hashcat.bin`.
+- Built both Windows x64 editions as `.51`; verified wordlist/mask/rule
+  permutations, adjacent and leading rules, hcmask/custom charsets, keyspace,
+  257 rule stages, and a real mode-0 recovery.
+- Confirmed automatic status pages report `Running` at startup and `Cracked`
+  at completion.
+
 ## v7.1.2-shooter.20260817.50
+
+> Superseded by `.51`: this release's fixed mask-first `?w` layout did not
+> satisfy arbitrary left-to-right component ordering.
 
 ### Added
 

@@ -3762,20 +3762,27 @@ void status_display (hashcat_ctx_t *hashcat_ctx)
     case GUESS_MODE_MULTI_HYBRID:
 
       event_log_info (hashcat_ctx,
-        "Guess.Mask.......: %s [%u]",
-        hashcat_ctx->mask_ctx->mask,
-        hashcat_status->guess_mask_length);
+        "Guess.Pipeline...: %u stages, processed left to right",
+        hashcat_ctx->mask_ctx->attack13_stages_cnt);
 
       event_log_info (hashcat_ctx,
-        "Guess.Wordlists..: %d, mapped to ?w markers in command-line order",
-        hashcat_ctx->combinator_ctx->dicts_cnt);
+        "Guess.Rule.Scope.: each rule stage transforms the complete prefix to its left");
 
-      for (int i = 0; i < hashcat_ctx->combinator_ctx->dicts_cnt; i++)
+      for (u32 i = 0; i < hashcat_ctx->mask_ctx->attack13_stages_cnt; i++)
       {
+        const attack13_stage_t *stage = &hashcat_ctx->mask_ctx->attack13_stages[i];
+
+        const char *stage_name = "Rules";
+
+        if      (stage->type == ATTACK13_STAGE_WORDLIST) stage_name = "Wordlist";
+        else if (stage->type == ATTACK13_STAGE_MASK)     stage_name = "Mask";
+
         event_log_info (hashcat_ctx,
-          "Guess.?w.#%02d....: %s",
+          "Guess.Stage.#%02u..: %s (%s) [%" PRIu64 "]",
           i + 1,
-          hashcat_ctx->combinator_ctx->dicts[i]);
+          stage_name,
+          stage->source,
+          stage->candidates);
       }
 
       break;

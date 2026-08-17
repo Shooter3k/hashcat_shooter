@@ -74,6 +74,26 @@ static bool attack_mode_uses_whole_candidate_rules (const u32 attack_mode)
   return false;
 }
 
+static u32 user_options_original_argv_pos (const user_options_t *user_options, const char *arg)
+{
+  if (arg == NULL) return UINT32_MAX;
+
+  for (int i = 0; i < user_options->hc_argv_original_cnt; i++)
+  {
+    const char *original = user_options->hc_argv_original[i];
+
+    if (original == NULL) continue;
+
+    const uintptr_t arg_addr      = (uintptr_t) arg;
+    const uintptr_t original_addr = (uintptr_t) original;
+    const uintptr_t original_end  = original_addr + strlen (original);
+
+    if ((arg_addr >= original_addr) && (arg_addr <= original_end)) return (u32) i;
+  }
+
+  return UINT32_MAX;
+}
+
 static int attack_mode_combi_file_count (const user_options_t *user_options)
 {
   if (user_options->attack_mode != ATTACK_MODE_COMBI) return 0;
@@ -394,6 +414,7 @@ int user_options_init (hashcat_ctx_t *hashcat_ctx)
   user_options->workload_profile          = WORKLOAD_PROFILE;
   user_options->rp_files_cnt              = 0;
   user_options->rp_files                  = (char **) hccalloc (256, sizeof (char *));
+  user_options->rp_files_pos              = (u32 *) hccalloc (256, sizeof (u32));
   user_options->hc_bin                    = PROGNAME;
   user_options->hc_argc                   = 0;
   user_options->hc_argv                   = NULL;
@@ -406,6 +427,10 @@ void user_options_destroy (hashcat_ctx_t *hashcat_ctx)
   user_options_t *user_options = hashcat_ctx->user_options;
 
   hcfree (user_options->rp_files);
+  hcfree (user_options->rp_files_pos);
+
+  hcfree (user_options->hc_argv_pos);
+  hcfree (user_options->hc_argv_original);
 
   hcfree (user_options->hc_argv_alias);
 
@@ -421,6 +446,20 @@ void user_options_destroy (hashcat_ctx_t *hashcat_ctx)
 int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
 {
   user_options_t *user_options = hashcat_ctx->user_options;
+
+  // A mode-13 pipeline may contain more rule stages than the historical fixed option buffer.
+  // One rule option cannot outnumber argv entries, so sizing both arrays to argc removes that cap.
+
+  if (argc > 256)
+  {
+    user_options->rp_files = (char **) hcrealloc (user_options->rp_files, 256 * sizeof (char *), (argc - 256) * sizeof (char *));
+    user_options->rp_files_pos = (u32 *) hcrealloc (user_options->rp_files_pos, 256 * sizeof (u32), (argc - 256) * sizeof (u32));
+  }
+
+  user_options->hc_argv_original_cnt = argc;
+  user_options->hc_argv_original     = (char **) hccalloc (argc, sizeof (char *));
+
+  memcpy (user_options->hc_argv_original, argv, argc * sizeof (char *));
 
   // Route getopt diagnostics through event_log_error() so the automatic support report receives
   // the same command-line error the user sees instead of losing getopt's direct stderr output.
@@ -594,8 +633,17 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
                                           user_options->metal_compiler_runtime_chgd = true;                          break;
       case IDX_ATTACK_MODE:               user_options->attack_mode               = hc_strtoul (optarg, NULL, 10);
                                           user_options->attack_mode_chgd          = true;                            break;
-      case IDX_RP_FILE:                   user_options->rp_files[user_options->rp_files_cnt++] = optarg;             break;
-      case IDX_RP_GEN:                    user_options->rp_gen                    = hc_strtoul (optarg, NULL, 10);   break;
+      case IDX_RP_FILE:
+      {
+        const u32 rp_pos = user_options->rp_files_cnt++;
+
+        user_options->rp_files[rp_pos]     = optarg;
+        user_options->rp_files_pos[rp_pos] = user_options_original_argv_pos (user_options, optarg);
+
+        break;
+      }
+      case IDX_RP_GEN:                    user_options->rp_gen                    = hc_strtoul (optarg, NULL, 10);
+                                           user_options->rp_gen_pos                = user_options_original_argv_pos (user_options, optarg); break;
       case IDX_RP_GEN_FUNC_MIN:           user_options->rp_gen_func_min           = hc_strtoul (optarg, NULL, 10);   break;
       case IDX_RP_GEN_FUNC_MAX:           user_options->rp_gen_func_max           = hc_strtoul (optarg, NULL, 10);   break;
       case IDX_RP_GEN_FUNC_SEL:           user_options->rp_gen_func_sel           = optarg;                          break;
@@ -736,6 +784,13 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
 
   user_options->hc_argc = argc - optind;
   user_options->hc_argv = argv + optind;
+
+  user_options->hc_argv_pos = (u32 *) hccalloc (user_options->hc_argc, sizeof (u32));
+
+  for (int i = 0; i < user_options->hc_argc; i++)
+  {
+    user_options->hc_argv_pos[i] = user_options_original_argv_pos (user_options, user_options->hc_argv[i]);
+  }
 
   return 0;
 }
@@ -1258,12 +1313,12 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
 
   if ((user_options->increment != INCREMENT_NONE) && (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID))
   {
-    event_log_error (hashcat_ctx, "Attack-mode 13 does not support -i/--increment. Every ?w has a fixed command-line wordlist mapping.");
+    event_log_error (hashcat_ctx, "Attack-mode 13 does not support -i/--increment. Its masks are fixed pipeline stages.");
 
     return -1;
   }
 
-  if ((user_options->rp_files_cnt > 0) && (user_options->rp_gen > 0))
+  if ((user_options->rp_files_cnt > 0) && (user_options->rp_gen > 0) && (user_options->attack_mode != ATTACK_MODE_MULTI_HYBRID))
   {
     event_log_error (hashcat_ctx, "Combining -r/--rules-file and -g/--rules-generate is not supported.");
 
@@ -2179,9 +2234,9 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
     }
     else if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
     {
-      // the mask, followed by one or more wordlists
+      // one or more ordered sources; rule-only pipelines are valid too
 
-      if (user_options->hc_argc >= 2)
+      if ((user_options->hc_argc >= 1) || (user_options->rp_files_cnt > 0) || (user_options->rp_gen > 0))
       {
         show_error = false;
       }
@@ -2252,9 +2307,9 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
     }
     else if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
     {
-      // the mask, followed by one or more wordlists
+      // one or more ordered sources; rule-only pipelines are valid too
 
-      if (user_options->hc_argc >= 2)
+      if ((user_options->hc_argc >= 1) || (user_options->rp_files_cnt > 0) || (user_options->rp_gen > 0))
       {
         show_error = false;
       }
@@ -2348,9 +2403,9 @@ int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
     }
     else if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
     {
-      // the hash file, the mask, and one or more wordlists
+      // the hash file plus one or more ordered sources; rule-only pipelines are valid too
 
-      if (user_options->hc_argc >= 3)
+      if ((user_options->hc_argc >= 2) || ((user_options->hc_argc == 1) && ((user_options->rp_files_cnt > 0) || (user_options->rp_gen > 0))))
       {
         show_error = false;
       }
@@ -3721,74 +3776,101 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
   }
   else if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
   {
-    char *maskfile = user_options_extra->hc_workv[0];
-
-    // If the mask argument names a file, it is an hcmask-style ordered list of masks.
-
-    if (hc_path_exist (maskfile) == true)
+    for (int i = 0; i < user_options_extra->hc_workc; i++)
     {
-      if (hc_path_is_directory (maskfile) == true)
+      const char *source = NULL;
+      bool mask_file = false;
+
+      const attack13_stage_type_t type = attack13_classify_arg (user_options_extra->hc_workv[i], &source, &mask_file);
+
+      if (type == ATTACK13_STAGE_MASK)
       {
-        event_log_error (hashcat_ctx, "%s: A directory cannot be used as a maskfile argument.", maskfile);
+        if (mask_file == false) continue;
+
+        if (hc_path_exist (source) == false)
+        {
+          event_log_error (hashcat_ctx, "%s: %s", source, strerror (errno));
+
+          return -1;
+        }
+
+        if (hc_path_is_directory (source) == true)
+        {
+          event_log_error (hashcat_ctx, "%s: A directory cannot be used as an attack-mode 13 mask file.", source);
+
+          return -1;
+        }
+
+        if (hc_path_read (source) == false)
+        {
+          event_log_error (hashcat_ctx, "%s: %s", source, strerror (errno));
+
+          return -1;
+        }
+
+        if (hc_path_has_bom (source) == true)
+        {
+          event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", source);
+        }
+
+        continue;
+      }
+
+      if (hc_path_exist (source) == false)
+      {
+        event_log_error (hashcat_ctx, "%s: %s", source, strerror (errno));
 
         return -1;
       }
 
-      if (hc_path_read (maskfile) == false)
+      if (hc_path_is_directory (source) == true)
       {
-        event_log_error (hashcat_ctx, "%s: %s", maskfile, strerror (errno));
+        event_log_error (hashcat_ctx, "%s: A directory cannot be used as an attack-mode 13 wordlist.", source);
 
         return -1;
       }
 
-      if (hc_path_has_bom (maskfile) == true)
+      if (hc_path_read (source) == false)
       {
-        event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", maskfile);
-      }
-
-      if ((user_options->custom_charset_1)
-       || (user_options->custom_charset_2)
-       || (user_options->custom_charset_3)
-       || (user_options->custom_charset_4)
-       || (user_options->custom_charset_5)
-       || (user_options->custom_charset_6)
-       || (user_options->custom_charset_7)
-       || (user_options->custom_charset_8))
-      {
-        event_log_error (hashcat_ctx, "Using --custom-charsetX with mask files is misleading. Put custom charsets in the mask file instead.");
+        event_log_error (hashcat_ctx, "%s: %s", source, strerror (errno));
 
         return -1;
+      }
+
+      if (hc_path_has_bom (source) == true)
+      {
+        event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", source);
       }
     }
 
-    for (int i = 1; i < user_options_extra->hc_workc; i++)
+    for (int i = 0; i < (int) user_options->rp_files_cnt; i++)
     {
-      char *dictfile = user_options_extra->hc_workv[i];
+      char *rp_file = user_options->rp_files[i];
 
-      if (hc_path_exist (dictfile) == false)
+      if (hc_path_exist (rp_file) == false)
       {
-        event_log_error (hashcat_ctx, "%s: %s", dictfile, strerror (errno));
+        event_log_error (hashcat_ctx, "%s: %s", rp_file, strerror (errno));
 
         return -1;
       }
 
-      if (hc_path_is_directory (dictfile) == true)
+      if (hc_path_is_directory (rp_file) == true)
       {
-        event_log_error (hashcat_ctx, "%s: A directory cannot be used as an attack-mode 13 wordlist.", dictfile);
+        event_log_error (hashcat_ctx, "%s: A directory cannot be used as a rulefile argument.", rp_file);
 
         return -1;
       }
 
-      if (hc_path_read (dictfile) == false)
+      if (hc_path_read (rp_file) == false)
       {
-        event_log_error (hashcat_ctx, "%s: %s", dictfile, strerror (errno));
+        event_log_error (hashcat_ctx, "%s: %s", rp_file, strerror (errno));
 
         return -1;
       }
 
-      if (hc_path_has_bom (dictfile) == true)
+      if (hc_path_has_bom (rp_file) == true)
       {
-        event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", dictfile);
+        event_log_warning (hashcat_ctx, "%s: Byte Order Mark (BOM) was detected", rp_file);
       }
     }
   }
@@ -4180,8 +4262,7 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
       }
     }
   }
-  else if ((user_options->attack_mode == ATTACK_MODE_HYBRID)
-        || (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID))
+  else if (user_options->attack_mode == ATTACK_MODE_HYBRID)
   {
     // The mask is the first work argument and everything behind it is a wordlist: one of them, or two
     // when the mask carries a ?q.
@@ -4191,6 +4272,23 @@ int user_options_check_files (hashcat_ctx_t *hashcat_ctx)
       char *wlfile = user_options_extra->hc_workv[i];
 
       if (hc_same_files (outfile_ctx->filename, wlfile) == true)
+      {
+        event_log_error (hashcat_ctx, "Outfile and wordlist cannot point to the same file.");
+
+        return -1;
+      }
+    }
+  }
+  else if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    for (int i = 0; i < user_options_extra->hc_workc; i++)
+    {
+      const char *source = NULL;
+      bool mask_file = false;
+
+      if (attack13_classify_arg (user_options_extra->hc_workv[i], &source, &mask_file) != ATTACK13_STAGE_WORDLIST) continue;
+
+      if (hc_same_files (outfile_ctx->filename, (char *) source) == true)
       {
         event_log_error (hashcat_ctx, "Outfile and wordlist cannot point to the same file.");
 

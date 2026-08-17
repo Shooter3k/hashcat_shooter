@@ -85,8 +85,9 @@ all combinations assigned to earlier devices. See the
 ### 11. Whole-candidate rules
 
 `-r` and `-g` can transform the fully assembled candidate in attack modes 1,
-3, 6, 7, and 13. Existing `-j` and `-k` side rules still run before assembly.
-See the [whole-candidate rule guide](whole-candidate-rules.md).
+3, 6, and 7. Existing `-j` and `-k` side rules still run before assembly.
+Mode 13 instead applies each rule at its exact pipeline position. See the
+[whole-candidate rule guide](whole-candidate-rules.md).
 
 ### 12. Parallel stdout rule generation
 
@@ -526,25 +527,23 @@ Automatic pages are suppressed for `--quiet`, machine-readable and JSON
 output, benchmarks, speed-only and progress-only modes, and `--stdout`, so
 their established output formats remain unchanged.
 
-## Ordered multi-hybrid candidates
+## Ordered component candidates
 
-### 52. Ordered multi-hybrid mode 13
+### 52. Ordered component pipeline mode 13
 
-Attack mode 13 accepts a mask followed by any number of wordlists. The first
-`?w` in the mask receives an entry from the first wordlist, the second `?w`
-receives an entry from the second wordlist, and so on. Every mask must contain
-exactly as many `?w` markers as the command names wordlists, which makes the
-mapping explicit and prevents silent reordering.
+Attack mode 13 accepts any number of wordlists, masks, and rule stages in any
+order. It processes them from left to right exactly as entered. Wordlist and
+mask stages append to the candidate assembled so far. A rule stage transforms
+the entire assembled prefix, and components to its right append afterward.
 
-Wordlists and their Cartesian positions retain command-line order; no
-dictionary is swapped merely because it is larger. A mask file supplies any
-number of masks in file order. Within each mask, hashcat's normal mask order
-is used, including normal Markov behavior unless `--markov-disable` is given.
-Multiple `-r` files retain option order and run only after the complete
-mask-and-wordlist candidate has been assembled. `-j` applies to the first
-wordlist and `-k` applies to every remaining wordlist before assembly.
+Each `-r` file is its own Cartesian stage at the option's command-line
+position, so adjacent rule files apply sequentially. Positional files default
+to wordlists, mask-looking tokens are inline masks, and `.hcmask` files are
+mask-file stages. Explicit `wordlist:`, `mask:`, and `maskfile:` prefixes
+handle ambiguous names. Mode-12 `?w` and `?q` markers are not reused.
 
-The mode supports normal cracking, `--stdout`, keyspace and total-candidate
-counts, skip/limit accounting, restores, status, potfiles, and outfiles. See
-the [attack-mode 13 guide](multi-hybrid-mode13.md) for syntax, examples,
-ordering, counting, and limits.
+The complete ordered product drives keyspace, skip/limit, checkpoints, and
+restore positions. Original stage order is preserved in restore files.
+`-j` transforms the first wordlist stage and `-k` transforms later wordlist
+stages as they are read. See the [attack-mode 13 guide](multi-hybrid-mode13.md)
+for syntax, examples, type detection, counting, and limits.

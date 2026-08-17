@@ -2644,6 +2644,13 @@ typedef struct user_options
 
   int          hc_argc;
   char       **hc_argv;
+  u32         *hc_argv_pos;
+
+  // getopt permutes argv while it collects options. Attack-mode 13 needs the original positions
+  // of positional sources and rule options, so retain the incoming pointer order for that parse.
+
+  int          hc_argv_original_cnt;
+  char       **hc_argv_original;
 
   // The vector the attack mode alias built, kept only so that it can be freed. hc_argv points at it
   // while the alias is in force and at argv otherwise, so it cannot be freed through hc_argv.
@@ -2766,6 +2773,7 @@ typedef struct user_options
   char        *potfile_path;
   char        *restore_file_path;
   char       **rp_files;
+  u32         *rp_files_pos;
   char        *rp_gen_func_sel;
   char        *separator;
   char        *truecrypt_keyfiles;
@@ -2835,6 +2843,7 @@ typedef struct user_options
   u32          restore_timer;
   u32          rp_files_cnt;
   u32          rp_gen;
+  u32          rp_gen_pos;
   u32          rp_gen_func_max;
   u32          rp_gen_func_min;
   u32          rp_gen_seed;
@@ -3022,6 +3031,51 @@ typedef struct combinator_ctx
 
 } combinator_ctx_t;
 
+typedef enum attack13_stage_type
+{
+  ATTACK13_STAGE_WORDLIST = 1,
+  ATTACK13_STAGE_MASK     = 2,
+  ATTACK13_STAGE_RULES    = 3,
+
+} attack13_stage_type_t;
+
+typedef struct attack13_mask
+{
+  char *mask;
+
+  cs_t *css_buf;
+  cs_t *root_css_buf;
+
+  u32 css_cnt;
+  u64 candidates;
+  u64 offset;
+
+} attack13_mask_t;
+
+typedef struct attack13_stage
+{
+  attack13_stage_type_t type;
+
+  char *source;
+
+  u32 command_pos;
+  u32 wordlist_ordinal;
+
+  u64 candidates;
+  u64 stride;
+
+  attack13_mask_t *masks;
+  u32              masks_cnt;
+
+  char **rules;
+  u32   *rule_lens;
+  u32    rules_cnt;
+
+  kernel_rule_t *generated_rules;
+  bool           generated;
+
+} attack13_stage_t;
+
 typedef struct mask_ctx
 {
   bool   enabled;
@@ -3048,11 +3102,13 @@ typedef struct mask_ctx
   u32    pre_len;
   u32    mid_len;
 
-  // Attack-mode 13 maps each ?w, from left to right, to the wordlist in the same command-line
-  // position. The markers are removed from css_buf, so these are positions in the generated mask.
+  // Attack-mode 13 is a left-to-right pipeline of wordlist, mask and rule stages. Every stage is a
+  // Cartesian position, and a rule stage transforms the complete prefix assembled before it.
 
-  u32    w_pos[256];
-  u32    w_cnt;
+  attack13_stage_t *attack13_stages;
+  u32               attack13_stages_cnt;
+  u32               attack13_wordlists_cnt;
+  u64               attack13_candidates;
 
   hcstat_table_t *root_table_buf;
   hcstat_table_t *markov_table_buf;

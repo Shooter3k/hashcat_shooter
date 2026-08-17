@@ -30,7 +30,7 @@ item links to a plain-language explanation.
 8. **[Large cracked-result sets write much faster](docs/shooter-enhancements.md#8-high-volume-result-streaming)** — outfile and potfile results are batched safely.
 9. **[Attack mode 1 joins three or more wordlists](docs/shooter-enhancements.md#9-multi-file-combination-attacks)** — no fixed three-to-six-file attack modes are needed.
 10. **[Multi-GPU combination attacks seek directly to each GPU's work](docs/shooter-enhancements.md#10-efficient-multi-gpu-combination-starts)** — later GPUs do not replay earlier combinations.
-11. **[Rules can modify the complete candidate](docs/shooter-enhancements.md#11-whole-candidate-rules)** — supported in attack modes 1, 3, 6, 7, and 13.
+11. **[Rules can modify the complete candidate](docs/shooter-enhancements.md#11-whole-candidate-rules)** — supported in attack modes 1, 3, 6, and 7; mode 13 instead applies rules at their ordered pipeline position.
 12. **[`--stdout` rule generation uses multiple CPU cores](docs/shooter-enhancements.md#12-parallel-stdout-rule-generation)** — up to 64 workers retain deterministic order.
 13. **[`--stdout` jobs can pause, checkpoint, and restore](docs/shooter-enhancements.md#13-resumable-stdout-sessions)** — file output resumes at the exact byte boundary.
 14. **[Multibyte masks work on Windows](docs/shooter-enhancements.md#14-multibyte-masks-work-on-windows)** — literals such as `№` survive the command line.
@@ -71,7 +71,7 @@ item links to a plain-language explanation.
 49. **[Remaining hashes and recovery rates are always visible](docs/shooter-enhancements.md#49-consistent-remaining-and-recovery-rate-status)** — every normal status display includes `Remaining` and `Recovered/Time`, even for small hash lists, with live minute values from the first status update.
 50. **[Every attack explains where its time went](docs/shooter-enhancements.md#50-automatic-task-time-breakdown)** — the final report separates preparation, cracking, and cleanup, then itemizes hash loading, sorting, potfile/outfile checks, rules, GPU setup, self-test, and autotune.
 51. **[Full status appears at both ends of an attack](docs/shooter-enhancements.md#51-automatic-start-and-finish-status)** — the same human-readable page as interactive `s` prints once before cracking workers start and again when the attack completes.
-52. **[Attack mode 13 builds ordered multi-hybrid candidates](docs/shooter-enhancements.md#52-ordered-multi-hybrid-mode-13)** — any number of wordlists map left-to-right to `?w` markers, masks retain their supplied order, and rules run after assembly.
+52. **[Attack mode 13 runs an ordered component pipeline](docs/shooter-enhancements.md#52-ordered-component-pipeline-mode-13)** — any number of wordlists, masks, and rule stages run left-to-right in the exact order entered.
 
 ## Download and run
 
@@ -118,7 +118,7 @@ Windows and Linux builds, Rust crates, and the sanitizer-backed parser fuzzer.
 | Existing `--outfile-check-dir` results before cracking | [outfile-check startup](docs/startup-optimization.md#existing-outfile-results-before-cracking-allocation) |
 | RTX 4090 autotune cache | [RTX_4090_AUTOTUNE_CACHE.md](RTX_4090_AUTOTUNE_CACHE.md) |
 | Multi-file combinations and complete-candidate rules | [docs/multi-file-combination.md](docs/multi-file-combination.md) and [docs/whole-candidate-rules.md](docs/whole-candidate-rules.md) |
-| Ordered multi-hybrid attack mode 13 | [docs/multi-hybrid-mode13.md](docs/multi-hybrid-mode13.md) |
+| Ordered component pipeline: attack mode 13 | [docs/multi-hybrid-mode13.md](docs/multi-hybrid-mode13.md) |
 | Runtime and checkpoint controls | [docs/runtime-controls.md](docs/runtime-controls.md) and [docs/checkpoint-control.md](docs/checkpoint-control.md) |
 | Interactive status output | [consistent remaining and recovery-rate lines](docs/shooter-enhancements.md#49-consistent-remaining-and-recovery-rate-status) |
 | Resumable candidate output | [docs/stdout-sessions.md](docs/stdout-sessions.md) |

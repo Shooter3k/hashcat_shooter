@@ -560,6 +560,17 @@ int restore_ctx_init (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
   restore_ctx->argc = argc;
   restore_ctx->argv = argv;
 
+  // getopt permutes argv. Mode 13 assigns semantic meaning to where every -r and positional stage
+  // originally appeared, so persist the untouched pointer order or a resumed run would reorder the
+  // pipeline.
+
+  if ((user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+   && (user_options->hc_argv_original_cnt == argc)
+   && (user_options->hc_argv_original != NULL))
+  {
+    restore_ctx->argv = user_options->hc_argv_original;
+  }
+
   if (init_restore (hashcat_ctx) == -1) return -1;
 
   restore_ctx->enabled = true;

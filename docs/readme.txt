@@ -542,7 +542,7 @@ NVIDIA GPUs require "NVIDIA CUDA Toolkit"
 - Hybrid dict + mask
 - Hybrid mask + dict
 - Hybrid, mask says where the word goes
-- Multi-hybrid, ordered wordlists + masks + rules
+- Ordered component pipeline: wordlists + masks + rules
 
 * = Supports rules
 

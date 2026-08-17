@@ -131,21 +131,13 @@ int combinator_ctx_init (hashcat_ctx_t *hashcat_ctx)
   if (user_options->version      == true) return 0;
 
   if ((user_options->attack_mode != ATTACK_MODE_COMBI)
-   && (user_options->attack_mode != ATTACK_MODE_HYBRID)
-   && (user_options->attack_mode != ATTACK_MODE_MULTI_HYBRID)) return 0;
+   && (user_options->attack_mode != ATTACK_MODE_HYBRID)) return 0;
 
   combinator_ctx->enabled = true;
 
   if (user_options->attack_mode == ATTACK_MODE_COMBI)
   {
     if (combinator_ctx_init_multi (hashcat_ctx, 0, user_options_extra->hc_workc) == -1) return -1;
-
-    return 0;
-  }
-
-  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
-  {
-    if (combinator_ctx_init_multi (hashcat_ctx, 1, user_options_extra->hc_workc - 1) == -1) return -1;
 
     return 0;
   }
