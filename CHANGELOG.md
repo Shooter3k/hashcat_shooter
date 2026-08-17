@@ -1,6 +1,37 @@
 # shooter_hashcat release notes
 
-## Unreleased
+## v7.1.2-shooter.20260817.49
+
+Automatic endpoint-status and task-timing release.
+
+### Added
+
+- Every normal human-readable attack now ends with an automatic task-time
+  breakdown. It separates preparation, cracking, and cleanup and itemizes
+  backend discovery, GPU setup, hash loading/sorting/deduplication,
+  potfile/outfile checks, rules, bitmaps, self-test, and autotune.
+- Each timing line includes seconds and its share of measured end-to-end time;
+  unclassified preparation remains visible so the report reconciles to the
+  measured total.
+- Normal human-readable attacks print the full interactive `s` status page
+  once before cracking workers launch and again when the attack completes.
+  Quiet, structured, benchmark, speed-only, progress-only, and `--stdout`
+  output retain their existing formats.
+
+### Changed
+
+- Audited the public feature inventory against the official upstream hashcat
+  commit merged into this branch. Inherited hashcat features are no longer
+  counted as Shooter enhancements; the inventory now contains 51 local
+  changes.
+
+### Verified
+
+- Built the portable Windows x64 executable and ran a real CUDA MD5 attack.
+- Confirmed `BEFORE ATTACK`, `ATTACK`, and `AFTER ATTACK` reconcile to the
+  displayed `MEASURED TOTAL`.
+- Confirmed a real MD5 attack prints exactly two full status pages, starting
+  with `Running` and ending with `Cracked`, while `--quiet` prints neither.
 
 ## v7.1.2-shooter.20260816.48
 
@@ -130,10 +161,6 @@ and release-security upgrade.
 - `--stage-profile` and `--stage-profile-json` report pipeline-stage time,
   launch counts, and process peak memory in human-readable or stable
   `shooter-stage-profile-v1` JSON form.
-- `--bypass-delay` and `--bypass-threshold` can automatically leave the
-  current dictionary or mask when it produces fewer than the requested number
-  of new cracks during a time window. The paired options use the current
-  Hashcat new-digest counter and do not count paused time against the window.
 - Existing records in `--outfile-check-dir` are now applied before bitmap
   creation, candidate-source setup, attack-kernel initialization, autotune,
   and attack-specific GPU and host-memory allocation. An all-found job exits

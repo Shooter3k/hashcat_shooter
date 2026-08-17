@@ -518,11 +518,15 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
    * create cracker threads
    */
 
-  if (round_continues == false) EVENT (EVENT_CRACKER_STARTING);
-
   status_ctx->devices_status = STATUS_RUNNING;
 
   status_ctx->accessible = true;
+
+  // The starting event prints the same human-readable page as interactive
+  // status. Make the live status readable before dispatching that event, but
+  // still do it before any cracking worker is launched.
+
+  if (round_continues == false) EVENT (EVENT_CRACKER_STARTING);
 
   // The checkpoint barrier counts live cracking workers, not configured backend slots. Skipped
   // devices never enter thread_calc's work path and therefore must not hold the barrier open.
@@ -927,7 +931,13 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
    * load hashes, stage 1
    */
 
-  if (hashes_init_stage1 (hashcat_ctx) == -1) return -1;
+  EVENT (EVENT_HASHLIST_PARSE_INPUT_PRE);
+
+  const int hashes_stage1_rc = hashes_init_stage1 (hashcat_ctx);
+
+  EVENT (EVENT_HASHLIST_PARSE_INPUT_POST);
+
+  if (hashes_stage1_rc == -1) return -1;
 
   if ((user_options->keyspace == false) && (user_options->stdout_flag == false))
   {
@@ -1112,6 +1122,8 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
    * generic mode init
    */
 
+  EVENT (EVENT_CANDIDATE_SOURCE_PRE);
+
   // Ahead of the combinator, because -a 1 amplifies with a wordlist and the number of amplifier words
   // is a feed instance's keyspace. Ahead of the mask too, which is the other way round: -a 6 and -a 7
   // amplify with the mask and the mask is only sized once per round, so the feed keyspace is left in
@@ -1141,6 +1153,8 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
    */
 
   if (mask_ctx_init (hashcat_ctx) == -1) return -1;
+
+  EVENT (EVENT_CANDIDATE_SOURCE_POST);
 
   /**
    * prevent the user from using --skip/--limit together with multiple word lists

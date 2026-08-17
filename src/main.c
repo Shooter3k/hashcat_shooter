@@ -25,6 +25,7 @@
 #include "status.h"
 #include "shared.h"
 #include "system.h"
+#include "timer.h"
 #include "event.h"
 #include "hwmon.h"
 
@@ -477,6 +478,14 @@ static void main_cracker_starting (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYB
 
   const bool show_prompt = (user_options->quiet == false) || (user_options->stdout_flag == true);
 
+  const bool show_initial_status = (user_options->quiet            == false)
+                                && (user_options->machine_readable == false)
+                                && (user_options->status_json      == false)
+                                && (user_options->benchmark        == false)
+                                && (user_options->progress_only    == false)
+                                && (user_options->speed_only       == false)
+                                && (user_options->stdout_flag      == false);
+
   if (show_prompt == false) return;
 
   // Tell the user we're about to start
@@ -489,13 +498,30 @@ static void main_cracker_starting (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAYB
 
       clear_prompt (hashcat_ctx);
 
+      if (show_initial_status == true)
+      {
+        status_display (hashcat_ctx);
+
+        event_log_info (hashcat_ctx, NULL);
+      }
+
       send_prompt (hashcat_ctx);
     }
   }
-  else if (user_options_extra->wordlist_mode == WL_MODE_STDIN)
+  else
   {
-    event_log_info (hashcat_ctx, "Starting attack in stdin mode");
-    event_log_info (hashcat_ctx, NULL);
+    if (user_options_extra->wordlist_mode == WL_MODE_STDIN)
+    {
+      event_log_info (hashcat_ctx, "Starting attack in stdin mode");
+      event_log_info (hashcat_ctx, NULL);
+    }
+
+    if (show_initial_status == true)
+    {
+      status_display (hashcat_ctx);
+
+      event_log_info (hashcat_ctx, NULL);
+    }
   }
 }
 
@@ -1569,8 +1595,322 @@ static void main_bridges_salt_post (MAYBE_UNUSED hashcat_ctx_t *hashcat_ctx, MAY
   event_log_info_nn (hashcat_ctx, "Initialized bridge salts");
 }
 
+typedef enum main_timing_stage
+{
+  MAIN_TIMING_TOTAL = 0,
+  MAIN_TIMING_BEFORE_ATTACK,
+  MAIN_TIMING_ATTACK,
+  MAIN_TIMING_AFTER_ATTACK,
+  MAIN_TIMING_COMMAND_SETUP,
+  MAIN_TIMING_SESSION_INIT,
+  MAIN_TIMING_RETRY_WAIT,
+  MAIN_TIMING_EXECUTE,
+  MAIN_TIMING_SESSION_DESTROY,
+  MAIN_TIMING_BRIDGES_INIT,
+  MAIN_TIMING_BACKEND_RUNTIMES,
+  MAIN_TIMING_BACKEND_DEVICES,
+  MAIN_TIMING_AUTODETECT,
+  MAIN_TIMING_HASHCONFIG,
+  MAIN_TIMING_HASH_PARSE,
+  MAIN_TIMING_HASH_COUNT,
+  MAIN_TIMING_HASH_SORT,
+  MAIN_TIMING_SALT_SORT,
+  MAIN_TIMING_HASH_UNIQUE,
+  MAIN_TIMING_POTFILE,
+  MAIN_TIMING_OUTFILE_CHECK,
+  MAIN_TIMING_RULES,
+  MAIN_TIMING_CANDIDATE_SOURCE,
+  MAIN_TIMING_BITMAP,
+  MAIN_TIMING_BRIDGE_SALTS,
+  MAIN_TIMING_BACKEND_SESSION,
+  MAIN_TIMING_SELFTEST,
+  MAIN_TIMING_AUTOTUNE,
+  MAIN_TIMING_STAGE_MAX
+} main_timing_stage_t;
+
+typedef struct main_timing_entry
+{
+  hc_timer_t timer;
+  double msec;
+  u64 calls;
+  bool running;
+} main_timing_entry_t;
+
+typedef struct main_timing_profile
+{
+  main_timing_entry_t entries[MAIN_TIMING_STAGE_MAX];
+  bool attack_seen;
+  bool initialized;
+  bool finalized;
+} main_timing_profile_t;
+
+static main_timing_profile_t main_timing_profile;
+
+static void main_timing_start (const main_timing_stage_t stage)
+{
+  main_timing_entry_t *entry = &main_timing_profile.entries[stage];
+
+  if (entry->running == true) return;
+
+  hc_timer_set (&entry->timer);
+
+  entry->running = true;
+}
+
+static void main_timing_stop (const main_timing_stage_t stage)
+{
+  main_timing_entry_t *entry = &main_timing_profile.entries[stage];
+
+  if (entry->running == false) return;
+
+  entry->msec += hc_timer_get (entry->timer);
+  entry->calls++;
+  entry->running = false;
+}
+
+static void main_timing_reset (void)
+{
+  memset (&main_timing_profile, 0, sizeof (main_timing_profile));
+
+  main_timing_profile.initialized = true;
+
+  main_timing_start (MAIN_TIMING_TOTAL);
+  main_timing_start (MAIN_TIMING_BEFORE_ATTACK);
+  main_timing_start (MAIN_TIMING_COMMAND_SETUP);
+}
+
+static void main_timing_event (const u32 id)
+{
+  if (main_timing_profile.initialized == false) return;
+
+  switch (id)
+  {
+    case EVENT_BRIDGES_INIT_PRE:          main_timing_start (MAIN_TIMING_BRIDGES_INIT);     break;
+    case EVENT_BRIDGES_INIT_POST:         main_timing_stop  (MAIN_TIMING_BRIDGES_INIT);     break;
+    case EVENT_BACKEND_RUNTIMES_INIT_PRE: main_timing_start (MAIN_TIMING_BACKEND_RUNTIMES); break;
+    case EVENT_BACKEND_RUNTIMES_INIT_POST:main_timing_stop  (MAIN_TIMING_BACKEND_RUNTIMES); break;
+    case EVENT_BACKEND_DEVICES_INIT_PRE:  main_timing_start (MAIN_TIMING_BACKEND_DEVICES);  break;
+    case EVENT_BACKEND_DEVICES_INIT_POST: main_timing_stop  (MAIN_TIMING_BACKEND_DEVICES);  break;
+    case EVENT_AUTODETECT_STARTING:       main_timing_start (MAIN_TIMING_AUTODETECT);       break;
+    case EVENT_AUTODETECT_FINISHED:       main_timing_stop  (MAIN_TIMING_AUTODETECT);       break;
+    case EVENT_HASHCONFIG_PRE:            main_timing_start (MAIN_TIMING_HASHCONFIG);       break;
+    case EVENT_HASHCONFIG_POST:           main_timing_stop  (MAIN_TIMING_HASHCONFIG);       break;
+    case EVENT_HASHLIST_PARSE_INPUT_PRE:  main_timing_start (MAIN_TIMING_HASH_PARSE);       break;
+    case EVENT_HASHLIST_PARSE_INPUT_POST: main_timing_stop  (MAIN_TIMING_HASH_PARSE);       break;
+    case EVENT_HASHLIST_COUNT_LINES_PRE:  main_timing_start (MAIN_TIMING_HASH_COUNT);       break;
+    case EVENT_HASHLIST_COUNT_LINES_POST: main_timing_stop  (MAIN_TIMING_HASH_COUNT);       break;
+    case EVENT_HASHLIST_SORT_HASH_PRE:    main_timing_start (MAIN_TIMING_HASH_SORT);        break;
+    case EVENT_HASHLIST_SORT_HASH_POST:   main_timing_stop  (MAIN_TIMING_HASH_SORT);        break;
+    case EVENT_HASHLIST_SORT_SALT_PRE:    main_timing_start (MAIN_TIMING_SALT_SORT);        break;
+    case EVENT_HASHLIST_SORT_SALT_POST:   main_timing_stop  (MAIN_TIMING_SALT_SORT);        break;
+    case EVENT_HASHLIST_UNIQUE_HASH_PRE:  main_timing_start (MAIN_TIMING_HASH_UNIQUE);      break;
+    case EVENT_HASHLIST_UNIQUE_HASH_POST: main_timing_stop  (MAIN_TIMING_HASH_UNIQUE);      break;
+    case EVENT_POTFILE_REMOVE_PARSE_PRE:  main_timing_start (MAIN_TIMING_POTFILE);          break;
+    case EVENT_POTFILE_REMOVE_PARSE_POST: main_timing_stop  (MAIN_TIMING_POTFILE);          break;
+    case EVENT_OUTFILE_CHECK_PARSE_PRE:   main_timing_start (MAIN_TIMING_OUTFILE_CHECK);    break;
+    case EVENT_OUTFILE_CHECK_PARSE_POST:  main_timing_stop  (MAIN_TIMING_OUTFILE_CHECK);    break;
+    case EVENT_RULESFILES_PARSE_PRE:      main_timing_start (MAIN_TIMING_RULES);            break;
+    case EVENT_RULESFILES_PARSE_POST:     main_timing_stop  (MAIN_TIMING_RULES);            break;
+    case EVENT_CANDIDATE_SOURCE_PRE:      main_timing_start (MAIN_TIMING_CANDIDATE_SOURCE); break;
+    case EVENT_CANDIDATE_SOURCE_POST:     main_timing_stop  (MAIN_TIMING_CANDIDATE_SOURCE); break;
+    case EVENT_BITMAP_INIT_PRE:           main_timing_start (MAIN_TIMING_BITMAP);           break;
+    case EVENT_BITMAP_INIT_POST:          main_timing_stop  (MAIN_TIMING_BITMAP);           break;
+    case EVENT_BRIDGES_SALT_PRE:          main_timing_start (MAIN_TIMING_BRIDGE_SALTS);     break;
+    case EVENT_BRIDGES_SALT_POST:         main_timing_stop  (MAIN_TIMING_BRIDGE_SALTS);     break;
+    case EVENT_BACKEND_SESSION_PRE:       main_timing_start (MAIN_TIMING_BACKEND_SESSION);  break;
+    case EVENT_BACKEND_SESSION_POST:      main_timing_stop  (MAIN_TIMING_BACKEND_SESSION);  break;
+    case EVENT_SELFTEST_STARTING:         main_timing_start (MAIN_TIMING_SELFTEST);         break;
+    case EVENT_SELFTEST_FINISHED:         main_timing_stop  (MAIN_TIMING_SELFTEST);         break;
+    case EVENT_AUTOTUNE_STARTING:         main_timing_start (MAIN_TIMING_AUTOTUNE);         break;
+    case EVENT_AUTOTUNE_FINISHED:         main_timing_stop  (MAIN_TIMING_AUTOTUNE);         break;
+
+    case EVENT_CRACKER_STARTING:
+      main_timing_stop (MAIN_TIMING_BEFORE_ATTACK);
+      main_timing_stop (MAIN_TIMING_AFTER_ATTACK);
+      main_timing_start (MAIN_TIMING_ATTACK);
+      main_timing_profile.attack_seen = true;
+      break;
+
+    case EVENT_CRACKER_FINISHED:
+      main_timing_stop (MAIN_TIMING_ATTACK);
+      main_timing_start (MAIN_TIMING_AFTER_ATTACK);
+      break;
+  }
+}
+
+static void main_timing_finalize (void)
+{
+  if ((main_timing_profile.initialized == false) || (main_timing_profile.finalized == true)) return;
+
+  for (int stage = 0; stage < MAIN_TIMING_STAGE_MAX; stage++)
+  {
+    main_timing_stop ((main_timing_stage_t) stage);
+  }
+
+  main_timing_profile.finalized = true;
+}
+
+static double main_timing_msec (const main_timing_stage_t stage)
+{
+  return main_timing_profile.entries[stage].msec;
+}
+
+static double main_timing_other (const double total, const double known)
+{
+  return (total > known) ? total - known : 0;
+}
+
+static double main_timing_percent (const double part, const double total)
+{
+  return (total > 0) ? (part * 100.0) / total : 0;
+}
+
+static void main_timing_line (hashcat_ctx_t *hashcat_ctx, const char *label, const double msec, const double total_msec, const int indent)
+{
+  event_log_info (hashcat_ctx, "%*s%-35s %12.3f s  %6.2f%%", indent, "", label, msec / 1000.0, main_timing_percent (msec, total_msec));
+}
+
+static void main_timing_detail_line (hashcat_ctx_t *hashcat_ctx, const char *label, const main_timing_stage_t stage, const double total_msec, const int indent)
+{
+  const main_timing_entry_t *entry = &main_timing_profile.entries[stage];
+
+  if (entry->calls == 0) return;
+
+  char display_label[80];
+
+  if (entry->calls > 1)
+  {
+    snprintf (display_label, sizeof (display_label), "%s (%" PRIu64 " runs)", label, entry->calls);
+  }
+  else
+  {
+    snprintf (display_label, sizeof (display_label), "%s", label);
+  }
+
+  main_timing_line (hashcat_ctx, display_label, entry->msec, total_msec, indent);
+}
+
+static void main_timing_report (hashcat_ctx_t *hashcat_ctx, const bool enabled)
+{
+  main_timing_finalize ();
+
+  if (enabled == false) return;
+
+  const double total          = main_timing_msec (MAIN_TIMING_TOTAL);
+  const double before         = main_timing_msec (MAIN_TIMING_BEFORE_ATTACK);
+  const double attack         = main_timing_msec (MAIN_TIMING_ATTACK);
+  const double after          = main_timing_msec (MAIN_TIMING_AFTER_ATTACK);
+  const double command_setup  = main_timing_msec (MAIN_TIMING_COMMAND_SETUP);
+  const double session_init   = main_timing_msec (MAIN_TIMING_SESSION_INIT);
+  const double retry_wait     = main_timing_msec (MAIN_TIMING_RETRY_WAIT);
+  const double session_close  = main_timing_msec (MAIN_TIMING_SESSION_DESTROY);
+
+  const double init_detail = main_timing_msec (MAIN_TIMING_BRIDGES_INIT)
+                           + main_timing_msec (MAIN_TIMING_BACKEND_RUNTIMES)
+                           + main_timing_msec (MAIN_TIMING_BACKEND_DEVICES);
+
+  const double prep_detail = main_timing_msec (MAIN_TIMING_AUTODETECT)
+                           + main_timing_msec (MAIN_TIMING_HASHCONFIG)
+                           + main_timing_msec (MAIN_TIMING_HASH_PARSE)
+                           + main_timing_msec (MAIN_TIMING_HASH_SORT)
+                           + main_timing_msec (MAIN_TIMING_SALT_SORT)
+                           + main_timing_msec (MAIN_TIMING_HASH_UNIQUE)
+                           + main_timing_msec (MAIN_TIMING_POTFILE)
+                           + main_timing_msec (MAIN_TIMING_OUTFILE_CHECK)
+                           + main_timing_msec (MAIN_TIMING_CANDIDATE_SOURCE)
+                           + main_timing_msec (MAIN_TIMING_BITMAP)
+                           + main_timing_msec (MAIN_TIMING_BRIDGE_SALTS)
+                           + main_timing_msec (MAIN_TIMING_BACKEND_SESSION)
+                           + main_timing_msec (MAIN_TIMING_SELFTEST)
+                           + main_timing_msec (MAIN_TIMING_AUTOTUNE);
+
+  const double preparation_total = main_timing_other (before, command_setup + session_init + retry_wait);
+  const double execution_cleanup = main_timing_other (after, session_close);
+
+  event_log_info (hashcat_ctx, NULL);
+  event_log_info (hashcat_ctx, "Task Time Breakdown");
+  event_log_info (hashcat_ctx, "===================");
+  event_log_info (hashcat_ctx, "Each percentage is part of the measured end-to-end run.");
+  event_log_info (hashcat_ctx, NULL);
+
+  main_timing_line (hashcat_ctx, "BEFORE ATTACK", before, total, 0);
+  main_timing_line (hashcat_ctx, "Program/options setup", command_setup, total, 2);
+  main_timing_line (hashcat_ctx, "Session initialization", session_init, total, 2);
+  main_timing_detail_line (hashcat_ctx, "Bridge/plugin initialization", MAIN_TIMING_BRIDGES_INIT, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Backend runtime loading", MAIN_TIMING_BACKEND_RUNTIMES, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Backend device/GPU setup", MAIN_TIMING_BACKEND_DEVICES, total, 4);
+  main_timing_line (hashcat_ctx, "Other session initialization", main_timing_other (session_init, init_detail), total, 4);
+  if (retry_wait > 0) main_timing_line (hashcat_ctx, "CUDA retry waiting", retry_wait, total, 2);
+  main_timing_line (hashcat_ctx, "Attack preparation", preparation_total, total, 2);
+  main_timing_detail_line (hashcat_ctx, "Hash-mode autodetection", MAIN_TIMING_AUTODETECT, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Hash-mode/module setup", MAIN_TIMING_HASHCONFIG, total, 4);
+  if (main_timing_profile.entries[MAIN_TIMING_HASH_PARSE].calls > 0)
+  {
+    const double hash_parse = main_timing_msec (MAIN_TIMING_HASH_PARSE);
+    const double hash_count = main_timing_msec (MAIN_TIMING_HASH_COUNT);
+
+    main_timing_detail_line (hashcat_ctx, "Read and parse hash input", MAIN_TIMING_HASH_PARSE, total, 4);
+    main_timing_detail_line (hashcat_ctx, "Count hash input lines", MAIN_TIMING_HASH_COUNT, total, 6);
+    main_timing_line (hashcat_ctx, "Other hash parsing", main_timing_other (hash_parse, hash_count), total, 6);
+  }
+  main_timing_detail_line (hashcat_ctx, "Sort hashes", MAIN_TIMING_HASH_SORT, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Sort salts", MAIN_TIMING_SALT_SORT, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Remove duplicate hashes", MAIN_TIMING_HASH_UNIQUE, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Check potfile", MAIN_TIMING_POTFILE, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Check outfile-check-dir", MAIN_TIMING_OUTFILE_CHECK, total, 4);
+  if (main_timing_profile.entries[MAIN_TIMING_CANDIDATE_SOURCE].calls > 0)
+  {
+    const double candidate_source = main_timing_msec (MAIN_TIMING_CANDIDATE_SOURCE);
+    const double rules = main_timing_msec (MAIN_TIMING_RULES);
+
+    main_timing_detail_line (hashcat_ctx, "Prepare wordlists/masks/rules", MAIN_TIMING_CANDIDATE_SOURCE, total, 4);
+    main_timing_detail_line (hashcat_ctx, "Load and validate rules", MAIN_TIMING_RULES, total, 6);
+    main_timing_line (hashcat_ctx, "Other candidate-source setup", main_timing_other (candidate_source, rules), total, 6);
+  }
+  main_timing_detail_line (hashcat_ctx, "Build hash lookup bitmaps", MAIN_TIMING_BITMAP, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Prepare bridge salts", MAIN_TIMING_BRIDGE_SALTS, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Allocate attack/GPU session", MAIN_TIMING_BACKEND_SESSION, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Kernel self-test", MAIN_TIMING_SELFTEST, total, 4);
+  main_timing_detail_line (hashcat_ctx, "Kernel autotune", MAIN_TIMING_AUTOTUNE, total, 4);
+  main_timing_line (hashcat_ctx, "Other attack preparation", main_timing_other (preparation_total, prep_detail), total, 4);
+
+  if (main_timing_profile.attack_seen == true)
+  {
+    main_timing_line (hashcat_ctx, "ATTACK", attack, total, 0);
+    main_timing_line (hashcat_ctx, "AFTER ATTACK", after, total, 0);
+    main_timing_line (hashcat_ctx, "Finish monitors/output/GPU session", execution_cleanup, total, 2);
+    main_timing_line (hashcat_ctx, "Destroy remaining session contexts", session_close, total, 2);
+  }
+  else
+  {
+    event_log_info (hashcat_ctx, "ATTACK                              not started (all hashes may already be resolved)");
+  }
+
+  event_log_info (hashcat_ctx, NULL);
+  main_timing_line (hashcat_ctx, "MEASURED TOTAL", total, total, 0);
+  event_log_info (hashcat_ctx, NULL);
+}
+
+static bool main_timing_report_enabled (const user_options_t *user_options)
+{
+  if (user_options->quiet            == true) return false;
+  if (user_options->machine_readable == true) return false;
+  if (user_options->keyspace         == true) return false;
+  if (user_options->stdout_flag      == true) return false;
+  if (user_options->show             == true) return false;
+  if (user_options->left             == true) return false;
+  if (user_options->identify         == true) return false;
+  if (user_options->usage             > 0)    return false;
+  if (user_options->hash_info         > 0)    return false;
+  if (user_options->backend_info      > 0)    return false;
+
+  return true;
+}
+
 static void event (const u32 id, hashcat_ctx_t *hashcat_ctx, const void *buf, const size_t len)
 {
+  main_timing_event (id);
+
   switch (id)
   {
     case EVENT_AUTOTUNE_FINISHED:         main_autotune_finished         (hashcat_ctx, buf, len); break;
@@ -1657,6 +1997,8 @@ int main (int argc, char **argv)
     return -1;
   }
 #endif
+
+  main_timing_reset ();
 
   // this increases the size on windows dos boxes
 
@@ -1768,6 +2110,10 @@ int main (int argc, char **argv)
 
   int rc_final = -1;
 
+  const bool timing_report_enabled = main_timing_report_enabled (user_options);
+
+  main_timing_stop (MAIN_TIMING_COMMAND_SETUP);
+
   #define CUDA_STARTUP_RETRY_MAX   10
   #define CUDA_STARTUP_RETRY_DELAY 5000000  /* 5 seconds in microseconds */
 
@@ -1777,10 +2123,20 @@ int main (int argc, char **argv)
     {
       fprintf (stderr, "\nNOTICE: CUDA context startup failed. Partial resources were released; retrying in 5 seconds (%d/%d) ...\n\n", retry, CUDA_STARTUP_RETRY_MAX);
 
+      main_timing_start (MAIN_TIMING_RETRY_WAIT);
+
       usleep (CUDA_STARTUP_RETRY_DELAY);
+
+      main_timing_stop (MAIN_TIMING_RETRY_WAIT);
     }
 
-    if (hashcat_session_init (hashcat_ctx, install_folder, shared_folder, argc, argv, COMPTIME) == 0)
+    main_timing_start (MAIN_TIMING_SESSION_INIT);
+
+    const int session_init_rc = hashcat_session_init (hashcat_ctx, install_folder, shared_folder, argc, argv, COMPTIME);
+
+    main_timing_stop (MAIN_TIMING_SESSION_INIT);
+
+    if (session_init_rc == 0)
     {
       if (user_options->usage > 0)
       {
@@ -1810,7 +2166,11 @@ int main (int argc, char **argv)
 
         user_options_info (hashcat_ctx);
 
+        main_timing_start (MAIN_TIMING_EXECUTE);
+
         rc_final = hashcat_session_execute (hashcat_ctx);
+
+        main_timing_stop (MAIN_TIMING_EXECUTE);
       }
     }
 
@@ -1818,7 +2178,11 @@ int main (int argc, char **argv)
 
     const bool should_retry = ((backend_ctx_t *) hashcat_ctx->backend_ctx)->cuda_startup_error;
 
+    main_timing_start (MAIN_TIMING_SESSION_DESTROY);
+
     hashcat_session_destroy (hashcat_ctx);
+
+    main_timing_stop (MAIN_TIMING_SESSION_DESTROY);
 
     if (should_retry == false) break;
 
@@ -1829,6 +2193,8 @@ int main (int argc, char **argv)
   }
 
   // finished with hashcat, clean up
+
+  main_timing_report (hashcat_ctx, timing_report_enabled);
 
   const time_t proc_stop = time (NULL);
 

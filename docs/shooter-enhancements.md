@@ -1,11 +1,11 @@
 # Shooter enhancement details
 
-This page explains every publicly documented difference summarized at the
-beginning of the main README. The comparison baseline is upstream hashcat commit
-[`fdad9f2f7`](https://github.com/hashcat/hashcat/commit/fdad9f2f7bd7ec7f53056727e39331a17514db7c).
-Items 14 and 39 are newer official hashcat work included after that baseline;
-they are not claimed as Shooter-authored features. Release-by-release evidence
-and test results are preserved in [CHANGELOG.md](../CHANGELOG.md).
+This page explains every Shooter-specific change summarized at the beginning
+of the main README. The comparison baseline is official upstream hashcat commit
+[`eba388d2e`](https://github.com/hashcat/hashcat/commit/eba388d2ef8d2dc6f184cb2effdc1a99493d888d),
+which is merged into this branch. Features inherited from official hashcat are
+intentionally excluded. Upstream integration history, release-by-release
+evidence, and test results are preserved in [CHANGELOG.md](../CHANGELOG.md).
 
 ## Performance and startup
 
@@ -101,23 +101,16 @@ and quit. With a regular `-o` file, restore data binds the candidate position
 to an exact byte boundary and removes an uncommitted tail before continuing.
 See the [stdout session guide](stdout-sessions.md).
 
-### 14. Official attack mode 12
-
-Shooter includes official hashcat attack mode 12, added upstream after the
-fork. Its mask can place one or two wordlist entries at arbitrary positions
-using `?w` and `?q`. This is included functionality, not a Shooter-authored
-feature. See the [integration release notes](../CHANGELOG.md#v712-shooter2026081218).
-
 ## Multibyte input
 
-### 15. Multibyte masks work on Windows
+### 14. Multibyte masks work on Windows
 
 Literal two-, three-, and four-byte UTF-8 characters work beside normal mask
 tokens in every mask-capable hash mode. For example,
 `?d?d№?d?d№?d?d№` reaches the mask engine without Windows replacing `№`.
 See the [release notes](../CHANGELOG.md#v712-shooter2026081434).
 
-### 16. Multibyte rules work on Windows
+### 15. Multibyte rules work on Windows
 
 Rule files can use UTF-8 literals with the byte-emitting `$`, `^`, `i`, `v`,
 and `o` operations. UTF-8 BOM-prefixed files, Unicode paths, and literal
@@ -127,34 +120,34 @@ and non-emitting transforms remain byte-oriented. See the
 
 ## Long-job control and recovery
 
-### 17. Interactive runtime controls
+### 16. Interactive runtime controls
 
 The interactive menu can extend a `--runtime` countdown or make it decrease at
 twice normal speed. A running job can switch directly between the two modes.
 See the [runtime-control guide](runtime-controls.md).
 
-### 18. Coordinated multi-GPU checkpoints
+### 17. Coordinated multi-GPU checkpoints
 
 A checkpoint request parks active GPUs at safe restore positions until every
 participating device reaches the barrier. Cancelling the checkpoint releases
 all parked devices and preserves prefetched candidate work. See the
 [checkpoint-control guide](checkpoint-control.md).
 
-### 19. Atomic CUDA startup retry
+### 18. Atomic CUDA startup retry
 
 If context creation fails on any selected CUDA GPU, Shooter releases the
 partial attempt and retries the complete session instead of continuing with a
 subset of devices. Stream and event creation failures retry on the affected
 context. Retries are bounded and end with an explicit error.
 
-### 20. Windows outfile lock recovery
+### 19. Windows outfile lock recovery
 
 Startup validation and result-time append operations retry temporary Windows
 outfile access failures every 250 milliseconds for up to five seconds. A
 cooldown prevents persistent locks from adding the same long delay for every
 later result. See the [release notes](../CHANGELOG.md#v712-shooter202608127).
 
-### 21. Ignore outfile
+### 20. Ignore outfile
 
 When `--outfile-check-dir` is active, `[i]gnore outfile` stops further
 directory checking for the current process without deleting or changing
@@ -162,12 +155,12 @@ files. Press `i` to activate it; the command then disappears from the prompt.
 Hashes already processed remain recovered. See the
 [release notes](../CHANGELOG.md#v712-shooter202608129-local-source-build).
 
-### 22. Clear outfile-check completion status
+### 21. Clear outfile-check completion status
 
 When every recovered hash came from `--outfile-check-dir` rather than the
 current attack, the final status says `cracked from outfile-check-dir`.
 
-### 23. Reliable loopback cleanup
+### 22. Reliable loopback cleanup
 
 Windows loopback feeds release their file mappings before consumed induction
 files are deleted. Cleanup failures are reported instead of letting the same
@@ -176,26 +169,26 @@ quit. See the [release notes](../CHANGELOG.md#v712-shooter2026081431).
 
 ## Clearer status information
 
-### 24. Visible quit progress
+### 23. Visible quit progress
 
 After `q` or `Q`, Shooter reports candidate and GPU drain, worker completion,
 session-service shutdown, GPU-resource release, and final session-file work so
 the console does not appear frozen. See the
 [release notes](../CHANGELOG.md#v712-shooter2026081213-local-source-build).
 
-### 25. Total run time
+### 24. Total run time
 
 The final summary prints `Total Run Time`, calculated from the displayed
 `Started` and `Stopped` timestamps. See the
 [release notes](../CHANGELOG.md#v712-shooter202608125).
 
-### 26. Correct combination status
+### 25. Correct combination status
 
 A two-wordlist mode-1 attack using whole-candidate rules reports the real left
 and right wordlist paths instead of a `(null)` feed label. See the
 [release notes](../CHANGELOG.md#v712-shooter2026081215).
 
-### 27. Visible Pure Kernel warning
+### 26. Visible Pure Kernel warning
 
 Interactive terminals display the complete Pure Kernel status line in bright
 yellow. Redirected, logged, and machine-readable output remains plain text.
@@ -203,7 +196,7 @@ See the [release notes](../CHANGELOG.md#v712-shooter2026081325).
 
 ## Hash formats and compatibility
 
-### 28. Complete mdxfind namespace
+### 27. Complete mdxfind namespace
 
 Shooter exposes every name in mdxfind's live registry as `e1` through `e1001`.
 Of those 1,001 entries, 999 are self-contained algorithms with passing test
@@ -212,33 +205,33 @@ mdxfind custom-user/salt state. See the
 [mdxfind compatibility guide](mdxfind-modules.md) and
 [complete registry](mdxfind-modules.json).
 
-### 29. Public mdxfind mode names
+### 28. Public mdxfind mode names
 
 Help, hash information, examples, runtime status, benchmarks, autodetection,
 diagnostics, and session logs show public `eN` names instead of private numeric
 plugin identifiers. Existing standard numeric modes remain unchanged.
 
-### 30. Magento Argon2 input
+### 29. Magento Argon2 input
 
 Mode `e987` accepts standard Argon2 PHC strings and mdxfind's Magento
 `hex_digest:salt:2` and extended `:3_...` forms. The original Magento line is
 retained for potfiles, `--show`, `--left`, and cracked output. See the
 [release notes](../CHANGELOG.md#v712-shooter2026081322).
 
-### 31. phpBB3 bcrypt-over-phpass modes
+### 30. phpBB3 bcrypt-over-phpass modes
 
 Mode `29950` handles `bcrypt(phpass($pass))`; mode `29951` explicitly handles
 the rarer `bcrypt(phpass(md5($pass)))` construction. Both accept the original
 phpBB3 record and run both stages through hashcat's GPU scheduler. See the
 [mode 29950 guide](mode-29950.md).
 
-### 32. Mode 29980
+### 31. Mode 29980
 
 Mode `29980` implements the supported libxcrypt-style gost-yescrypt
 `$gy$j9T$` profile on the GPU. See the
 [gost-yescrypt notes](../GOST_YESCRYPT_GPU.md).
 
-### 33. Mode 67000
+### 32. Mode 67000
 
 Mode `67000` is a compatibility number for older yescrypt jobs and uses the
 maintained implementation behind current mode `36100`. New jobs should use
@@ -246,55 +239,43 @@ maintained implementation behind current mode `36100`. New jobs should use
 
 ## Downloads and builds
 
-### 34. Complete Windows release archive
+### 33. Complete Windows release archive
 
 Each release publishes one `shooter_hashcat-<version>-windows-x64-complete.7z`
 containing the complete
 tagged source, the ready-to-run Windows x64 executable, module and bridge DLLs,
 required runtime DLLs, build metadata, and rebuild tools.
 
-### 35. Package integrity verification
+### 34. Package integrity verification
 
 The archive includes `SHA256SUMS` covering its source and binary contents plus
 `verify-windows-package.ps1`, which checks every manifest entry after
 extraction.
 
-### 36. Self-bootstrapping Windows build
+### 35. Self-bootstrapping Windows build
 
 `build-windows.ps1` downloads a checksum-pinned MSYS2 toolchain into the local
 `.build-tools` directory and builds Shooter without installing system-wide
 software or changing the user or system `PATH`. See
 [how_to_compile.txt](../how_to_compile.txt).
 
-### 37. Portable Windows build instructions
+### 36. Portable Windows build instructions
 
 Build commands work with a fresh clone on any drive and include all required
 GCC, Clang, Rust, OpenSSL, iconv, bridge, feed, and runtime dependencies. No
 developer-specific absolute paths are required. See
 [how_to_compile.txt](../how_to_compile.txt).
 
-### 38. Reproducible release versioning
+### 37. Reproducible release versioning
 
 Production source pins its release date and revision so later rebuilds retain
 the same version across machines and time zones. Packaging and release
 automation refuse to publish an executable that does not exactly match the
 requested tag.
 
-## Newer official work included after the fork
-
-### 39. Newer upstream correctness fixes
-
-Shooter synchronized with official hashcat through commit
-[`eba388d2e`](https://github.com/hashcat/hashcat/commit/eba388d2ef8d2dc6f184cb2effdc1a99493d888d).
-In addition to the earlier feed, yescrypt, PDF, combinator, overflow,
-double-free, and bounds fixes, the current merge includes the shared plugin
-core and ABI checks, LM parsing and corruption fixes, secp256k1 zero-scalar
-and bounds fixes, updated zlib, Windows CI, and Android build corrections.
-These fixes are included but not claimed as Shooter-authored work.
-
 ## Rule loading
 
-### 40. Parallel rule-file loading
+### 38. Parallel rule-file loading
 
 Plain rule files of at least 16 MiB are read once and validated with up to 64
 CPU workers. This is part of the shared rule loader, so it benefits every hash
@@ -313,7 +294,7 @@ for controls, memory behavior, and verification details.
 
 ## Optional status detail
 
-### 41. Optional Restore.Sub status lines
+### 39. Optional Restore.Sub status lines
 
 The per-device `Restore.Sub` rows are hidden from normal human-readable status
 output by default, keeping a 12-GPU status screen twelve lines shorter. Add
@@ -332,7 +313,7 @@ did not emit these human-readable rows.
 
 ## Portable release binaries
 
-### 42. Portable prebuilt Windows binaries
+### 40. Portable prebuilt Windows binaries
 
 The one-file Windows release is compiled for the standard x64 baseline instead
 of the particular CPU model used by GitHub Actions. This prevents a downloaded
@@ -343,7 +324,7 @@ directly when they intentionally want machine-specific optimization.
 
 ## Potfile reporting
 
-### 43. Faster show and left
+### 41. Faster show and left
 
 `--show` and `--left` use narrower searches when comparing a potfile with a
 large hash list. Unsalted lists use a small 16-bit prefix index over the
@@ -363,7 +344,7 @@ for measured results, scope, and verification details.
 
 ## Linux builds
 
-### 44. Working Linux builds
+### 42. Linux-compatible mdxfind bridge
 
 Shooter's bundled mdxfind libraries are compiled as position-independent code
 before they are linked into `bridge_mdxfind.so`. This fixes the Linux linker
@@ -375,7 +356,7 @@ See [BUILD.md](../BUILD.md) for the tested Ubuntu prerequisites and commands.
 
 ## Support and troubleshooting
 
-### 45. Automatic error reports
+### 43. Automatic error reports
 
 The first normal Hashcat error in a process creates a uniquely named
 `shooter_hashcat-error-YYYYMMDD-HHMMSS-PID.log` in the directory where the
@@ -396,7 +377,7 @@ the [error-report guide](error-reports.md).
 
 ## Testing and observability
 
-### 46. Sanitizers and parser fuzzing
+### 44. Sanitizers and parser fuzzing
 
 The Security workflow compiles the shared parser core with AddressSanitizer
 and UndefinedBehaviorSanitizer and runs a coverage-guided libFuzzer target over
@@ -404,7 +385,7 @@ the common tokenizer and multibyte rule compiler. Scheduled and change-based
 runs retain any crash input as a workflow artifact. See
 [security-testing.md](security-testing.md).
 
-### 47. Stage time and peak memory
+### 45. Stage time and peak memory
 
 `--stage-profile` prints final time for feed, copy, initialization, temporary
 transfer, main launch, and comparison stages together with measured launches
@@ -412,7 +393,7 @@ and peak process RAM. `--stage-profile-json` emits the same fields as one
 `shooter-stage-profile-v1` object. Profiling is disabled by default. See
 [stage-profile.md](stage-profile.md).
 
-### 48. SBOM and signed release attestations
+### 46. SBOM and signed release attestations
 
 The Windows package contains an SPDX 2.3 inventory of the executables and
 plugin DLLs with SHA-256 checksums and principal dependencies. The release
@@ -420,20 +401,9 @@ workflow creates Sigstore-backed GitHub attestations for both build provenance
 and the SBOM while retaining one public `.7z` download asset. See
 [release-security.md](release-security.md).
 
-## Attack automation
-
-### 49. Automatic low-crack-rate bypass
-
-`--bypass-delay` and `--bypass-threshold` work together to measure how many
-new hashes the current dictionary or mask cracks during each time window. If
-the number is below the threshold, Hashcat selects the next queued dictionary
-or mask. A single-entry queue ends with `Status: Bypass`. Already-recovered
-hashes do not inflate the measurement, and time spent paused does not consume
-the delay window. See [bypass-rate-control.md](bypass-rate-control.md).
-
 ## Outfile-check startup
 
-### 50. Outfile-check before cracking allocation
+### 47. Outfile-check before cracking allocation
 
 Before building bitmap tables, loading the candidate source, initializing
 attack kernels, allocating attack-specific GPU and host buffers, or running
@@ -461,7 +431,7 @@ host allocation; it does not suppress the initial device list. See
 
 ## Wordlist I/O
 
-### 51. Faster large-wordlist indexing and feed
+### 48. Faster large-wordlist indexing and feed
 
 The first time Shooter sees a wordlist, it builds the sparse line index used
 for multi-GPU distribution, `--skip`, and restore. Very large files now use up
@@ -489,7 +459,7 @@ for scope and verification details.
 
 ## Status visibility
 
-### 52. Consistent remaining and recovery-rate status
+### 49. Consistent remaining and recovery-rate status
 
 Every normal human-readable status display includes both of these lines:
 
@@ -508,3 +478,50 @@ pace. The hour and day columns use `N/A` until those windows have elapsed.
 This affects the normal terminal display, including periodic and final status.
 Machine-readable and JSON status formats keep their existing structured
 fields and formats.
+
+## Automatic timing diagnostics
+
+### 50. Automatic task-time breakdown
+
+After every normal human-readable attack, Shooter prints a `Task Time
+Breakdown` that accounts for the measured end-to-end run. The three main
+totals are `BEFORE ATTACK`, `ATTACK`, and `AFTER ATTACK`; every line includes
+seconds and its percentage of the complete run.
+
+The preparation section separately measures command/options setup, session
+initialization, bridge/plugin initialization, backend runtime loading, GPU
+device setup, hash-mode setup, hash line counting, hash and salt sorting,
+duplicate removal, potfile checks, `--outfile-check-dir` checks, rule loading,
+bitmap generation, bridge salts, per-attack GPU allocation, self-test, and
+autotune. `Other session initialization` and `Other attack preparation` keep
+unclassified coordination time visible instead of silently losing it.
+
+The cleanup section separates the time used to finish monitors, output, and
+the attack-specific GPU session from the time used to destroy the remaining
+session contexts. Repeated stages show their run count, such as during a
+benchmark or retry. If the potfile or outfile preflight resolves every hash,
+the report says that the attack did not start.
+
+No option is required. The report is intentionally suppressed for `--quiet`,
+machine-readable output, `--stdout`, `--show`, `--left`, `--identify`,
+`--keyspace`, help, hash-info, and backend-info modes so existing scripts keep
+their established output formats. This end-to-end report complements the
+opt-in `--stage-profile`, which measures the lower-level candidate pipeline.
+
+## Automatic endpoint status
+
+### 51. Automatic start and finish status
+
+Every normal human-readable attack prints the same full status page as the
+interactive `s` command at both endpoints. The initial page appears after
+attack preparation, self-test, and autotune have made live status available,
+but before any cracking worker is launched. It therefore provides a complete
+zero-progress view of the selected hashes, candidate source, devices, and
+runtime estimate. The existing final page remains the matching completion
+view with the terminal result and recovery totals.
+
+Queued rounds share one initial page at the beginning and one final page after
+the last round, avoiding duplicate pages between dictionaries or masks.
+Automatic pages are suppressed for `--quiet`, machine-readable and JSON
+output, benchmarks, speed-only and progress-only modes, and `--stdout`, so
+their established output formats remain unchanged.

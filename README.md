@@ -13,12 +13,12 @@ but most of its additions also work on other hardware.
 Use this software only on passwords and systems you own or are explicitly
 authorized to audit.
 
-## What shooter_hashcat can do that the original Hashcat baseline cannot
+## Shooter-specific enhancements
 
-This is the public feature inventory for the current branch.
-Items 14 and 39 came from newer official hashcat work included after the fork;
-the other items are Shooter changes. Every item links to a plain-language
-explanation.
+This public inventory lists changes maintained by Shooter relative to the
+[official upstream hashcat commit merged into this branch](https://github.com/hashcat/hashcat/commit/eba388d2ef8d2dc6f184cb2effdc1a99493d888d).
+Features inherited from official hashcat are intentionally excluded. Every
+item links to a plain-language explanation.
 
 1. **[Huge hash lists parse across CPU cores](docs/shooter-enhancements.md#1-parallel-hash-list-parsing)** — less time waiting at `Parsing Hashes`.
 2. **[Huge unsalted hash lists sort across CPU cores](docs/shooter-enhancements.md#2-parallel-hash-list-sorting)** — preprocessing finishes sooner.
@@ -33,45 +33,44 @@ explanation.
 11. **[Rules can modify the complete candidate](docs/shooter-enhancements.md#11-whole-candidate-rules)** — supported in attack modes 1, 3, 6, and 7.
 12. **[`--stdout` rule generation uses multiple CPU cores](docs/shooter-enhancements.md#12-parallel-stdout-rule-generation)** — up to 64 workers retain deterministic order.
 13. **[`--stdout` jobs can pause, checkpoint, and restore](docs/shooter-enhancements.md#13-resumable-stdout-sessions)** — file output resumes at the exact byte boundary.
-14. **[Official attack mode 12 is included](docs/shooter-enhancements.md#14-official-attack-mode-12)** — place one or two wordlist entries anywhere inside a mask.
-15. **[Multibyte masks work on Windows](docs/shooter-enhancements.md#15-multibyte-masks-work-on-windows)** — literals such as `№` survive the command line.
-16. **[Multibyte rules work on Windows](docs/shooter-enhancements.md#16-multibyte-rules-work-on-windows)** — rule files and inline rules accept UTF-8 literals.
-17. **[A running time limit can be extended or shortened](docs/shooter-enhancements.md#17-interactive-runtime-controls)** — adjust `--runtime` without restarting.
-18. **[Multi-GPU checkpoints keep every GPU coordinated](docs/shooter-enhancements.md#18-coordinated-multi-gpu-checkpoints)** — checkpoint cancellation safely resumes all devices.
-19. **[CUDA startup failures retry without dropping GPUs](docs/shooter-enhancements.md#19-atomic-cuda-startup-retry)** — a failed device cannot silently produce a partial-GPU run.
-20. **[Temporarily locked output files are retried](docs/shooter-enhancements.md#20-windows-outfile-lock-recovery)** — brief Windows locks do not immediately lose results.
-21. **[`[i]gnore outfile` stops directory checking](docs/shooter-enhancements.md#21-ignore-outfile)** — stop checking `--outfile-check-dir` for the current run without changing the directory.
-22. **[Outfile-check-only cracks are labeled clearly](docs/shooter-enhancements.md#22-clear-outfile-check-completion-status)** — the final status identifies where the result came from.
-23. **[Loopback induction files clean up safely on Windows](docs/shooter-enhancements.md#23-reliable-loopback-cleanup)** — consumed files are not rediscovered forever.
-24. **[Quit shows shutdown progress](docs/shooter-enhancements.md#24-visible-quit-progress)** — the console explains what hashcat is still finishing.
-25. **[The final summary shows total run time](docs/shooter-enhancements.md#25-total-run-time)** — `Total Run Time` is calculated from start and stop timestamps.
-26. **[Combination status shows the correct wordlist paths](docs/shooter-enhancements.md#26-correct-combination-status)** — ruled mode-1 jobs no longer show `(null)`.
-27. **[Pure Kernel selection is highlighted](docs/shooter-enhancements.md#27-visible-pure-kernel-warning)** — interactive status displays the line in yellow.
-28. **[The complete mdxfind `e1`-`e1001` namespace is available](docs/shooter-enhancements.md#28-complete-mdxfind-namespace)** — 999 standalone algorithms plus two documented special entries.
-29. **[mdxfind names appear consistently throughout hashcat](docs/shooter-enhancements.md#29-public-mdxfind-mode-names)** — help, status, benchmarks, and logs show public `eN` names.
-30. **[mdxfind `e987` accepts Magento Argon2 input](docs/shooter-enhancements.md#30-magento-argon2-input)** — original Magento lines remain intact in output and potfiles.
-31. **[Modes 29950 and 29951 handle phpBB3 legacy rehashes](docs/shooter-enhancements.md#31-phpbb3-bcrypt-over-phpass-modes)** — the complete two-stage hashes run on the GPU.
-32. **[Mode 29980 adds the supported gost-yescrypt profile](docs/shooter-enhancements.md#32-mode-29980)** — handles libxcrypt-style `$gy$j9T$` hashes.
-33. **[Mode 67000 restores legacy yescrypt numbering](docs/shooter-enhancements.md#33-mode-67000)** — old jobs use the maintained mode-36100 implementation.
-34. **[One `.7z` contains both source and a ready-to-run build](docs/shooter-enhancements.md#34-complete-windows-release-archive)** — download one file to run or rebuild Shooter.
-35. **[Release contents can be verified locally](docs/shooter-enhancements.md#35-package-integrity-verification)** — an included script checks the complete SHA-256 manifest.
-36. **[Windows builds bootstrap with one command](docs/shooter-enhancements.md#36-self-bootstrapping-windows-build)** — the compiler toolchain stays inside the repository.
-37. **[Fresh clones build from any drive](docs/shooter-enhancements.md#37-portable-windows-build-instructions)** — no machine-specific absolute paths are required.
-38. **[Release versions are reproducible](docs/shooter-enhancements.md#38-reproducible-release-versioning)** — tags, packages, rebuilds, and `--version` stay identical.
-39. **[Newer official hashcat fixes are included](docs/shooter-enhancements.md#39-newer-upstream-correctness-fixes)** — upstream fixes after the fork are preserved and clearly credited.
-40. **[Huge rule files load across CPU cores](docs/shooter-enhancements.md#40-parallel-rule-file-loading)** — all rule-capable algorithms spend less time waiting at `Loading rules`.
-41. **[`Restore.Sub` status lines are optional](docs/shooter-enhancements.md#41-optional-restoresub-status-lines)** — they stay hidden unless `--status-restore-sub` is requested.
-42. **[Prebuilt releases run on standard x64 CPUs](docs/shooter-enhancements.md#42-portable-prebuilt-windows-binaries)** — release binaries do not inherit the GitHub runner's CPU-only instructions.
-43. **[`--show` and `--left` finish faster on huge lists](docs/shooter-enhancements.md#43-faster-show-and-left)** — large potfiles use narrower lookups, and `-o` jobs skip a redundant full-result copy and sort.
-44. **[Linux builds complete successfully](docs/shooter-enhancements.md#44-working-linux-builds)** — Shooter's mdxfind bridge now links in both static and shared Linux builds.
-45. **[Errors are saved in one support file](docs/shooter-enhancements.md#45-automatic-error-reports)** — the file records recent warnings, every normal error, later warnings, and the details needed to investigate the problem.
-46. **[Parser bugs are hunted automatically](docs/shooter-enhancements.md#46-sanitizers-and-parser-fuzzing)** — scheduled sanitizer and coverage-guided fuzz tests retain crash inputs.
-47. **[Pipeline time and peak RAM can be measured](docs/shooter-enhancements.md#47-stage-time-and-peak-memory)** — opt-in human and JSON reports show where a run spent its time.
-48. **[Releases include an SBOM and signed attestations](docs/shooter-enhancements.md#48-sbom-and-signed-release-attestations)** — verify archive contents, provenance, and the software inventory.
-49. **[Slow-producing attacks can move on automatically](docs/shooter-enhancements.md#49-automatic-low-crack-rate-bypass)** — set a time window and minimum number of new cracks, then skip the current dictionary or mask when its yield falls below that minimum.
-50. **[Existing outfile results are removed before cracking starts](docs/shooter-enhancements.md#50-outfile-check-before-cracking-allocation)** — if every hash is already in `--outfile-check-dir`, the expensive attack-specific GPU and host-memory allocation is skipped.
-51. **[Huge wordlists index and feed faster](docs/shooter-enhancements.md#51-faster-large-wordlist-indexing-and-feed)** — first-use line counting uses the CPU cores and ordinary candidates reach the GPUs with less per-word overhead.
-52. **[Remaining hashes and recovery rates are always visible](docs/shooter-enhancements.md#52-consistent-remaining-and-recovery-rate-status)** — every normal status display includes `Remaining` and `Recovered/Time`, even for small hash lists, with live minute values from the first status update.
+14. **[Multibyte masks work on Windows](docs/shooter-enhancements.md#14-multibyte-masks-work-on-windows)** — literals such as `№` survive the command line.
+15. **[Multibyte rules work on Windows](docs/shooter-enhancements.md#15-multibyte-rules-work-on-windows)** — rule files and inline rules accept UTF-8 literals.
+16. **[A running time limit can be extended or shortened](docs/shooter-enhancements.md#16-interactive-runtime-controls)** — adjust `--runtime` without restarting.
+17. **[Multi-GPU checkpoints keep every GPU coordinated](docs/shooter-enhancements.md#17-coordinated-multi-gpu-checkpoints)** — checkpoint cancellation safely resumes all devices.
+18. **[CUDA startup failures retry without dropping GPUs](docs/shooter-enhancements.md#18-atomic-cuda-startup-retry)** — a failed device cannot silently produce a partial-GPU run.
+19. **[Temporarily locked output files are retried](docs/shooter-enhancements.md#19-windows-outfile-lock-recovery)** — brief Windows locks do not immediately lose results.
+20. **[`[i]gnore outfile` stops directory checking](docs/shooter-enhancements.md#20-ignore-outfile)** — stop checking `--outfile-check-dir` for the current run without changing the directory.
+21. **[Outfile-check-only cracks are labeled clearly](docs/shooter-enhancements.md#21-clear-outfile-check-completion-status)** — the final status identifies where the result came from.
+22. **[Loopback induction files clean up safely on Windows](docs/shooter-enhancements.md#22-reliable-loopback-cleanup)** — consumed files are not rediscovered forever.
+23. **[Quit shows shutdown progress](docs/shooter-enhancements.md#23-visible-quit-progress)** — the console explains what hashcat is still finishing.
+24. **[The final summary shows total run time](docs/shooter-enhancements.md#24-total-run-time)** — `Total Run Time` is calculated from start and stop timestamps.
+25. **[Combination status shows the correct wordlist paths](docs/shooter-enhancements.md#25-correct-combination-status)** — ruled mode-1 jobs no longer show `(null)`.
+26. **[Pure Kernel selection is highlighted](docs/shooter-enhancements.md#26-visible-pure-kernel-warning)** — interactive status displays the line in yellow.
+27. **[The complete mdxfind `e1`-`e1001` namespace is available](docs/shooter-enhancements.md#27-complete-mdxfind-namespace)** — 999 standalone algorithms plus two documented special entries.
+28. **[mdxfind names appear consistently throughout hashcat](docs/shooter-enhancements.md#28-public-mdxfind-mode-names)** — help, status, benchmarks, and logs show public `eN` names.
+29. **[mdxfind `e987` accepts Magento Argon2 input](docs/shooter-enhancements.md#29-magento-argon2-input)** — original Magento lines remain intact in output and potfiles.
+30. **[Modes 29950 and 29951 handle phpBB3 legacy rehashes](docs/shooter-enhancements.md#30-phpbb3-bcrypt-over-phpass-modes)** — the complete two-stage hashes run on the GPU.
+31. **[Mode 29980 adds the supported gost-yescrypt profile](docs/shooter-enhancements.md#31-mode-29980)** — handles libxcrypt-style `$gy$j9T$` hashes.
+32. **[Mode 67000 restores legacy yescrypt numbering](docs/shooter-enhancements.md#32-mode-67000)** — old jobs use the maintained mode-36100 implementation.
+33. **[One `.7z` contains both source and a ready-to-run build](docs/shooter-enhancements.md#33-complete-windows-release-archive)** — download one file to run or rebuild Shooter.
+34. **[Release contents can be verified locally](docs/shooter-enhancements.md#34-package-integrity-verification)** — an included script checks the complete SHA-256 manifest.
+35. **[Windows builds bootstrap with one command](docs/shooter-enhancements.md#35-self-bootstrapping-windows-build)** — the compiler toolchain stays inside the repository.
+36. **[Fresh clones build from any drive](docs/shooter-enhancements.md#36-portable-windows-build-instructions)** — no machine-specific absolute paths are required.
+37. **[Release versions are reproducible](docs/shooter-enhancements.md#37-reproducible-release-versioning)** — tags, packages, rebuilds, and `--version` stay identical.
+38. **[Huge rule files load across CPU cores](docs/shooter-enhancements.md#38-parallel-rule-file-loading)** — all rule-capable algorithms spend less time waiting at `Loading rules`.
+39. **[`Restore.Sub` status lines are optional](docs/shooter-enhancements.md#39-optional-restoresub-status-lines)** — they stay hidden unless `--status-restore-sub` is requested.
+40. **[Prebuilt releases run on standard x64 CPUs](docs/shooter-enhancements.md#40-portable-prebuilt-windows-binaries)** — release binaries do not inherit the GitHub runner's CPU-only instructions.
+41. **[`--show` and `--left` finish faster on huge lists](docs/shooter-enhancements.md#41-faster-show-and-left)** — large potfiles use narrower lookups, and `-o` jobs skip a redundant full-result copy and sort.
+42. **[Shooter's mdxfind bridge builds on Linux](docs/shooter-enhancements.md#42-linux-compatible-mdxfind-bridge)** — the added bridge links in both static and shared Linux builds.
+43. **[Errors are saved in one support file](docs/shooter-enhancements.md#43-automatic-error-reports)** — the file records recent warnings, every normal error, later warnings, and the details needed to investigate the problem.
+44. **[Parser bugs are hunted automatically](docs/shooter-enhancements.md#44-sanitizers-and-parser-fuzzing)** — scheduled sanitizer and coverage-guided fuzz tests retain crash inputs.
+45. **[Pipeline time and peak RAM can be measured](docs/shooter-enhancements.md#45-stage-time-and-peak-memory)** — opt-in human and JSON reports show where a run spent its time.
+46. **[Releases include an SBOM and signed attestations](docs/shooter-enhancements.md#46-sbom-and-signed-release-attestations)** — verify archive contents, provenance, and the software inventory.
+47. **[Existing outfile results are removed before cracking starts](docs/shooter-enhancements.md#47-outfile-check-before-cracking-allocation)** — if every hash is already in `--outfile-check-dir`, the expensive attack-specific GPU and host-memory allocation is skipped.
+48. **[Huge wordlists index and feed faster](docs/shooter-enhancements.md#48-faster-large-wordlist-indexing-and-feed)** — first-use line counting uses the CPU cores and ordinary candidates reach the GPUs with less per-word overhead.
+49. **[Remaining hashes and recovery rates are always visible](docs/shooter-enhancements.md#49-consistent-remaining-and-recovery-rate-status)** — every normal status display includes `Remaining` and `Recovered/Time`, even for small hash lists, with live minute values from the first status update.
+50. **[Every attack explains where its time went](docs/shooter-enhancements.md#50-automatic-task-time-breakdown)** — the final report separates preparation, cracking, and cleanup, then itemizes hash loading, sorting, potfile/outfile checks, rules, GPU setup, self-test, and autotune.
+51. **[Full status appears at both ends of an attack](docs/shooter-enhancements.md#51-automatic-start-and-finish-status)** — the same human-readable page as interactive `s` prints once before cracking workers start and again when the attack completes.
 
 ## Download and run
 
@@ -119,8 +118,7 @@ Windows and Linux builds, Rust crates, and the sanitizer-backed parser fuzzer.
 | RTX 4090 autotune cache | [RTX_4090_AUTOTUNE_CACHE.md](RTX_4090_AUTOTUNE_CACHE.md) |
 | Multi-file combinations and complete-candidate rules | [docs/multi-file-combination.md](docs/multi-file-combination.md) and [docs/whole-candidate-rules.md](docs/whole-candidate-rules.md) |
 | Runtime and checkpoint controls | [docs/runtime-controls.md](docs/runtime-controls.md) and [docs/checkpoint-control.md](docs/checkpoint-control.md) |
-| Interactive status output | [consistent remaining and recovery-rate lines](docs/shooter-enhancements.md#52-consistent-remaining-and-recovery-rate-status) |
-| Automatic low-crack-rate bypass | [docs/bypass-rate-control.md](docs/bypass-rate-control.md) |
+| Interactive status output | [consistent remaining and recovery-rate lines](docs/shooter-enhancements.md#49-consistent-remaining-and-recovery-rate-status) |
 | Resumable candidate output | [docs/stdout-sessions.md](docs/stdout-sessions.md) |
 | mdxfind modes | [docs/mdxfind-modules.md](docs/mdxfind-modules.md) and the [complete JSON registry](docs/mdxfind-modules.json) |
 | Windows builds | [how_to_compile.txt](how_to_compile.txt) |
@@ -130,7 +128,7 @@ Windows and Linux builds, Rust crates, and the sanitizer-backed parser fuzzer.
 | Sanitizers and parser fuzzing | [docs/security-testing.md](docs/security-testing.md) |
 | SBOM and signed release attestations | [docs/release-security.md](docs/release-security.md) |
 | Every release and verification result | [CHANGELOG.md](CHANGELOG.md) |
-| Source comparison | [Feature origins](docs/shooter-enhancements.md) and the [complete comparison with the upstream baseline](https://github.com/Shooter3k/shooter_hashcat/compare/fdad9f2f7bd7ec7f53056727e39331a17514db7c...master) |
+| Source comparison | [Feature origins](docs/shooter-enhancements.md) and the [complete Shooter delta from the merged upstream baseline](https://github.com/Shooter3k/shooter_hashcat/compare/eba388d2ef8d2dc6f184cb2effdc1a99493d888d...master) |
 
 ## Upstream hashcat and license
 
