@@ -1,5 +1,26 @@
 # shooter_hashcat release notes
 
+## v7.1.2-shooter.20260817.52
+
+Interactive-control corrective release for attack mode 13.
+
+### Fixed
+
+- Mode 13 now starts the normal keyboard handler even though its ordered host
+  pipeline does not use Hashcat's single mask or generic-feed source type.
+- The interactive command menu is displayed during mode-13 attacks, and `s`,
+  `p`, `b`, `c`, `f`, `q`, `e`, `l`, and `i` are handled normally when their
+  corresponding features are available.
+- The automatic full status pages at the beginning and end of a mode-13 attack
+  remain enabled.
+
+### Verified
+
+- Reproduced the `.51` failure in a Windows console: the initial status page
+  printed, but `s` was ignored because no keyboard thread existed.
+- Built both Windows x64 editions as `.52` and verified that mode 13 displays
+  its command menu, responds to `s`, and accepts `q` for a clean exit.
+
 ## v7.1.2-shooter.20260817.51
 
 Corrective ordered-pipeline release for attack mode 13.

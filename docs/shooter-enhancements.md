@@ -545,5 +545,7 @@ handle ambiguous names. Mode-12 `?w` and `?q` markers are not reused.
 The complete ordered product drives keyspace, skip/limit, checkpoints, and
 restore positions. Original stage order is preserved in restore files.
 `-j` transforms the first wordlist stage and `-k` transforms later wordlist
-stages as they are read. See the [attack-mode 13 guide](multi-hybrid-mode13.md)
-for syntax, examples, type detection, counting, and limits.
+stages as they are read. Interactive attacks display the normal command menu
+and accept the usual status and control keys. See the
+[attack-mode 13 guide](multi-hybrid-mode13.md) for syntax, examples, type
+detection, counting, and limits.

@@ -118,6 +118,15 @@ Rules are part of the ordered base pipeline, not a final GPU amplifier, so
 skip, limit, checkpoint, and restore positions cover the complete product
 above. Restore files preserve the original command-line order.
 
+## Interactive controls
+
+Normal terminal attacks display Hashcat's interactive command menu and accept
+the usual one-key controls without Enter. In particular, `s` prints a live
+status page. Pause, bypass, checkpoint, finish, quit, runtime adjustment, and
+outfile-ignore controls appear and operate when their corresponding options
+and runtime state make them available. Mode 13 also prints the automatic full
+status page once before cracking starts and once after the attack completes.
+
 ## Wordlist side rules and masks
 
 Side rules retain their established meaning: <code>-j</code> transforms

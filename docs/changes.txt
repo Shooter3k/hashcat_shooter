@@ -6,6 +6,7 @@
 - Terminal: Shorten the interactive outfile-directory command label to `[i]gnore outfile` without changing its key or behavior
 - Diagnostics: Print an automatic end-of-run task-time breakdown for normal attacks, including preparation, cracking, cleanup, detailed startup stages, seconds, and percentages
 - Status: Print the full human-readable `s` status page before cracking workers start and again when the attack completes
+- Attack-Mode 13: Start the normal interactive keyboard handler so the command menu and status/control keys work during ordered-pipeline attacks
 
 ##
 ## Backward Incompatible Changes

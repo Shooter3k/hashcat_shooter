@@ -198,8 +198,8 @@ static int main_argv_utf8_init (int *argc, char ***argv)
 #endif
 
 // Most attacks with an interactive prompt read their base candidates through the mask or generic
-// feed. A multi-file -a 1 builds candidates in its own host producer, so its wordlist_mode remains
-// NONE even though it needs the same keyboard/status handling.
+// feed. Host-produced multi-input attacks keep wordlist_mode at NONE even though they need the
+// same keyboard/status handling.
 
 static bool main_has_terminal_prompt (const hashcat_ctx_t *hashcat_ctx)
 {
@@ -209,6 +209,7 @@ static bool main_has_terminal_prompt (const hashcat_ctx_t *hashcat_ctx)
   if (user_options_extra->wordlist_mode == WL_MODE_MASK)    return true;
   if (user_options_extra->wordlist_mode == WL_MODE_GENERIC) return true;
   if ((user_options->attack_mode == ATTACK_MODE_COMBI) && (user_options_extra->hc_workc > 2)) return true;
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID) return true;
 
   return false;
 }
