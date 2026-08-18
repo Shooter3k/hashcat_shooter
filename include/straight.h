@@ -12,6 +12,7 @@
 
 int  straight_ctx_update_loop (hashcat_ctx_t *hashcat_ctx);
 int  straight_ctx_init        (hashcat_ctx_t *hashcat_ctx);
+int  straight_ctx_attack13_amplifier_init (hashcat_ctx_t *hashcat_ctx);
 void straight_ctx_destroy     (hashcat_ctx_t *hashcat_ctx);
 
 #endif // HC_STRAIGHT_H

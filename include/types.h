@@ -897,6 +897,7 @@ typedef enum user_options_defaults
   STATUS_RESTORE_SUB       = false,
   STAGE_PROFILE            = false,
   STAGE_PROFILE_JSON       = false,
+  TASK_TIME_BREAKDOWN      = false,
   STATUS_TIMER             = 10,
   STDIN_TIMEOUT_ABORT      = 120,
   STDOUT_FLAG              = false,
@@ -1042,6 +1043,7 @@ typedef enum user_options_map
   IDX_STATUS_RESTORE_SUB        = 0xff63,
   IDX_STAGE_PROFILE             = 0xff64,
   IDX_STAGE_PROFILE_JSON        = 0xff65,
+  IDX_TASK_TIME_BREAKDOWN       = 0xff66,
   IDX_STATUS_TIMER              = 0xff4c,
   IDX_STDOUT_FLAG               = 0xff4d,
   IDX_STDIN_TIMEOUT_ABORT       = 0xff4e,
@@ -2544,6 +2546,7 @@ typedef struct restore_data
 
   u64  stdout_output_size;
   u32  stdout_flags;
+  u64  attack13_amplifier;
 
 } restore_data_t;
 
@@ -2860,6 +2863,7 @@ typedef struct user_options
   u64          limit;
   u64          skip;
   bool         hash_copy;
+  bool         task_time_breakdown;
 
 } user_options_t;
 
@@ -3109,6 +3113,15 @@ typedef struct mask_ctx
   u32               attack13_stages_cnt;
   u32               attack13_wordlists_cnt;
   u64               attack13_candidates;
+
+  // A safe trailing part of the ordered pipeline can be represented as native kernel rules. The
+  // host then materializes only the stages before attack13_host_stages_cnt and each device expands
+  // every host prefix by attack13_amplifier without changing the complete candidate keyspace.
+
+  u32               attack13_host_stages_cnt;
+  u32               attack13_host_wordlists_cnt;
+  u64               attack13_amplifier;
+  bool              attack13_gpu_amplified;
 
   hcstat_table_t *root_table_buf;
   hcstat_table_t *markov_table_buf;
@@ -3441,6 +3454,13 @@ typedef struct status_ctx
    */
 
   bool accessible;
+
+  // Set when every input hash is rejected while an actual optimized kernel is selected and the
+  // same mode has a pure kernel. The process boundary uses this to rebuild the complete session
+  // without -O exactly once; changing the option inside a built session would retain optimized
+  // parser limits and kernel choices.
+
+  bool optimized_kernel_parse_all_failed;
 
   u32  devices_status;
 

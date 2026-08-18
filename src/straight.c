@@ -15,8 +15,339 @@
 #include "folder.h"
 #include "rp.h"
 #include "wordlist.h"
+#include "restore.h"
+#include "dispatch.h"
 #include "generic.h"
 #include "straight.h"
+
+#define ATTACK13_GPU_RULES_MAX 65536U
+
+typedef struct attack13_gpu_wordlist
+{
+  u8  *buf;
+  int *len;
+
+} attack13_gpu_wordlist_t;
+
+static void attack13_gpu_wordlists_destroy (attack13_gpu_wordlist_t *wordlists, const u32 stages_cnt)
+{
+  if (wordlists == NULL) return;
+
+  for (u32 i = 0; i < stages_cnt; i++)
+  {
+    hcfree (wordlists[i].buf);
+    hcfree (wordlists[i].len);
+  }
+
+  hcfree (wordlists);
+}
+
+static int attack13_gpu_wordlist_load (hashcat_ctx_t *hashcat_ctx, const attack13_stage_t *stage, attack13_gpu_wordlist_t *wordlist)
+{
+  const user_options_t       *user_options       = hashcat_ctx->user_options;
+  const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+
+  HCFILE fp;
+
+  if (hc_fopen (&fp, stage->source, "rb") == false) return -1;
+
+  const int   rule_len = (stage->wordlist_ordinal == 0) ? user_options_extra->rule_len_l : user_options_extra->rule_len_r;
+  const char *rule_buf = (stage->wordlist_ordinal == 0) ? user_options->rule_buf_l       : user_options->rule_buf_r;
+
+  pw_transform_t transform;
+
+  if (pw_transform_init_wordlist (&transform, hashcat_ctx, rule_len, rule_buf) == -1)
+  {
+    hc_fclose (&fp);
+
+    return -1;
+  }
+
+  wordlist->buf = (u8 *) hccalloc ((size_t) stage->candidates, RP_PASSWORD_SIZE);
+  wordlist->len = (int *) hccalloc ((size_t) stage->candidates, sizeof (int));
+
+  char *line_buf = (char *) hcmalloc (HCBUFSIZ_LARGE);
+
+  int rc = 0;
+
+  for (u64 i = 0; i < stage->candidates; i++)
+  {
+    int line_len = fgetl (&fp, line_buf, HCBUFSIZ_LARGE);
+
+    if (line_len == -1)
+    {
+      rc = -1;
+
+      break;
+    }
+
+    line_len = pw_transform_apply (&transform, (u8 *) line_buf, line_len, HCBUFSIZ_LARGE);
+
+    // A rejected or very long line cannot be encoded as a literal kernel-rule suffix without
+    // changing the Cartesian position. Keep this pipeline on the exact host path instead.
+
+    if ((line_len < 0) || (line_len > MAX_KERNEL_RULES))
+    {
+      rc = 1;
+
+      break;
+    }
+
+    wordlist->len[i] = line_len;
+
+    memcpy (wordlist->buf + (i * RP_PASSWORD_SIZE), line_buf, line_len);
+  }
+
+  hcfree (line_buf);
+
+  pw_transform_term (&transform);
+
+  hc_fclose (&fp);
+
+  return rc;
+}
+
+static u32 attack13_gpu_rule_compact (kernel_rule_t *rule)
+{
+  u32 out = 0;
+
+  for (u32 i = 0; i < MAX_KERNEL_RULES; i++)
+  {
+    const u32 cmd = rule->cmds[i];
+
+    if (cmd == 0) break;
+    if ((cmd & 0xff) == RULE_OP_MANGLE_NOOP) continue;
+
+    rule->cmds[out++] = cmd;
+  }
+
+  for (u32 i = out; i < RULES_MAX; i++) rule->cmds[i] = 0;
+
+  return out;
+}
+
+static int attack13_gpu_rules_build (hashcat_ctx_t *hashcat_ctx, const u32 gpu_start, const u64 amplifier, kernel_rule_t **rules_out)
+{
+  const mask_ctx_t *mask_ctx = hashcat_ctx->mask_ctx;
+
+  const u32 stages_cnt = mask_ctx->attack13_stages_cnt;
+
+  attack13_gpu_wordlist_t *wordlists = (attack13_gpu_wordlist_t *) hccalloc (stages_cnt, sizeof (attack13_gpu_wordlist_t));
+
+  int rc = 0;
+
+  for (u32 i = gpu_start; i < stages_cnt; i++)
+  {
+    const attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
+
+    if (stage->type != ATTACK13_STAGE_WORDLIST) continue;
+
+    rc = attack13_gpu_wordlist_load (hashcat_ctx, stage, &wordlists[i]);
+
+    if (rc != 0) break;
+  }
+
+  kernel_rule_t *rules = NULL;
+
+  if (rc == 0) rules = (kernel_rule_t *) hccalloc ((size_t) amplifier, sizeof (kernel_rule_t));
+
+  for (u64 amplifier_pos = 0; (amplifier_pos < amplifier) && (rc == 0); amplifier_pos++)
+  {
+    kernel_rule_t *rule = &rules[amplifier_pos];
+
+    u32 commands_cnt = 0;
+
+    for (u32 i = gpu_start; i < stages_cnt; i++)
+    {
+      const attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
+      const u64 stage_idx = (amplifier_pos / stage->stride) % stage->candidates;
+
+      if (stage->type == ATTACK13_STAGE_RULES)
+      {
+        kernel_rule_t stage_rule;
+
+        memset (&stage_rule, 0, sizeof (stage_rule));
+
+        if (stage->generated == true)
+        {
+          memcpy (&stage_rule, &stage->generated_rules[stage_idx], sizeof (kernel_rule_t));
+        }
+        else if (cpu_rule_to_kernel_rule (stage->rules[stage_idx], stage->rule_lens[stage_idx], &stage_rule) == -1)
+        {
+          rc = 1;
+
+          break;
+        }
+
+        const u32 stage_commands_cnt = attack13_gpu_rule_compact (&stage_rule);
+
+        if (commands_cnt + stage_commands_cnt > MAX_KERNEL_RULES)
+        {
+          rc = 1;
+
+          break;
+        }
+
+        memcpy (rule->cmds + commands_cnt, stage_rule.cmds, stage_commands_cnt * sizeof (u32));
+
+        commands_cnt += stage_commands_cnt;
+
+        continue;
+      }
+
+      u8  literal[RP_PASSWORD_SIZE];
+      int literal_len = 0;
+
+      if (stage->type == ATTACK13_STAGE_WORDLIST)
+      {
+        literal_len = wordlists[i].len[stage_idx];
+
+        memcpy (literal, wordlists[i].buf + (stage_idx * RP_PASSWORD_SIZE), literal_len);
+      }
+      else if (attack13_mask_append (mask_ctx, stage, stage_idx, (char *) literal, &literal_len) == -1)
+      {
+        rc = 1;
+
+        break;
+      }
+
+      if (commands_cnt + (u32) literal_len > MAX_KERNEL_RULES)
+      {
+        rc = 1;
+
+        break;
+      }
+
+      for (int j = 0; j < literal_len; j++)
+      {
+        rule->cmds[commands_cnt++] = RULE_OP_MANGLE_APPEND | (((u32) literal[j] & 0xff) << 8);
+      }
+    }
+  }
+
+  attack13_gpu_wordlists_destroy (wordlists, stages_cnt);
+
+  if (rc != 0)
+  {
+    hcfree (rules);
+
+    return rc;
+  }
+
+  rules_out[0] = rules;
+
+  return 0;
+}
+
+int straight_ctx_attack13_amplifier_init (hashcat_ctx_t *hashcat_ctx)
+{
+  mask_ctx_t           *mask_ctx     = hashcat_ctx->mask_ctx;
+  const restore_ctx_t  *restore_ctx  = hashcat_ctx->restore_ctx;
+  straight_ctx_t       *straight_ctx = hashcat_ctx->straight_ctx;
+  const user_options_t *user_options = hashcat_ctx->user_options;
+
+  const u32 stages_cnt = mask_ctx->attack13_stages_cnt;
+
+  // stdout promises exact command-line order. Old restore files store full-pipeline positions, so
+  // they also stay on the old mapping. Divisible skip/limit boundaries retain their exact meaning.
+
+  // Mode 13 historically reports its complete ordered product through --keyspace. There is no
+  // cracking work to accelerate in this mode, so keep that public value independent of whether a
+  // later real attack can split the product into host prefixes and a GPU suffix.
+
+  if (user_options->stdout_flag == true) return 0;
+
+  if (user_options->keyspace == true) return 0;
+
+  if ((restore_ctx->restore_execute == true)
+   && ((restore_ctx->rd->stdout_flags & RESTORE_DATA_ATTACK13_AMPLIFIED) == 0)) return 0;
+
+  u32 *attempts = (u32 *) hccalloc (stages_cnt, sizeof (u32));
+  u32 attempts_cnt = 0;
+
+  u64 suffix_amplifier = 1;
+
+  for (u32 pos = stages_cnt; pos > 0; pos--)
+  {
+    const u32 i = pos - 1;
+    const attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
+
+    if (stage->candidates > ATTACK13_GPU_RULES_MAX / suffix_amplifier) break;
+
+    suffix_amplifier *= stage->candidates;
+
+    if (suffix_amplifier > 1) attempts[attempts_cnt++] = i;
+  }
+
+  // The starts were discovered from the shortest suffix to the longest. Try the largest multiplier
+  // first, then progressively drop leftmost stages if a rule cannot be compiled or exceeds 31
+  // kernel commands once its literal append stages are included.
+
+  for (u32 attempt_pos = attempts_cnt; attempt_pos > 0; attempt_pos--)
+  {
+    const u32 gpu_start = attempts[attempt_pos - 1];
+    const u64 amplifier = mask_ctx->attack13_stages[gpu_start].candidates * mask_ctx->attack13_stages[gpu_start].stride;
+
+    if (((user_options->skip  > 0) && ((user_options->skip  % amplifier) != 0))
+     || ((user_options->limit > 0) && ((user_options->limit % amplifier) != 0))) continue;
+
+    kernel_rule_t *rules = NULL;
+
+    const int rc = attack13_gpu_rules_build (hashcat_ctx, gpu_start, amplifier, &rules);
+
+    if (rc == -1)
+    {
+      hcfree (attempts);
+
+      return -1;
+    }
+    if (rc == 1) continue;
+
+    if ((restore_ctx->restore_execute == true) && (restore_ctx->rd->attack13_amplifier != amplifier))
+    {
+      hcfree (rules);
+
+      event_log_error (hashcat_ctx, "Attack-mode 13 restore amplifier no longer matches this pipeline.");
+
+      hcfree (attempts);
+
+      return -1;
+    }
+
+    u32 host_wordlists_cnt = 0;
+
+    for (u32 i = 0; i < gpu_start; i++)
+    {
+      if (mask_ctx->attack13_stages[i].type == ATTACK13_STAGE_WORDLIST) host_wordlists_cnt++;
+    }
+
+    hcfree (straight_ctx->kernel_rules_buf);
+
+    straight_ctx->kernel_rules_buf = rules;
+    straight_ctx->kernel_rules_cnt = (u32) amplifier;
+
+    mask_ctx->attack13_host_stages_cnt    = gpu_start;
+    mask_ctx->attack13_host_wordlists_cnt = host_wordlists_cnt;
+    mask_ctx->attack13_amplifier           = amplifier;
+    mask_ctx->attack13_gpu_amplified       = true;
+
+    hcfree (attempts);
+
+    return 0;
+  }
+
+  hcfree (attempts);
+
+  if ((restore_ctx->restore_execute == true)
+   && ((restore_ctx->rd->stdout_flags & RESTORE_DATA_ATTACK13_AMPLIFIED) != 0))
+  {
+    event_log_error (hashcat_ctx, "Attack-mode 13 could not reconstruct the saved GPU amplifier.");
+
+    return -1;
+  }
+
+  return 0;
+}
 
 static int straight_ctx_add_wl (hashcat_ctx_t *hashcat_ctx, const char *dict)
 {
@@ -508,10 +839,21 @@ int straight_ctx_init (hashcat_ctx_t *hashcat_ctx)
    * generate NOP rules
    */
 
-  if ((user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
-   || ((user_options->rp_files_cnt == 0) && (user_options->rp_gen == 0)))
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
   {
     straight_ctx->kernel_rules_buf = (kernel_rule_t *) hcmalloc (sizeof (kernel_rule_t));
+
+    memset (straight_ctx->kernel_rules_buf, 0, sizeof (kernel_rule_t));
+
+    straight_ctx->kernel_rules_buf[0].cmds[0] = RULE_OP_MANGLE_NOOP;
+
+    straight_ctx->kernel_rules_cnt = 1;
+  }
+  else if ((user_options->rp_files_cnt == 0) && (user_options->rp_gen == 0))
+  {
+    straight_ctx->kernel_rules_buf = (kernel_rule_t *) hcmalloc (sizeof (kernel_rule_t));
+
+    memset (straight_ctx->kernel_rules_buf, 0, sizeof (kernel_rule_t));
 
     straight_ctx->kernel_rules_buf[0].cmds[0] = RULE_OP_MANGLE_NOOP;
 

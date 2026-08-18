@@ -2508,6 +2508,10 @@ static int attack13_pipeline_init (hashcat_ctx_t *hashcat_ctx)
 
   mask_ctx->attack13_wordlists_cnt = wordlist_ordinal;
   mask_ctx->attack13_candidates    = candidates;
+  mask_ctx->attack13_host_stages_cnt    = stages_cnt;
+  mask_ctx->attack13_host_wordlists_cnt = wordlist_ordinal;
+  mask_ctx->attack13_amplifier           = 1;
+  mask_ctx->attack13_gpu_amplified       = false;
   mask_ctx->bfs_cnt                = candidates;
 
   mask_ctx->masks     = (char **) hccalloc (1, sizeof (char *));

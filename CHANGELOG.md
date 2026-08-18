@@ -1,5 +1,47 @@
 # shooter_hashcat release notes
 
+## v7.1.2-shooter.20260818.54
+
+Mode-13 performance, optimized-kernel recovery, and opt-in timing diagnostics.
+
+### Added
+
+- Add `--task-time-breakdown`, disabled by default, to print the measured
+  end-to-end preparation, attack, and cleanup report. Existing quiet,
+  machine-readable, informational, and candidate-output modes remain clean.
+- Add exhaustive mode-13 semantic validation for every one- through six-stage
+  wordlist, mask, and rule type sequence, plus a 60-stage stress case and a
+  reproducible all-order GPU benchmark harness.
+
+### Improved
+
+- Mode 13 now compiles the largest safe trailing product of wordlists, masks,
+  and rules into as many as 65,536 native GPU rules. Indexed outer-wordlist
+  dispatch, prefix reuse, resident small-wordlist caching, and forward cursors
+  avoid redundant host candidate generation without changing left-to-right
+  semantics, keyspace, restore positions, or output.
+- `--stdout` uses the exact compressed host path without interactive prompts
+  or automatic status output.
+
+### Fixed
+
+- When an optimized kernel actually selected by `-O` rejects every supplied
+  hash during parsing and a pure kernel exists, Hashcat rebuilds the complete
+  session once without `-O`. If the pure parser also rejects the input, its
+  error is preserved and the job stops normally.
+
+### Verified
+
+- Exhaustively compared 1,092 structural mode-13 pipelines and 55,986 ordered
+  candidates per semantic path against an independent left-to-right oracle.
+- Benchmarked all 24 permutations of a large wordlist, ten-rule file, digit
+  mask, and 100-line wordlist. Orders with the large source first formed a
+  10,000-candidate GPU suffix and held twelve RTX 4090 GPUs at 99 to 100
+  percent utilization; the original order reached 219.5 GH/s against one MD5.
+- Retested the best order against 84,381,739 MD5 digests at 100.8 to 101.3
+  GH/s with every GPU at 98 to 100 percent, and verified timing output is absent
+  by default and present only with `--task-time-breakdown`.
+
 ## v7.1.2-shooter.20260817.53
 
 Time-estimate corrective release for attack mode 13.

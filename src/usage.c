@@ -42,6 +42,7 @@ static const char *const USAGE_BIG_PRE_HASHMODES[] =
   "     --status-restore-sub       |      | Show per-device Restore.Sub details in status        |",
   "     --stage-profile            |      | Show final pipeline stage time and peak memory       |",
   "     --stage-profile-json       |      | Show final stage profile as one JSON object          |",
+  "     --task-time-breakdown      |      | Show measured end-to-end task time breakdown         |",
   "     --status-timer             | Num  | Sets seconds between status screen updates to X      | --status-timer=1",
   "     --stdin-timeout-abort      | Num  | Abort if there is no input from stdin for X seconds  | --stdin-timeout-abort=300",
   "     --machine-readable         |      | Display the status view in a machine-readable format |",

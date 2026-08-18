@@ -480,14 +480,15 @@ This affects the normal terminal display, including periodic and final status.
 Machine-readable and JSON status formats keep their existing structured
 fields and formats.
 
-## Automatic timing diagnostics
+## Opt-in timing diagnostics
 
-### 50. Automatic task-time breakdown
+### 50. Task-time breakdown
 
-After every normal human-readable attack, Shooter prints a `Task Time
-Breakdown` that accounts for the measured end-to-end run. The three main
-totals are `BEFORE ATTACK`, `ATTACK`, and `AFTER ATTACK`; every line includes
-seconds and its percentage of the complete run.
+Add `--task-time-breakdown` to a normal human-readable attack to print a `Task
+Time Breakdown` that accounts for the measured end-to-end run. The option is
+disabled by default. The three main totals are `BEFORE ATTACK`, `ATTACK`, and
+`AFTER ATTACK`; every line includes seconds and its percentage of the complete
+run.
 
 The preparation section separately measures command/options setup, session
 initialization, bridge/plugin initialization, backend runtime loading, GPU
@@ -503,11 +504,11 @@ session contexts. Repeated stages show their run count, such as during a
 benchmark or retry. If the potfile or outfile preflight resolves every hash,
 the report says that the attack did not start.
 
-No option is required. The report is intentionally suppressed for `--quiet`,
-machine-readable output, `--stdout`, `--show`, `--left`, `--identify`,
-`--keyspace`, help, hash-info, and backend-info modes so existing scripts keep
-their established output formats. This end-to-end report complements the
-opt-in `--stage-profile`, which measures the lower-level candidate pipeline.
+Even when requested, the report is suppressed for `--quiet`, machine-readable
+output, `--stdout`, `--show`, `--left`, `--identify`, `--keyspace`, help,
+hash-info, and backend-info modes so existing scripts keep their established
+output formats. This end-to-end report complements the opt-in
+`--stage-profile`, which measures the lower-level candidate pipeline.
 
 ## Automatic endpoint status
 
@@ -551,3 +552,65 @@ status pages calculate `Time.Estimated` from the complete pipeline's remaining
 candidates and aggregate device speed. See the
 [attack-mode 13 guide](multi-hybrid-mode13.md) for syntax, examples, type
 detection, counting, and limits.
+
+The host generator reuses an assembled stage prefix until an outer Cartesian
+position changes. For example, `wordlist -r rules ?d domains.txt` applies a
+given rule to a word once, reuses that result for its digit/domain suffixes,
+and regenerates only the suffix stage that advances. It also keeps small
+wordlists in an 8 MiB per-device cache and advances large-wordlist cursors
+across device work ranges instead of repeatedly restarting at the beginning.
+These optimizations do not change candidate order, skip/limit positions, or
+restore accounting.
+
+Mode 13 also compiles the largest safe trailing product, up to 65,536
+candidates, into native GPU rules. Wordlists, masks, and supported rule stages
+may all occur inside that suffix and retain their original left-to-right
+meaning. `Guess.GPU.Amp` shows the selected multiplier and stage range. On the
+reference twelve-RTX-4090 system, a 100-candidate suffix was insufficient,
+1,000 improved throughput but remained uneven, and the reported
+`wordlist -r ten-rules ?d hundred-word-domain-list` shape produced a 10,000×
+suffix that held all twelve GPUs at approximately 98-100 percent utilization.
+
+The bounded exhaustive regression covers every wordlist/mask/rule structure
+through six stages: 1,092 pipelines and 55,986 ordered candidates per host or
+compiled semantic path. A separate benchmark covered all 24 permutations of
+the production-shaped four-stage workload. Every order with the large
+wordlist first produced a 10,000-candidate suffix and held all twelve GPUs at
+99-100 percent; the original large-wordlist/rules/mask/domain order was fastest
+at 219.5 GH/s against one MD5 target. Reproducible harnesses are in `tools/`.
+
+On the actual 84,381,739-digest target with `--bitmap-max 26`, the same order
+held all twelve GPUs at 98-100 percent and measured 100.8-101.3 GH/s. The
+26-bit bitmap required about 17 seconds to build, so it improves the long
+attack rather than startup time.
+
+The first host-side wordlist uses the sparse indexed feed even if a mask or
+rule appears before it, preventing distant device ranges from repeatedly
+rescanning a large file. Unsupported or overlong suffix operations, products
+above the cap, non-divisible skip/limit boundaries, old restore mappings, and
+`--stdout` safely retain the exact host implementation. See the
+[attack-mode 13 guide](multi-hybrid-mode13.md#gpu-batching-and-performance) for
+the limits and ordering guidance.
+
+## Automatic pure-kernel recovery
+
+### 53. Automatic pure-kernel recovery
+
+When `-O` selects an actual optimized kernel, the mode also provides a pure
+kernel, and the optimized parser rejects every supplied hash, Shooter rebuilds
+the complete session once without `-O`. Rebuilding at the process boundary
+ensures that the second attempt receives the pure parser limits, password
+limits, kernel choices, and restore metadata instead of retaining optimized
+state from the first attempt.
+
+The retry is intentionally narrow. A mixed file with at least one valid hash
+continues normally, a run that is already using the pure kernel does not
+retry, and a mode without a pure kernel preserves its normal error. If the
+pure parser also rejects every hash, Shooter reports that parser error and
+stops; it never retries a second time.
+
+This fallback handles valid formats whose optimized parser imposes tighter
+field limits. It cannot repair malformed input or a hash supplied to the
+wrong mode. For example, mode 1800 requires sha512crypt input beginning with
+`$6$`; a line without that structure is retried once but remains a
+`Separator unmatched` error under the pure kernel.

@@ -66,8 +66,8 @@ produce <code>alpha42omega!</code>.
 Each rule file is an independent Cartesian stage. Two adjacent
 <code>-r</code> options apply sequentially: every rule from the first file
 transforms the current prefix, then every rule from the second file transforms
-that result. Rule files are executed on the host so intermediate placement is
-preserved.
+that result. The implementation may compile a safe trailing group of stages
+into GPU rules, but that does not change this stage-by-stage behavior.
 
 These are all valid:
 
@@ -114,9 +114,9 @@ A wordlist stage size is its line count. An inline mask size is its mask
 keyspace. An hcmask stage size is the sum of its non-comment mask-line
 keyspaces. A rule stage size is its valid rule count.
 
-Rules are part of the ordered base pipeline, not a final GPU amplifier, so
-skip, limit, checkpoint, and restore positions cover the complete product
-above. Restore files preserve the original command-line order.
+Skip, limit, checkpoint, and restore positions cover the complete product
+above, including every rule-stage choice. Restore files preserve the original
+command-line order and the internal GPU split used by the saved session.
 
 ## Interactive controls
 
@@ -126,6 +126,9 @@ status page. Pause, bypass, checkpoint, finish, quit, runtime adjustment, and
 outfile-ignore controls appear and operate when their corresponding options
 and runtime state make them available. Mode 13 also prints the automatic full
 status page once before cracking starts and once after the attack completes.
+
+`--stdout` is intentionally noninteractive: it emits candidates only and does
+not insert the command menu or automatic status pages into pipeline output.
 
 `Time.Estimated` uses the complete ordered-pipeline progress and aggregate
 device speed. The automatic pre-attack page is printed before a speed sample
@@ -145,7 +148,107 @@ Multiple mask stages are allowed in one command. For example,
 <code>?u?l words.txt ?d?d</code> appends a two-character mask, a word, and a
 two-digit mask.
 
-## Limits and performance
+## GPU batching and performance
+
+Mode 13 automatically searches for the largest safe trailing group of stages
+whose Cartesian product is at most 65,536 candidates. It compiles those
+wordlist values, masks, and supported rules into native kernel rules. The host
+then sends one assembled prefix while each GPU evaluates the entire compiled
+suffix. Status makes the split visible:
+
+~~~text
+Guess.GPU.Amp....: 10000 candidates per host prefix (stages #02-#04)
+~~~
+
+This is especially important for very fast hashes. On the reference system
+with twelve RTX 4090 GPUs and one MD5 target, suffixes of 100 candidates were
+not enough to keep the devices busy, 1,000 candidates were a substantial but
+uneven improvement, and 10,000 candidates held all twelve devices at roughly
+98 to 100 percent utilization. The pipeline from the earlier example has
+exactly that useful 10,000-candidate suffix:
+
+~~~text
+large-wordlist -r ten-rules ?d one-hundred-domains
+               10 rules * 10 digits * 100 domains = 10,000
+~~~
+
+The first stage remains the outer host wordlist, while the rule, digit, and
+domain choices execute as the GPU suffix. Rules can occur anywhere inside a
+compiled suffix; their left-to-right scope is unchanged.
+
+This is automatic, not a promise that every possible pipeline can reach 100
+percent utilization. A single wordlist has a suffix multiplier of one, for
+example, and there is no correct way to invent additional candidates merely
+to make a utilization meter read higher. For best throughput, keep a large
+outer source to the left and, when it matches the intended candidate semantics,
+place enough small masks, rule files, or small wordlists to its right to create
+about 10,000 or more suffix combinations. Do not reorder stages solely for
+speed when doing so would change the desired candidates.
+
+The compiled suffix is limited to 65,536 composite rules and 31 kernel-rule
+commands per composite. A suffix wordlist entry must fit that command limit.
+If a stage uses an unsupported rule operation, an overlong literal, or a
+larger product, mode 13 tries a shorter suffix and leaves the other stages on
+the exact host path. <code>--stdout</code> always uses the host path to retain
+its exact emission order. A non-divisible <code>--skip</code> or
+<code>--limit</code> boundary also falls back instead of rounding the requested
+window. Restore files created before the GPU split use the compatible host
+mapping.
+
+Large first host-side wordlists use Shooter's sparse indexed feed, even when
+a mask or rule precedes that wordlist. This prevents different GPU dispatchers
+from repeatedly rescanning billions of earlier lines to reach their assigned
+ranges.
+
+The utilization figures above measure candidate computation against one
+digest. A target containing tens of millions of digests has additional bitmap
+and comparison work, so its displayed cracking rate is not directly
+comparable even when GPU utilization is equally high.
+
+An exhaustive four-stage benchmark tested all 24 permutations of the same
+4,461,259,249-line wordlist, 10-rule file, `?d` mask, and 100-line domain
+wordlist against one MD5 target. All six orders with the large wordlist first
+formed a 10,000-candidate suffix, held every RTX 4090 at 99 to 100 percent, and
+measured 206.4 to 219.5 GH/s. The original order—large wordlist, rules, mask,
+then domain wordlist—was the fastest run at 219.5 GH/s. The other 18 orders
+formed multipliers of 1, 10, 100, or 1,000 and did not keep the complete fleet
+busy. This verifies the automatic split and the ordering guidance; it does not
+justify reordering stages when that would change the intended candidates.
+
+The same best order was then measured against the actual 84,381,739-digest
+MD5 target with `--bitmap-max 26`. Five consecutive NVIDIA samples put every
+GPU at 98 to 100 percent, per-device rates stayed balanced, and aggregate
+speed was 100.8 to 101.3 GH/s. The large target is comparison-bound and is not
+expected to match the one-digest rate. Building its 26-bit bitmap took about
+17 seconds, but the larger bitmap materially improved attack throughput for
+this target.
+
+## Reproducible validation
+
+`tools/test_mode13_exhaustive.py` enumerates every wordlist/mask/rule type
+string from one through six stages. That is 1,092 structural pipelines and
+55,986 ordered candidates per semantic path. It compares byte-for-byte output
+with an independent left-to-right oracle and can also validate a development
+build's compiled suffix rules.
+
+A separate 60-stage repeated wordlist/mask/rule stress case verifies that the
+runtime pipeline is not capped at the six-stage exhaustive-test bound.
+
+`tools/benchmark_mode13_orders.py` runs all 24 permutations of a supplied
+large wordlist, rule file, mask, and small suffix wordlist. It records the GPU
+amplifier, aggregate speed, and per-GPU NVIDIA utilization. The benchmark
+refuses to start when a card is already busy so a background job cannot make
+the result look better or worse than it is.
+
+## Additional limits
+
+The host generator caches each assembled prefix until one of its stages
+changes. In a pipeline such as <code>wordlist -r rules ?d domains.txt</code>,
+the rule result is therefore computed once for all of its digit/domain
+suffixes rather than once per final candidate. Mixed-radix positions advance
+as an odometer, small wordlists share an 8 MiB resident-cache budget per
+device, and forward jumps continue from the current large-wordlist cursor.
+The emitted candidates and their left-to-right order remain identical.
 
 - Mode 13 requires normal GPU execution. <code>-S/--slow-candidates</code>
   and brain client mode are not supported.
@@ -156,9 +259,8 @@ two-digit mask.
   final candidate must also fit the selected hash mode and kernel limit.
 - The product of all stage sizes must fit unsigned 64-bit keyspace accounting.
   Overflow is detected and rejected.
-- Intermediate rule stages run on the CPU to preserve exact placement. They
-  are more flexible, but generally slower, than a conventional final GPU rule
-  amplifier.
+- Stages that cannot be represented by the bounded GPU suffix run on the host.
+  Exact left-to-right behavior is retained in either path.
 
 Attack mode 12 is unchanged: it remains the one-wordlist <code>?w</code>
 hybrid with an optional second <code>?q</code> wordlist.

@@ -947,8 +947,15 @@ static int fill_multi (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_par
 
 typedef struct attack13_fill_state
 {
+  hashcat_ctx_t *hashcat_ctx;
+  int device_id;
+  bool indexed_first_wordlist;
+
   HCFILE *fps;
   int opened;
+
+  u32 wordlists_cnt;
+  u32 stages_cnt;
 
   pw_transform_t *transforms;
   int transforms_cnt;
@@ -958,9 +965,23 @@ typedef struct attack13_fill_state
   u8   *word_buf;
   int  *word_len;
 
+  u8  **resident_word_buf;
+  int **resident_word_len;
+  u64  *resident_word_cnt;
+
+  u64  *stage_indices;
+  bool *prefix_cached;
+  u8   *prefix_buf;
+  int  *prefix_len;
+
+  u64  candidate_pos;
+  bool candidate_pos_cached;
+
   char *line_buf;
 
 } attack13_fill_state_t;
+
+#define ATTACK13_RESIDENT_CACHE_BYTES (8U * 1024U * 1024U)
 
 static int attack13_fill_store_line (attack13_fill_state_t *state, const u32 wordlist_pos)
 {
@@ -980,15 +1001,66 @@ static int attack13_fill_store_line (attack13_fill_state_t *state, const u32 wor
   return 0;
 }
 
-static int attack13_fill_word (attack13_fill_state_t *state, const attack13_stage_t *stage, const u64 line_idx)
+static int attack13_fill_word (attack13_fill_state_t *state, const attack13_stage_t *stage, const u64 line_idx, const u8 **word_buf, int *word_len)
 {
   const u32 wordlist_pos = stage->wordlist_ordinal;
 
-  if ((state->cached[wordlist_pos] == true) && (state->cached_indices[wordlist_pos] == line_idx)) return 0;
-
-  if ((state->cached[wordlist_pos] == true) && (state->cached_indices[wordlist_pos] + 1 == line_idx))
+  if ((wordlist_pos == 0) && (state->indexed_first_wordlist == true))
   {
-    if (attack13_fill_store_line (state, wordlist_pos) == -1) return -1;
+    if ((state->cached[wordlist_pos] == false) || (state->cached_indices[wordlist_pos] != line_idx))
+    {
+      if ((state->cached[wordlist_pos] == false) || (state->cached_indices[wordlist_pos] + 1 != line_idx))
+      {
+        if (generic_thread_seek (state->hashcat_ctx, GENERIC_ROLE_BASE, state->device_id, line_idx) == GENERIC_RC_ERROR) return -1;
+      }
+
+      int line_len = generic_thread_next (state->hashcat_ctx, GENERIC_ROLE_BASE, state->device_id, (u8 *) state->line_buf, HCBUFSIZ_LARGE);
+
+      if (line_len < 0) return -1;
+
+      line_len = pw_transform_apply (&state->transforms[wordlist_pos], (u8 *) state->line_buf, line_len, HCBUFSIZ_LARGE);
+
+      state->word_len[wordlist_pos] = line_len;
+
+      if ((line_len >= 0) && (line_len <= RP_PASSWORD_SIZE))
+      {
+        memcpy (state->word_buf + (wordlist_pos * RP_PASSWORD_SIZE), state->line_buf, line_len);
+      }
+
+      state->cached_indices[wordlist_pos] = line_idx;
+      state->cached[wordlist_pos]         = true;
+    }
+
+    *word_buf = state->word_buf + (wordlist_pos * RP_PASSWORD_SIZE);
+    *word_len = state->word_len[wordlist_pos];
+
+    return 0;
+  }
+
+  if (state->resident_word_buf[wordlist_pos] != NULL)
+  {
+    if (line_idx >= state->resident_word_cnt[wordlist_pos]) return -1;
+
+    *word_buf = state->resident_word_buf[wordlist_pos] + (line_idx * RP_PASSWORD_SIZE);
+    *word_len = state->resident_word_len[wordlist_pos][line_idx];
+
+    return 0;
+  }
+
+  if ((state->cached[wordlist_pos] == true) && (state->cached_indices[wordlist_pos] == line_idx))
+  {
+    *word_buf = state->word_buf + (wordlist_pos * RP_PASSWORD_SIZE);
+    *word_len = state->word_len[wordlist_pos];
+
+    return 0;
+  }
+
+  if ((state->cached[wordlist_pos] == true) && (state->cached_indices[wordlist_pos] < line_idx))
+  {
+    for (u64 i = state->cached_indices[wordlist_pos] + 1; i <= line_idx; i++)
+    {
+      if (attack13_fill_store_line (state, wordlist_pos) == -1) return -1;
+    }
   }
   else
   {
@@ -1002,6 +1074,59 @@ static int attack13_fill_word (attack13_fill_state_t *state, const attack13_stag
 
   state->cached_indices[wordlist_pos] = line_idx;
   state->cached[wordlist_pos]         = true;
+
+  *word_buf = state->word_buf + (wordlist_pos * RP_PASSWORD_SIZE);
+  *word_len = state->word_len[wordlist_pos];
+
+  return 0;
+}
+
+static int attack13_fill_cache_wordlist (hashcat_ctx_t *hashcat_ctx, attack13_fill_state_t *state, const attack13_stage_t *stage, u64 *resident_bytes)
+{
+  const u32 wordlist_pos = stage->wordlist_ordinal;
+
+  if (stage->candidates > (u64) (ATTACK13_RESIDENT_CACHE_BYTES / RP_PASSWORD_SIZE)) return 0;
+
+  const u64 buf_bytes = stage->candidates * RP_PASSWORD_SIZE;
+  const u64 len_bytes = stage->candidates * sizeof (int);
+  const u64 new_bytes = buf_bytes + len_bytes;
+
+  if (new_bytes > ATTACK13_RESIDENT_CACHE_BYTES - *resident_bytes) return 0;
+
+  u8  *cache_buf = (u8 *) hccalloc ((size_t) stage->candidates, RP_PASSWORD_SIZE);
+  int *cache_len = (int *) hccalloc ((size_t) stage->candidates, sizeof (int));
+
+  for (u64 line_idx = 0; line_idx < stage->candidates; line_idx++)
+  {
+    int line_len = fgetl (&state->fps[wordlist_pos], state->line_buf, HCBUFSIZ_LARGE);
+
+    if (line_len == -1)
+    {
+      event_log_error (hashcat_ctx, "Unexpected end of attack-mode 13 wordlist: %s", stage->source);
+
+      hcfree (cache_buf);
+      hcfree (cache_len);
+
+      return -1;
+    }
+
+    line_len = pw_transform_apply (&state->transforms[wordlist_pos], (u8 *) state->line_buf, line_len, HCBUFSIZ_LARGE);
+
+    cache_len[line_idx] = line_len;
+
+    if ((line_len >= 0) && (line_len <= RP_PASSWORD_SIZE))
+    {
+      memcpy (cache_buf + (line_idx * RP_PASSWORD_SIZE), state->line_buf, line_len);
+    }
+  }
+
+  hc_rewind (&state->fps[wordlist_pos]);
+
+  state->resident_word_buf[wordlist_pos] = cache_buf;
+  state->resident_word_len[wordlist_pos] = cache_len;
+  state->resident_word_cnt[wordlist_pos] = stage->candidates;
+
+  *resident_bytes += new_bytes;
 
   return 0;
 }
@@ -1031,7 +1156,7 @@ static int attack13_markov_key (const mask_ctx_t *mask_ctx, const attack13_mask_
   return -1;
 }
 
-static int attack13_fill_mask (const mask_ctx_t *mask_ctx, const attack13_stage_t *stage, u64 mask_idx, char candidate[RP_PASSWORD_SIZE], int *candidate_len)
+int attack13_mask_append (const mask_ctx_t *mask_ctx, const attack13_stage_t *stage, u64 mask_idx, char *candidate, int *candidate_len)
 {
   const attack13_mask_t *attack_mask = NULL;
 
@@ -1080,7 +1205,7 @@ static int attack13_fill_mask (const mask_ctx_t *mask_ctx, const attack13_stage_
   return 0;
 }
 
-static int attack13_fill_init (hashcat_ctx_t *hashcat_ctx, attack13_fill_state_t *state)
+static int attack13_fill_init (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, attack13_fill_state_t *state)
 {
   const mask_ctx_t           *mask_ctx           = hashcat_ctx->mask_ctx;
   const user_options_t       *user_options       = hashcat_ctx->user_options;
@@ -1088,7 +1213,18 @@ static int attack13_fill_init (hashcat_ctx_t *hashcat_ctx, attack13_fill_state_t
 
   memset (state, 0, sizeof (*state));
 
-  const u32 wordlists_cnt = mask_ctx->attack13_wordlists_cnt;
+  state->hashcat_ctx = hashcat_ctx;
+  state->device_id   = device_param->device_id;
+
+  state->indexed_first_wordlist = ((mask_ctx->attack13_gpu_amplified == true)
+                                && (mask_ctx->attack13_host_wordlists_cnt > 0)
+                                && (hashcat_ctx->generic_ctx[GENERIC_ROLE_BASE].enabled == true));
+
+  const u32 wordlists_cnt = mask_ctx->attack13_host_wordlists_cnt;
+  const u32 stages_cnt    = mask_ctx->attack13_host_stages_cnt;
+
+  state->wordlists_cnt = wordlists_cnt;
+  state->stages_cnt    = stages_cnt;
 
   state->fps            = (HCFILE *)        hccalloc (wordlists_cnt, sizeof (HCFILE));
   state->transforms     = (pw_transform_t *) hccalloc (wordlists_cnt, sizeof (pw_transform_t));
@@ -1096,9 +1232,18 @@ static int attack13_fill_init (hashcat_ctx_t *hashcat_ctx, attack13_fill_state_t
   state->cached         = (bool *)          hccalloc (wordlists_cnt, sizeof (bool));
   state->word_buf       = (u8 *)            hccalloc (wordlists_cnt, RP_PASSWORD_SIZE);
   state->word_len       = (int *)           hccalloc (wordlists_cnt, sizeof (int));
+  state->resident_word_buf = (u8 **)  hccalloc (wordlists_cnt, sizeof (u8 *));
+  state->resident_word_len = (int **) hccalloc (wordlists_cnt, sizeof (int *));
+  state->resident_word_cnt = (u64 *)   hccalloc (wordlists_cnt, sizeof (u64));
+  state->stage_indices  = (u64 *)           hccalloc (stages_cnt, sizeof (u64));
+  state->prefix_cached  = (bool *)          hccalloc (stages_cnt, sizeof (bool));
+  state->prefix_buf     = (u8 *)            hccalloc (stages_cnt, RP_PASSWORD_SIZE);
+  state->prefix_len     = (int *)           hccalloc (stages_cnt, sizeof (int));
   state->line_buf       = (char *)          hcmalloc (HCBUFSIZ_LARGE);
 
-  for (u32 i = 0; i < mask_ctx->attack13_stages_cnt; i++)
+  u64 resident_bytes = 0;
+
+  for (u32 i = 0; i < stages_cnt; i++)
   {
     const attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
 
@@ -1121,6 +1266,8 @@ static int attack13_fill_init (hashcat_ctx_t *hashcat_ctx, attack13_fill_state_t
     if (pw_transform_init_wordlist (&state->transforms[wordlist_pos], hashcat_ctx, rule_len, rule_buf) == -1) return -1;
 
     state->transforms_cnt++;
+
+    if (attack13_fill_cache_wordlist (hashcat_ctx, state, stage, &resident_bytes) == -1) return -1;
   }
 
   return 0;
@@ -1131,12 +1278,25 @@ static void attack13_fill_destroy (attack13_fill_state_t *state)
   for (int i = 0; i < state->opened; i++) hc_fclose (&state->fps[i]);
   for (int i = 0; i < state->transforms_cnt; i++) pw_transform_term (&state->transforms[i]);
 
+  for (u32 i = 0; i < state->wordlists_cnt; i++)
+  {
+    hcfree (state->resident_word_buf[i]);
+    hcfree (state->resident_word_len[i]);
+  }
+
   hcfree (state->fps);
   hcfree (state->transforms);
   hcfree (state->cached_indices);
   hcfree (state->cached);
   hcfree (state->word_buf);
   hcfree (state->word_len);
+  hcfree (state->resident_word_buf);
+  hcfree (state->resident_word_len);
+  hcfree (state->resident_word_cnt);
+  hcfree (state->stage_indices);
+  hcfree (state->prefix_cached);
+  hcfree (state->prefix_buf);
+  hcfree (state->prefix_len);
   hcfree (state->line_buf);
 }
 
@@ -1167,58 +1327,125 @@ static int fill_attack13 (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_
     for (work_cur = 0; work_cur < work_cnt; work_cur++)
     {
       const u64 candidate_pos = words_off + work_cur;
+      const u64 pipeline_pos  = candidate_pos * mask_ctx->attack13_amplifier;
+
+      u32 first_changed = 0;
+
+      if ((state->candidate_pos_cached == true) && (candidate_pos == state->candidate_pos + 1))
+      {
+        first_changed = state->stages_cnt;
+
+        for (u32 stage_pos = state->stages_cnt; stage_pos > 0; stage_pos--)
+        {
+          const u32 i = stage_pos - 1;
+          const attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
+
+          state->stage_indices[i]++;
+          first_changed = i;
+
+          if (state->stage_indices[i] < stage->candidates) break;
+
+          state->stage_indices[i] = 0;
+        }
+      }
+      else if (state->candidate_pos_cached == true)
+      {
+        first_changed = state->stages_cnt;
+
+        for (u32 i = 0; i < state->stages_cnt; i++)
+        {
+          const attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
+          const u64 stage_idx = (pipeline_pos / stage->stride) % stage->candidates;
+
+          if ((first_changed == state->stages_cnt) && (state->stage_indices[i] != stage_idx)) first_changed = i;
+
+          state->stage_indices[i] = stage_idx;
+        }
+
+        if (first_changed == state->stages_cnt) first_changed = state->stages_cnt - 1;
+      }
+      else
+      {
+        for (u32 i = 0; i < state->stages_cnt; i++)
+        {
+          const attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
+
+          state->stage_indices[i] = (pipeline_pos / stage->stride) % stage->candidates;
+        }
+      }
+
+      state->candidate_pos        = candidate_pos;
+      state->candidate_pos_cached = true;
+
+      for (u32 i = first_changed; i + 1 < state->stages_cnt; i++) state->prefix_cached[i] = false;
 
       u32 candidate_words[(RP_PASSWORD_SIZE + 3) / 4] = { 0 };
       char *candidate = (char *) candidate_words;
       int candidate_len = 0;
       bool reject = false;
 
-      for (u32 i = 0; i < mask_ctx->attack13_stages_cnt; i++)
+      u32 stage_start = first_changed;
+
+      while ((stage_start > 0) && (state->prefix_cached[stage_start - 1] == false)) stage_start--;
+
+      if (stage_start > 0)
+      {
+        candidate_len = state->prefix_len[stage_start - 1];
+
+        if (candidate_len < 0)
+        {
+          reject = true;
+        }
+        else
+        {
+          memcpy (candidate, state->prefix_buf + ((stage_start - 1) * RP_PASSWORD_SIZE), candidate_len);
+        }
+      }
+
+      for (u32 i = stage_start; (i < state->stages_cnt) && (reject == false); i++)
       {
         const attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
-        const u64 stage_idx = (candidate_pos / stage->stride) % stage->candidates;
+        const u64 stage_idx = state->stage_indices[i];
 
         if (stage->type == ATTACK13_STAGE_WORDLIST)
         {
-          if (attack13_fill_word (state, stage, stage_idx) == -1)
+          const u8 *word_buf = NULL;
+          int word_len = 0;
+
+          if (attack13_fill_word (state, stage, stage_idx, &word_buf, &word_len) == -1)
           {
             event_log_error (hashcat_ctx, "Unexpected end of attack-mode 13 wordlist: %s", stage->source);
 
             return -1;
           }
 
-          const u32 wordlist_pos = stage->wordlist_ordinal;
-          const int word_len = state->word_len[wordlist_pos];
-
           if ((word_len < 0) || (candidate_len + word_len > RP_PASSWORD_SIZE))
           {
             reject = true;
-
-            break;
           }
+          else
+          {
+            memcpy (candidate + candidate_len, word_buf, word_len);
 
-          memcpy (candidate + candidate_len, state->word_buf + (wordlist_pos * RP_PASSWORD_SIZE), word_len);
-
-          candidate_len += word_len;
+            candidate_len += word_len;
+          }
         }
         else if (stage->type == ATTACK13_STAGE_MASK)
         {
-          if (attack13_fill_mask (mask_ctx, stage, stage_idx, candidate, &candidate_len) == -1)
+          if (attack13_mask_append (mask_ctx, stage, stage_idx, candidate, &candidate_len) == -1)
           {
             reject = true;
-
-            break;
           }
         }
         else if (stage->generated == true)
         {
+          memset (candidate + candidate_len, 0, RP_PASSWORD_SIZE - candidate_len);
+
           candidate_len = (int) apply_rules (stage->generated_rules[stage_idx].cmds, candidate_words, candidate_len);
 
           if ((candidate_len < 0) || (candidate_len > RP_PASSWORD_SIZE))
           {
             reject = true;
-
-            break;
           }
         }
         else
@@ -1230,18 +1457,29 @@ static int fill_attack13 (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_
           if (ruled_len < 0)
           {
             reject = true;
-
-            break;
           }
+          else
+          {
+            memcpy (candidate, ruled, ruled_len);
 
-          memcpy (candidate, ruled, ruled_len);
+            candidate_len = ruled_len;
+          }
+        }
 
-          candidate_len = ruled_len;
+        if (i + 1 < state->stages_cnt)
+        {
+          state->prefix_len[i]    = (reject == true) ? -1 : candidate_len;
+          state->prefix_cached[i] = true;
+
+          if (reject == false)
+          {
+            memcpy (state->prefix_buf + (i * RP_PASSWORD_SIZE), candidate, candidate_len);
+          }
         }
       }
 
       if ((reject == true)
-       || (candidate_len < (int) hashconfig->pw_min)
+       || ((mask_ctx->attack13_gpu_amplified == false) && (candidate_len < (int) hashconfig->pw_min))
        || (candidate_len > (int) hashconfig->pw_max))
       {
         if (fill_reject (hashcat_ctx, false, batch, &words_extra, candidate_pos) == -1) return -1;
@@ -1883,7 +2121,7 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
     {
       attack13_fill_state_t attack13;
 
-      if (attack13_fill_init (hashcat_ctx, &attack13) == -1)
+      if (attack13_fill_init (hashcat_ctx, device_param, &attack13) == -1)
       {
         attack13_fill_destroy (&attack13);
 

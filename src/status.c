@@ -1529,18 +1529,32 @@ char *status_get_time_estimated_relative (const hashcat_ctx_t *hashcat_ctx)
 
 u64 status_get_restore_point (const hashcat_ctx_t *hashcat_ctx)
 {
+  const mask_ctx_t   *mask_ctx   = hashcat_ctx->mask_ctx;
   const status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
-  const u64 restore_point = status_ctx->words_cur;
+  u64 restore_point = status_ctx->words_cur;
+
+  if ((user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID) && (mask_ctx->attack13_gpu_amplified == true))
+  {
+    restore_point *= mask_ctx->attack13_amplifier;
+  }
 
   return restore_point;
 }
 
 u64 status_get_restore_total (const hashcat_ctx_t *hashcat_ctx)
 {
+  const mask_ctx_t   *mask_ctx   = hashcat_ctx->mask_ctx;
   const status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
-  const u64 restore_total = status_ctx->words_base;
+  u64 restore_total = status_ctx->words_base;
+
+  if ((user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID) && (mask_ctx->attack13_gpu_amplified == true))
+  {
+    restore_total = mask_ctx->attack13_candidates;
+  }
 
   return restore_total;
 }
@@ -2874,6 +2888,8 @@ void status_progress_reset (hashcat_ctx_t *hashcat_ctx)
 int status_ctx_init (hashcat_ctx_t *hashcat_ctx)
 {
   status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+
+  status_ctx->optimized_kernel_parse_all_failed = false;
 
   status_ctx->devices_status = STATUS_INIT;
   status_ctx->runtime_status = STATUS_RUNNING;

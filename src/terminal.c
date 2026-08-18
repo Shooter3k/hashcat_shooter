@@ -3768,6 +3768,15 @@ void status_display (hashcat_ctx_t *hashcat_ctx)
       event_log_info (hashcat_ctx,
         "Guess.Rule.Scope.: each rule stage transforms the complete prefix to its left");
 
+      if (hashcat_ctx->mask_ctx->attack13_gpu_amplified == true)
+      {
+        event_log_info (hashcat_ctx,
+          "Guess.GPU.Amp....: %" PRIu64 " candidates per host prefix (stages #%02u-#%02u)",
+          hashcat_ctx->mask_ctx->attack13_amplifier,
+          hashcat_ctx->mask_ctx->attack13_host_stages_cnt + 1,
+          hashcat_ctx->mask_ctx->attack13_stages_cnt);
+      }
+
       for (u32 i = 0; i < hashcat_ctx->mask_ctx->attack13_stages_cnt; i++)
       {
         const attack13_stage_t *stage = &hashcat_ctx->mask_ctx->attack13_stages[i];

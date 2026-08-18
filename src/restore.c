@@ -100,8 +100,10 @@ static int read_restore (hashcat_ctx_t *hashcat_ctx)
 
   memset (rd, 0, sizeof (restore_data_t));
 
-  const size_t restore_data_size = (restore_version >= 721)
+  const size_t restore_data_size = (restore_version >= 722)
                                  ? sizeof (restore_data_t)
+                                 : (restore_version >= 721)
+                                 ? offsetof (restore_data_t, attack13_amplifier)
                                  : offsetof (restore_data_t, stdout_output_size);
 
   if (hc_fread (rd, restore_data_size, 1, &fp) != 1)
@@ -259,7 +261,10 @@ static int write_restore (hashcat_ctx_t *hashcat_ctx)
   {
     rd->words_cur          = status_ctx->words_cur;
     rd->stdout_output_size = 0;
-    rd->stdout_flags       = 0;
+    rd->stdout_flags       = (mask_ctx->attack13_gpu_amplified == true)
+                           ? RESTORE_DATA_ATTACK13_AMPLIFIED
+                           : 0;
+    rd->attack13_amplifier = mask_ctx->attack13_amplifier;
   }
 
   char *new_restore_file = restore_ctx->new_restore_file;
@@ -302,6 +307,7 @@ static int write_restore (hashcat_ctx_t *hashcat_ctx)
   rd->words_cur = 0;
   rd->stdout_output_size = 0;
   rd->stdout_flags = 0;
+  rd->attack13_amplifier = 0;
 
   return 0;
 }

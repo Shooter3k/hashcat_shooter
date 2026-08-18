@@ -730,7 +730,8 @@ int process_stdout (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param,
     // consume it in place.
 
     const bool host_straight = (user_options->stdout_flag == true)
-                            && (user_options->attack_mode == ATTACK_MODE_STRAIGHT)
+                            && ((user_options->attack_mode == ATTACK_MODE_STRAIGHT)
+                             || (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID))
                             && (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT);
 
     const u64 blk_cnt_max = (host_straight == true)

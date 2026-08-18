@@ -28,4 +28,6 @@ HC_API_CALL DWORD thread_calc (void *p);
 HC_API_CALL void *thread_calc (void *p);
 #endif
 
+int attack13_mask_append (const mask_ctx_t *mask_ctx, const attack13_stage_t *stage, u64 mask_idx, char *candidate, int *candidate_len);
+
 #endif // HC_DISPATCH_H

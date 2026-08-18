@@ -295,11 +295,20 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
   status_ctx->words_skip  = 0;
   status_ctx->words_limit = 0;
 
+  u64 window_skip  = user_options->skip;
+  u64 window_limit = user_options->limit;
+
+  if ((user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID) && (mask_ctx->attack13_gpu_amplified == true))
+  {
+    window_skip  /= mask_ctx->attack13_amplifier;
+    window_limit /= mask_ctx->attack13_amplifier;
+  }
+
   const bool one_round = ((mask_ctx->masks_cnt <= 1) && (straight_ctx->dicts_cnt <= 1));
 
-  if (user_options->skip > walk_first)
+  if (window_skip > walk_first)
   {
-    status_ctx->words_skip = user_options->skip - walk_first;
+    status_ctx->words_skip = window_skip - walk_first;
 
     // A queue of rounds passes over one the window does not reach. A single round has nothing to pass
     // over to, so a --skip past its end is the command line mistake it always was and the keyspace
@@ -320,9 +329,9 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
     }
   }
 
-  if (user_options->limit > 0)
+  if (window_limit > 0)
   {
-    if (user_options->limit <= walk_first)
+    if (window_limit <= walk_first)
     {
       status_ctx->devices_status = STATUS_EXHAUSTED;
 
@@ -331,7 +340,7 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
       return 0;
     }
 
-    status_ctx->words_limit = user_options->limit - walk_first;
+    status_ctx->words_limit = window_limit - walk_first;
   }
 
   // A restored session is already where it belongs, and --restore overrides --skip.
@@ -943,7 +952,18 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
   {
     if (hashes->hashes_cnt == 0)
     {
-      event_log_error (hashcat_ctx, "No hashes loaded.");
+      const bool optimized_kernel_active = (hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) != 0;
+
+      if ((optimized_kernel_active == true) && (hashconfig->has_pure_kernel == true))
+      {
+        status_ctx->optimized_kernel_parse_all_failed = true;
+
+        event_log_warning (hashcat_ctx, "All input hashes were rejected while -O was active.");
+      }
+      else
+      {
+        event_log_error (hashcat_ctx, "No hashes loaded.");
+      }
 
       return -1;
     }
@@ -1153,6 +1173,29 @@ static int outer_loop (hashcat_ctx_t *hashcat_ctx, const int iteration)
    */
 
   if (mask_ctx_init (hashcat_ctx) == -1) return -1;
+
+  if (user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID)
+  {
+    if (straight_ctx_attack13_amplifier_init (hashcat_ctx) == -1) return -1;
+
+    if (mask_ctx->attack13_gpu_amplified == true)
+    {
+      for (u32 i = 0; i < mask_ctx->attack13_host_stages_cnt; i++)
+      {
+        const attack13_stage_t *stage = &mask_ctx->attack13_stages[i];
+
+        if (stage->type != ATTACK13_STAGE_WORDLIST) continue;
+
+        // The sparse generic feed index avoids rescanning a large outer wordlist whenever another
+        // device receives a distant mode-13 prefix range. It is useful even when masks or rules
+        // appear before the first host-side wordlist.
+
+        if (generic_ctx_base_round (hashcat_ctx, stage->source) == -1) return -1;
+
+        break;
+      }
+    }
+  }
 
   EVENT (EVENT_CANDIDATE_SOURCE_POST);
 
@@ -2402,6 +2445,17 @@ int hashcat_session_quit (hashcat_ctx_t *hashcat_ctx)
 
 int hashcat_session_destroy (hashcat_ctx_t *hashcat_ctx)
 {
+  // A 100%-rejected optimized parse returns before outer_loop's common teardown. The direct
+  // process is about to rebuild the complete session, so release the mode and hash allocations
+  // here. Resident workers use their already-exhaustive worker boundary instead.
+
+  if (hashcat_ctx->status_ctx->optimized_kernel_parse_all_failed == true)
+  {
+    bridges_destroy   (hashcat_ctx);
+    hashconfig_destroy (hashcat_ctx);
+    hashes_destroy     (hashcat_ctx);
+  }
+
   #ifdef WITH_BRAIN
   #if defined (_WIN)
   user_options_t *user_options = hashcat_ctx->user_options;

@@ -4,10 +4,15 @@
 - Status: Always show Remaining and Recovered/Time in the normal status display, including for jobs with 1,000 or fewer digests
 - Status: Show live current and average minute recovery values during the first minute instead of reporting N/A
 - Terminal: Shorten the interactive outfile-directory command label to `[i]gnore outfile` without changing its key or behavior
-- Diagnostics: Print an automatic end-of-run task-time breakdown for normal attacks, including preparation, cracking, cleanup, detailed startup stages, seconds, and percentages
+- Diagnostics: Add opt-in `--task-time-breakdown` output for normal attacks, including preparation, cracking, cleanup, detailed startup stages, seconds, and percentages; keep it disabled by default
 - Status: Print the full human-readable `s` status page before cracking workers start and again when the attack completes
 - Attack-Mode 13: Start the normal interactive keyboard handler so the command menu and status/control keys work during ordered-pipeline attacks
 - Attack-Mode 13: Calculate Time.Estimated from the complete pipeline progress and measured aggregate speed instead of reporting zero after cracking starts
+- Attack-Mode 13: Reuse unchanged stage prefixes, keep small wordlists resident, and advance wordlist cursors across device work ranges to remove redundant host candidate generation
+- Attack-Mode 13: Batch a safe trailing product of wordlists, masks, and rule stages into up to 65,536 native GPU rules, with indexed outer-wordlist dispatch, exact fallback behavior, and amplifier-aware status/restore accounting
+- Attack-Mode 13: Keep `--stdout` candidate output prompt-free and use the direct compressed host buffer path
+- Testing: Add exhaustive mode-13 ordering and all-permutation GPU benchmark harnesses
+- Kernels: If an actual optimized kernel selected by `-O` rejects 100% of the supplied hashes during parsing and the mode has a pure kernel, rebuild the complete session once without `-O`; preserve the pure parser error and stop if that retry also rejects the input
 
 ##
 ## Backward Incompatible Changes

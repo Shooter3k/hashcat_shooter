@@ -69,9 +69,10 @@ item links to a plain-language explanation.
 47. **[Existing outfile results are removed before cracking starts](docs/shooter-enhancements.md#47-outfile-check-before-cracking-allocation)** — if every hash is already in `--outfile-check-dir`, the expensive attack-specific GPU and host-memory allocation is skipped.
 48. **[Huge wordlists index and feed faster](docs/shooter-enhancements.md#48-faster-large-wordlist-indexing-and-feed)** — first-use line counting uses the CPU cores and ordinary candidates reach the GPUs with less per-word overhead.
 49. **[Remaining hashes and recovery rates are always visible](docs/shooter-enhancements.md#49-consistent-remaining-and-recovery-rate-status)** — every normal status display includes `Remaining` and `Recovered/Time`, even for small hash lists, with live minute values from the first status update.
-50. **[Every attack explains where its time went](docs/shooter-enhancements.md#50-automatic-task-time-breakdown)** — the final report separates preparation, cracking, and cleanup, then itemizes hash loading, sorting, potfile/outfile checks, rules, GPU setup, self-test, and autotune.
+50. **[Attacks can explain where their time went](docs/shooter-enhancements.md#50-task-time-breakdown)** — opt-in `--task-time-breakdown` output separates preparation, cracking, and cleanup, then itemizes hash loading, sorting, potfile/outfile checks, rules, GPU setup, self-test, and autotune.
 51. **[Full status appears at both ends of an attack](docs/shooter-enhancements.md#51-automatic-start-and-finish-status)** — the same human-readable page as interactive `s` prints once before cracking workers start and again when the attack completes.
 52. **[Attack mode 13 runs an ordered component pipeline](docs/shooter-enhancements.md#52-ordered-component-pipeline-mode-13)** — any number of wordlists, masks, and rule stages run left-to-right in the exact order entered.
+53. **[All-rejected optimized input retries with the pure kernel](docs/shooter-enhancements.md#53-automatic-pure-kernel-recovery)** — when `-O` parser limits reject every supplied hash, the complete session is rebuilt once without `-O`.
 
 ## Download and run
 

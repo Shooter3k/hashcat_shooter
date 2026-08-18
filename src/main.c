@@ -197,6 +197,57 @@ static int main_argv_utf8_init (int *argc, char ***argv)
 
 #endif
 
+// Build the argument vector for the one automatic pure-kernel retry. The strings remain owned by
+// the original command line; only the pointer array is new. Forcing the parsed option off as well
+// covers an unusual clustered short option while the ordinary -O and long spelling are omitted
+// from restore metadata and diagnostics.
+
+static char **main_pure_kernel_argv (const int argc, char **argv, int *pure_argc)
+{
+  char **pure_argv = (char **) hccalloc (argc + 1, sizeof (char *));
+
+  int out = 0;
+
+  for (int i = 0; i < argc; i++)
+  {
+    if (strcmp (argv[i], "-O") == 0) continue;
+    if (strcmp (argv[i], "--optimized-kernel-enable") == 0) continue;
+
+    pure_argv[out++] = argv[i];
+  }
+
+  pure_argv[out] = NULL;
+
+  *pure_argc = out;
+
+  return pure_argv;
+}
+
+static int main_user_options_reload (hashcat_ctx_t *hashcat_ctx, const int argc, char **argv, const bool force_pure_kernel)
+{
+  memset (hashcat_ctx->user_options, 0, sizeof (user_options_t));
+
+  if (user_options_init (hashcat_ctx) == -1) return -1;
+
+  if (user_options_getopt (hashcat_ctx, argc, argv) == -1)
+  {
+    user_options_destroy (hashcat_ctx);
+
+    return -1;
+  }
+
+  if (force_pure_kernel == true) hashcat_ctx->user_options->optimized_kernel = false;
+
+  if (user_options_sanity (hashcat_ctx) == -1)
+  {
+    user_options_destroy (hashcat_ctx);
+
+    return -1;
+  }
+
+  return 0;
+}
+
 // Most attacks with an interactive prompt read their base candidates through the mask or generic
 // feed. Host-produced multi-input attacks keep wordlist_mode at NONE even though they need the
 // same keyboard/status handling.
@@ -205,6 +256,13 @@ static bool main_has_terminal_prompt (const hashcat_ctx_t *hashcat_ctx)
 {
   const user_options_t       *user_options       = hashcat_ctx->user_options;
   const user_options_extra_t *user_options_extra = hashcat_ctx->user_options_extra;
+
+  // --stdout is a candidate stream, not an interactive attack. In particular, mode 13 must not
+  // start the keyboard thread merely because its normal cracking path has a prompt: doing so can
+  // delay process exit while the thread waits for console input and can mix a prompt with scripts'
+  // diagnostic streams.
+
+  if (user_options->stdout_flag == true) return false;
 
   if (user_options_extra->wordlist_mode == WL_MODE_MASK)    return true;
   if (user_options_extra->wordlist_mode == WL_MODE_GENERIC) return true;
@@ -1894,6 +1952,8 @@ static void main_timing_report (hashcat_ctx_t *hashcat_ctx, const bool enabled)
 
 static bool main_timing_report_enabled (const user_options_t *user_options)
 {
+  if (user_options->task_time_breakdown == false) return false;
+
   if (user_options->quiet            == true) return false;
   if (user_options->machine_readable == true) return false;
   if (user_options->keyspace         == true) return false;
@@ -2118,11 +2178,19 @@ int main (int argc, char **argv)
   #define CUDA_STARTUP_RETRY_MAX   10
   #define CUDA_STARTUP_RETRY_DELAY 5000000  /* 5 seconds in microseconds */
 
-  for (int retry = 0; retry <= CUDA_STARTUP_RETRY_MAX; retry++)
+  int active_argc = argc;
+  char **active_argv = argv;
+  char **pure_argv = NULL;
+
+  bool pure_kernel_retry_done = false;
+
+  int cuda_retry = 0;
+
+  while (true)
   {
-    if (retry > 0)
+    if (cuda_retry > 0)
     {
-      fprintf (stderr, "\nNOTICE: CUDA context startup failed. Partial resources were released; retrying in 5 seconds (%d/%d) ...\n\n", retry, CUDA_STARTUP_RETRY_MAX);
+      fprintf (stderr, "\nNOTICE: CUDA context startup failed. Partial resources were released; retrying in 5 seconds (%d/%d) ...\n\n", cuda_retry, CUDA_STARTUP_RETRY_MAX);
 
       main_timing_start (MAIN_TIMING_RETRY_WAIT);
 
@@ -2133,9 +2201,11 @@ int main (int argc, char **argv)
 
     main_timing_start (MAIN_TIMING_SESSION_INIT);
 
-    const int session_init_rc = hashcat_session_init (hashcat_ctx, install_folder, shared_folder, argc, argv, COMPTIME);
+    const int session_init_rc = hashcat_session_init (hashcat_ctx, install_folder, shared_folder, active_argc, active_argv, COMPTIME);
 
     main_timing_stop (MAIN_TIMING_SESSION_INIT);
+
+    bool should_retry_pure_kernel = false;
 
     if (session_init_rc == 0)
     {
@@ -2172,12 +2242,15 @@ int main (int argc, char **argv)
         rc_final = hashcat_session_execute (hashcat_ctx);
 
         main_timing_stop (MAIN_TIMING_EXECUTE);
+
+        should_retry_pure_kernel = (pure_kernel_retry_done == false)
+                                && (hashcat_ctx->status_ctx->optimized_kernel_parse_all_failed == true);
       }
     }
 
     // finish the hashcat session, this shuts down backend devices, hwmon, etc
 
-    const bool should_retry = ((backend_ctx_t *) hashcat_ctx->backend_ctx)->cuda_startup_error;
+    const bool should_retry_cuda = ((backend_ctx_t *) hashcat_ctx->backend_ctx)->cuda_startup_error;
 
     main_timing_start (MAIN_TIMING_SESSION_DESTROY);
 
@@ -2185,13 +2258,37 @@ int main (int argc, char **argv)
 
     main_timing_stop (MAIN_TIMING_SESSION_DESTROY);
 
-    if (should_retry == false) break;
+    if (should_retry_pure_kernel == true)
+    {
+      pure_kernel_retry_done = true;
 
-    if (retry == CUDA_STARTUP_RETRY_MAX)
+      pure_argv = main_pure_kernel_argv (argc, argv, &active_argc);
+      active_argv = pure_argv;
+
+      fprintf (stderr, "\nNOTICE: 100%% of input hashes were rejected with -O; rebuilding the session with the pure kernel.\n\n");
+
+      if (main_user_options_reload (hashcat_ctx, active_argc, active_argv, true) == -1) break;
+
+      cuda_retry = 0;
+
+      continue;
+    }
+
+    if (should_retry_cuda == false) break;
+
+    if (cuda_retry == CUDA_STARTUP_RETRY_MAX)
     {
       fprintf (stderr, "\nNOTICE: CUDA startup still failed after %d retries; giving up with no partial-GPU run.\n\n", CUDA_STARTUP_RETRY_MAX);
+
+      break;
     }
+
+    cuda_retry++;
+
+    if (main_user_options_reload (hashcat_ctx, active_argc, active_argv, pure_kernel_retry_done) == -1) break;
   }
+
+  hcfree (pure_argv);
 
   // finished with hashcat, clean up
 
