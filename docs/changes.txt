@@ -7,6 +7,7 @@
 - Diagnostics: Print an automatic end-of-run task-time breakdown for normal attacks, including preparation, cracking, cleanup, detailed startup stages, seconds, and percentages
 - Status: Print the full human-readable `s` status page before cracking workers start and again when the attack completes
 - Attack-Mode 13: Start the normal interactive keyboard handler so the command menu and status/control keys work during ordered-pipeline attacks
+- Attack-Mode 13: Calculate Time.Estimated from the complete pipeline progress and measured aggregate speed instead of reporting zero after cracking starts
 
 ##
 ## Backward Incompatible Changes

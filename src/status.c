@@ -1413,7 +1413,8 @@ time_t status_get_sec_etc (const hashcat_ctx_t *hashcat_ctx)
 
   if ((user_options_extra->wordlist_mode == WL_MODE_MASK)
    || (user_options_extra->wordlist_mode == WL_MODE_GENERIC)
-   || ((hashcat_ctx->user_options->attack_mode == ATTACK_MODE_COMBI) && (hashcat_ctx->combinator_ctx->dicts_cnt > 2)))
+   || ((hashcat_ctx->user_options->attack_mode == ATTACK_MODE_COMBI) && (hashcat_ctx->combinator_ctx->dicts_cnt > 2))
+   || (hashcat_ctx->user_options->attack_mode == ATTACK_MODE_MULTI_HYBRID))
   {
     if (status_ctx->devices_status != STATUS_CRACKED)
     {

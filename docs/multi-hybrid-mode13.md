@@ -127,6 +127,11 @@ outfile-ignore controls appear and operate when their corresponding options
 and runtime state make them available. Mode 13 also prints the automatic full
 status page once before cracking starts and once after the attack completes.
 
+`Time.Estimated` uses the complete ordered-pipeline progress and aggregate
+device speed. The automatic pre-attack page is printed before a speed sample
+exists and can therefore show `0 secs` beside `0 H/s`. Periodic pages and `s`
+show the measured ETA as soon as cracking has produced a speed sample.
+
 ## Wordlist side rules and masks
 
 Side rules retain their established meaning: <code>-j</code> transforms

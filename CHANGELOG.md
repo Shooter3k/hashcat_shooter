@@ -1,5 +1,27 @@
 # shooter_hashcat release notes
 
+## v7.1.2-shooter.20260817.53
+
+Time-estimate corrective release for attack mode 13.
+
+### Fixed
+
+- Mode 13 now participates in Hashcat's normal ETA calculation. Once a speed
+  sample is available, `Time.Estimated` uses the complete ordered-pipeline
+  keyspace, current progress, ignored work, and aggregate device speed instead
+  of remaining at the current time with `(0 secs)`.
+- The automatic pre-attack status page still reports zero while speed is
+  `0 H/s`; later automatic, periodic, and interactive status pages report the
+  measured ETA.
+
+### Verified
+
+- Tested a real `wordlist -> rule -> mask -> wordlist` pipeline with
+  651,605,000 candidates on a CPU-only OpenCL device in both editions.
+- Confirmed nonzero ETAs after the first speed sample and confirmed the
+  displayed remaining time matches remaining candidates divided by measured
+  speed. The standard executable was also retested successfully by the user.
+
 ## v7.1.2-shooter.20260817.52
 
 Interactive-control corrective release for attack mode 13.
