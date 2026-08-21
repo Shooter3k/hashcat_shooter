@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <getopt.h>
 #include <unistd.h>
 
@@ -304,6 +305,83 @@ static bool main_log_is_pure_kernel_feature (const char *msg_buf, const size_t m
   return (memcmp (msg_buf, pure_kernel_prefix, prefix_len) == 0);
 }
 
+#if defined (_WIN)
+static void main_log_write_utf8 (FILE *fp, HANDLE hConsole, const bool is_terminal, const char *buf, const size_t len)
+{
+  // Internally Hashcat keeps paths, status text, and printable candidates as UTF-8. fwrite() sends
+  // those bytes through the console's active OEM/ANSI code page, which corrupts valid multibyte
+  // candidate previews unless the user happened to select code page 65001. Write UTF-16 directly
+  // to a real Windows console instead. Redirected output deliberately stays byte-for-byte UTF-8.
+
+  if ((is_terminal == false) || (len == 0) || (len > INT_MAX))
+  {
+    fwrite (buf, len, 1, fp);
+
+    return;
+  }
+
+  const int wide_len = MultiByteToWideChar (CP_UTF8, MB_ERR_INVALID_CHARS, buf, (int) len, NULL, 0);
+
+  if (wide_len <= 0)
+  {
+    // Candidate display hexifies invalid UTF-8 before it reaches this point. Keep a byte-preserving
+    // fallback for other diagnostics that may intentionally contain arbitrary input bytes.
+
+    fwrite (buf, len, 1, fp);
+
+    return;
+  }
+
+  wchar_t *wide_buf = (wchar_t *) malloc ((size_t) wide_len * sizeof (wchar_t));
+
+  if (wide_buf == NULL)
+  {
+    fwrite (buf, len, 1, fp);
+
+    return;
+  }
+
+  if (MultiByteToWideChar (CP_UTF8, MB_ERR_INVALID_CHARS, buf, (int) len, wide_buf, wide_len) != wide_len)
+  {
+    free (wide_buf);
+
+    fwrite (buf, len, 1, fp);
+
+    return;
+  }
+
+  int wide_pos = 0;
+
+  while (wide_pos < wide_len)
+  {
+    const DWORD wide_left = (DWORD) MIN (wide_len - wide_pos, 16384);
+
+    DWORD wide_written = 0;
+
+    if (WriteConsoleW (hConsole, wide_buf + wide_pos, wide_left, &wide_written, NULL) == 0)
+    {
+      // Falling back is safe only before WriteConsoleW has emitted anything; otherwise it would
+      // duplicate the already-visible prefix.
+
+      if (wide_pos == 0) fwrite (buf, len, 1, fp);
+
+      break;
+    }
+
+    if (wide_written == 0)
+    {
+      if (wide_pos == 0) fwrite (buf, len, 1, fp);
+
+      break;
+    }
+
+    wide_pos += (int) wide_written;
+  }
+
+  free (wide_buf);
+}
+#endif
+
 static void main_log (hashcat_ctx_t *hashcat_ctx, FILE *fp, const int loglevel)
 {
   event_ctx_t *event_ctx = hashcat_ctx->event_ctx;
@@ -377,7 +455,11 @@ static void main_log (hashcat_ctx_t *hashcat_ctx, FILE *fp, const int loglevel)
 
   // finally, print
 
+  #if defined (_WIN)
+  main_log_write_utf8 (fp, hConsole, is_terminal, msg_buf, msg_len);
+  #else
   fwrite (msg_buf, msg_len, 1, fp);
+  #endif
 
   // color stuff post
   if (is_terminal == true)

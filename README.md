@@ -73,6 +73,8 @@ item links to a plain-language explanation.
 51. **[Full status appears at both ends of an attack](docs/shooter-enhancements.md#51-automatic-start-and-finish-status)** — the same human-readable page as interactive `s` prints once before cracking workers start and again when the attack completes.
 52. **[Attack mode 13 runs an ordered component pipeline](docs/shooter-enhancements.md#52-ordered-component-pipeline-mode-13)** — any number of wordlists, masks, and rule stages run left-to-right in the exact order entered.
 53. **[All-rejected optimized input retries with the pure kernel](docs/shooter-enhancements.md#53-automatic-pure-kernel-recovery)** — when `-O` parser limits reject every supplied hash, the complete session is rebuilt once without `-O`.
+54. **[PCFG candidates run through a native deterministic feed](docs/shooter-enhancements.md#54-native-pcfg-feed)** — train a probability-ordered grammar, then run it as `-a 8 pcfg MODEL` with keyspace, rules, restore, and multi-GPU distribution.
+55. **[Final candidates can require character classes](docs/shooter-enhancements.md#55-final-candidate-class-requirements)** — independent, default-off upper/lower/digit/symbol minimums are checked after supported rules and complete mode-13 pipelines.
 
 ## Download and run
 
@@ -120,6 +122,9 @@ Windows and Linux builds, Rust crates, and the sanitizer-backed parser fuzzer.
 | RTX 4090 autotune cache | [RTX_4090_AUTOTUNE_CACHE.md](RTX_4090_AUTOTUNE_CACHE.md) |
 | Multi-file combinations and complete-candidate rules | [docs/multi-file-combination.md](docs/multi-file-combination.md) and [docs/whole-candidate-rules.md](docs/whole-candidate-rules.md) |
 | Ordered component pipeline: attack mode 13 | [docs/multi-hybrid-mode13.md](docs/multi-hybrid-mode13.md) |
+| Native PCFG training and attack feed | [docs/pcfg-attack.md](docs/pcfg-attack.md) |
+| Final-candidate class requirements | [docs/candidate-requirements.md](docs/candidate-requirements.md) |
+| Candidate methods 1-6 and implementation status | [docs/candidate-generation-roadmap.md](docs/candidate-generation-roadmap.md) |
 | Runtime and checkpoint controls | [docs/runtime-controls.md](docs/runtime-controls.md) and [docs/checkpoint-control.md](docs/checkpoint-control.md) |
 | Interactive status output | [consistent remaining and recovery-rate lines](docs/shooter-enhancements.md#49-consistent-remaining-and-recovery-rate-status) |
 | Resumable candidate output | [docs/stdout-sessions.md](docs/stdout-sessions.md) |

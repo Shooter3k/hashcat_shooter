@@ -1044,6 +1044,14 @@ typedef enum user_options_map
   IDX_STAGE_PROFILE             = 0xff64,
   IDX_STAGE_PROFILE_JSON        = 0xff65,
   IDX_TASK_TIME_BREAKDOWN       = 0xff66,
+  IDX_CANDIDATE_MIN_UPPER       = 0xff86,
+  IDX_CANDIDATE_MIN_LOWER       = 0xff87,
+  IDX_CANDIDATE_MIN_DIGIT       = 0xff88,
+  IDX_CANDIDATE_MIN_SYMBOL      = 0xff89,
+  IDX_REQUIRE_UPPER             = 0xff8a,
+  IDX_REQUIRE_LOWER             = 0xff8b,
+  IDX_REQUIRE_DIGIT             = 0xff8c,
+  IDX_REQUIRE_SYMBOL            = 0xff8d,
   IDX_STATUS_TIMER              = 0xff4c,
   IDX_STDOUT_FLAG               = 0xff4d,
   IDX_STDIN_TIMEOUT_ABORT       = 0xff4e,
@@ -2825,6 +2833,10 @@ typedef struct user_options
   #endif
   u32          bypass_delay;
   u32          bypass_threshold;
+  u32          candidate_min_upper;
+  u32          candidate_min_lower;
+  u32          candidate_min_digit;
+  u32          candidate_min_symbol;
   u32          debug_mode;
   u32          hwmon_temp_abort;
   u32          hash_info;

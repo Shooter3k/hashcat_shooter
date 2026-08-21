@@ -207,7 +207,14 @@ int build_plain (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, pl
 
       if (hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL)
       {
-        if ((user_options->rp_files_cnt == 0) && (user_options->rp_gen == 0))
+        // Mode 13 can synthesize its ordered GPU suffix as kernel rules even when the user did not
+        // supply an ordinary -r/--rules-file. In that case pw is only the host-side prefix (and can
+        // be empty when the complete pipeline fits in the amplifier), so reconstruct the recovered
+        // plaintext by applying the synthesized rule instead of copying the prefix unchanged.
+
+        if ((user_options->rp_files_cnt == 0)
+         && (user_options->rp_gen == 0)
+         && ((user_options->attack_mode != ATTACK_MODE_MULTI_HYBRID) || (mask_ctx->attack13_gpu_amplified == false)))
         {
           for (int i = 0; i < 14; i++)
           {

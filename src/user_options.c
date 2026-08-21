@@ -20,6 +20,7 @@
 #include "outfile.h"
 #include "rp.h"
 #include "rp_cpu.h"
+#include "candidate_policy.h"
 
 #include "generic.h"
 #include "mpsp.h"
@@ -121,6 +122,14 @@ static const struct option long_options[] =
   {"backend-vector-width",      required_argument, NULL, IDX_BACKEND_VECTOR_WIDTH},
   {"bypass-delay",              required_argument, NULL, IDX_BYPASS_DELAY},
   {"bypass-threshold",          required_argument, NULL, IDX_BYPASS_THRESHOLD},
+  {"candidate-min-upper",       required_argument, NULL, IDX_CANDIDATE_MIN_UPPER},
+  {"candidate-min-lower",       required_argument, NULL, IDX_CANDIDATE_MIN_LOWER},
+  {"candidate-min-digit",       required_argument, NULL, IDX_CANDIDATE_MIN_DIGIT},
+  {"candidate-min-symbol",      required_argument, NULL, IDX_CANDIDATE_MIN_SYMBOL},
+  {"require-upper",             no_argument,       NULL, IDX_REQUIRE_UPPER},
+  {"require-lower",             no_argument,       NULL, IDX_REQUIRE_LOWER},
+  {"require-digit",             no_argument,       NULL, IDX_REQUIRE_DIGIT},
+  {"require-symbol",            no_argument,       NULL, IDX_REQUIRE_SYMBOL},
   {"benchmark-all",             no_argument,       NULL, IDX_BENCHMARK_ALL},
   {"benchmark-max",             required_argument, NULL, IDX_BENCHMARK_MAX},
   {"benchmark-min",             required_argument, NULL, IDX_BENCHMARK_MIN},
@@ -402,6 +411,10 @@ int user_options_init (hashcat_ctx_t *hashcat_ctx)
   user_options->stage_profile             = STAGE_PROFILE;
   user_options->stage_profile_json        = STAGE_PROFILE_JSON;
   user_options->task_time_breakdown       = TASK_TIME_BREAKDOWN;
+  user_options->candidate_min_upper       = 0;
+  user_options->candidate_min_lower       = 0;
+  user_options->candidate_min_digit       = 0;
+  user_options->candidate_min_symbol      = 0;
   user_options->status_timer              = STATUS_TIMER;
   user_options->stdin_timeout_abort       = STDIN_TIMEOUT_ABORT;
   user_options->stdout_flag               = STDOUT_FLAG;
@@ -620,6 +633,14 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
       case IDX_STAGE_PROFILE:             user_options->stage_profile             = true;                            break;
       case IDX_STAGE_PROFILE_JSON:        user_options->stage_profile_json        = true;                            break;
       case IDX_TASK_TIME_BREAKDOWN:       user_options->task_time_breakdown       = true;                            break;
+      case IDX_CANDIDATE_MIN_UPPER:       user_options->candidate_min_upper       = MAX (user_options->candidate_min_upper,  hc_strtoul (optarg, NULL, 10)); break;
+      case IDX_CANDIDATE_MIN_LOWER:       user_options->candidate_min_lower       = MAX (user_options->candidate_min_lower,  hc_strtoul (optarg, NULL, 10)); break;
+      case IDX_CANDIDATE_MIN_DIGIT:       user_options->candidate_min_digit       = MAX (user_options->candidate_min_digit,  hc_strtoul (optarg, NULL, 10)); break;
+      case IDX_CANDIDATE_MIN_SYMBOL:      user_options->candidate_min_symbol      = MAX (user_options->candidate_min_symbol, hc_strtoul (optarg, NULL, 10)); break;
+      case IDX_REQUIRE_UPPER:             user_options->candidate_min_upper       = MAX (1, user_options->candidate_min_upper);  break;
+      case IDX_REQUIRE_LOWER:             user_options->candidate_min_lower       = MAX (1, user_options->candidate_min_lower);  break;
+      case IDX_REQUIRE_DIGIT:             user_options->candidate_min_digit       = MAX (1, user_options->candidate_min_digit);  break;
+      case IDX_REQUIRE_SYMBOL:            user_options->candidate_min_symbol      = MAX (1, user_options->candidate_min_symbol); break;
       case IDX_STATUS_TIMER:              user_options->status_timer              = hc_strtoul (optarg, NULL, 10);   break;
       case IDX_MACHINE_READABLE:          user_options->machine_readable          = true;                            break;
       case IDX_LOOPBACK:                  user_options->loopback                  = true;                            break;
@@ -795,12 +816,41 @@ int user_options_getopt (hashcat_ctx_t *hashcat_ctx, int argc, char **argv)
     user_options->hc_argv_pos[i] = user_options_original_argv_pos (user_options, user_options->hc_argv[i]);
   }
 
+  // A policy must inspect the complete candidate after its ordinary transforms. The generic host
+  // producer is Hashcat's one attack-independent place where that representation exists. Mode 13
+  // already assembles its complete ordered pipeline on the host and is filtered in that producer.
+
+  if ((candidate_policy_active (user_options) == true)
+   && (user_options->attack_mode != ATTACK_MODE_MULTI_HYBRID))
+  {
+    user_options->slow_candidates = true;
+  }
+
   return 0;
 }
 
 int user_options_sanity (hashcat_ctx_t *hashcat_ctx)
 {
   user_options_t *user_options = hashcat_ctx->user_options;
+
+  if (candidate_policy_active (user_options) == true)
+  {
+    const u32 minimum_total = user_options->candidate_min_upper
+                            + user_options->candidate_min_lower
+                            + user_options->candidate_min_digit
+                            + user_options->candidate_min_symbol;
+
+    if ((user_options->candidate_min_upper  > PW_MAX)
+     || (user_options->candidate_min_lower  > PW_MAX)
+     || (user_options->candidate_min_digit  > PW_MAX)
+     || (user_options->candidate_min_symbol > PW_MAX)
+     || (minimum_total > PW_MAX))
+    {
+      event_log_error (hashcat_ctx, "Candidate class minimums cannot require more than %u total bytes.", PW_MAX);
+
+      return -1;
+    }
+  }
 
   if (user_options->hc_argc < 0)
   {
@@ -4661,6 +4711,10 @@ void user_options_logger (hashcat_ctx_t *hashcat_ctx)
   logfile_top_uint   (user_options->benchmark_all);
   logfile_top_uint   (user_options->benchmark_max);
   logfile_top_uint   (user_options->benchmark_min);
+  logfile_top_uint   (user_options->candidate_min_upper);
+  logfile_top_uint   (user_options->candidate_min_lower);
+  logfile_top_uint   (user_options->candidate_min_digit);
+  logfile_top_uint   (user_options->candidate_min_symbol);
   logfile_top_uint   (user_options->bitmap_max);
   logfile_top_uint   (user_options->bitmap_min);
   logfile_top_uint   (user_options->debug_mode);

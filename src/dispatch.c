@@ -19,6 +19,7 @@
 #include "rp_cpu.h"
 #include "emu_inc_rp.h"
 #include "slow_candidates.h"
+#include "candidate_policy.h"
 #include "dispatch.h"
 #include "generic.h"
 #include "convert.h"
@@ -293,6 +294,17 @@ static int fill_slow (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_para
         // than fetching a replacement, and the caller counts it the way it counts a length reject.
 
         if ((sc->reject != NULL) && (*sc->reject == true))
+        {
+          pre_rejects++;
+
+          continue;
+        }
+
+        // Candidate class requirements are deliberately checked here, after the host has assembled
+        // the complete password and applied its rules. A rejected candidate keeps its original
+        // keyspace position so --skip, --restore and progress accounting remain stable.
+
+        if (candidate_policy_accept (user_options, sc->out_buf, sc->out_len[0]) == false)
         {
           pre_rejects++;
 
@@ -1305,6 +1317,7 @@ static int fill_attack13 (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_
   const hashconfig_t *hashconfig = hashcat_ctx->hashconfig;
   const mask_ctx_t   *mask_ctx   = hashcat_ctx->mask_ctx;
   const status_ctx_t *status_ctx = hashcat_ctx->status_ctx;
+  const user_options_t *user_options = hashcat_ctx->user_options;
 
   attack13_fill_state_t *state = (attack13_fill_state_t *) state_ptr;
 
@@ -1480,7 +1493,8 @@ static int fill_attack13 (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_
 
       if ((reject == true)
        || ((mask_ctx->attack13_gpu_amplified == false) && (candidate_len < (int) hashconfig->pw_min))
-       || (candidate_len > (int) hashconfig->pw_max))
+       || (candidate_len > (int) hashconfig->pw_max)
+       || (candidate_policy_accept (user_options, (const u8 *) candidate, (u32) candidate_len) == false))
       {
         if (fill_reject (hashcat_ctx, false, batch, &words_extra, candidate_pos) == -1) return -1;
 

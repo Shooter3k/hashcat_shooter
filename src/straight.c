@@ -18,6 +18,7 @@
 #include "restore.h"
 #include "dispatch.h"
 #include "generic.h"
+#include "candidate_policy.h"
 #include "straight.h"
 
 #define ATTACK13_GPU_RULES_MAX 65536U
@@ -258,6 +259,11 @@ int straight_ctx_attack13_amplifier_init (hashcat_ctx_t *hashcat_ctx)
   if (user_options->stdout_flag == true) return 0;
 
   if (user_options->keyspace == true) return 0;
+
+  // A policy is evaluated after every mode-13 stage. Keep the whole ordered pipeline on the host so
+  // a GPU suffix cannot be appended after the check.
+
+  if (candidate_policy_active (user_options) == true) return 0;
 
   if ((restore_ctx->restore_execute == true)
    && ((restore_ctx->rd->stdout_flags & RESTORE_DATA_ATTACK13_AMPLIFIED) == 0)) return 0;

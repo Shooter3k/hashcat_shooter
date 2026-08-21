@@ -1,5 +1,51 @@
 # shooter_hashcat release notes
 
+## v7.1.2-shooter.20260820.55
+
+Candidate generation, final-candidate policy, Unicode status output, and
+mode-13 recovered-plaintext correctness.
+
+### Added
+
+- Add a native deterministic PCFG feed for attack mode 8 plus
+  `tools/train_pcfg.py`. Models use probability-ordered class structures and
+  terminal tables, exact 64-bit keyspace accounting, deterministic
+  multi-device offsets, rules, skip/limit, and restore.
+- Add independent, default-off `--require-upper`, `--require-lower`,
+  `--require-digit`, and `--require-symbol` final-candidate policies, with
+  numeric `--candidate-min-*=N` forms for larger minimums.
+- Add comprehensive PCFG, candidate-policy, and six-method candidate roadmap
+  documentation. Only PCFG is marked shipped; the remaining five generator
+  proposals are explicitly planned.
+
+### Fixed
+
+- Render valid UTF-8 status and diagnostic text through the Windows Unicode
+  console API. Multibyte candidate previews no longer depend on the active
+  console code page; redirected output remains byte-for-byte UTF-8, and
+  invalid candidate bytes retain the existing `$HEX[...]` representation.
+- Reconstruct optimized mode-13 recovered plaintext from its synthesized GPU
+  suffix rules. Fully GPU-amplified pipelines no longer report an empty plain,
+  and partial GPU suffixes retain their complete host prefix.
+
+### Verified
+
+- Build the Windows core and PCFG feed, compare skip output with the suffix of
+  a complete deterministic sequence, validate model-class errors, and verify
+  rules transform complete PCFG candidates. A two-GPU run recovered all 21
+  known candidates, and a runtime-aborted session restored at its saved PCFG
+  offset.
+- Verify final-candidate requirements with straight wordlists, post-rule
+  output, masks, two-word combinations, both hybrid orders, PCFG plus rules,
+  and an ordered mode-13 wordlist/mask/rule pipeline.
+- Verify two-, three-, and four-byte UTF-8 candidate previews, including real
+  Windows terminal runs under code page 437 in both editions and ordered mode
+  13, plus redirected UTF-8 output and invalid-byte `$HEX[...]` fallback.
+- Verify exact `hash:plain` output for every permutation of two distinct
+  wordlists and a mask, leading/middle/trailing and repeated rule stages,
+  optimized and pure kernels, complete/partial/disabled GPU amplification,
+  crack positions, and wrong-order negative cases in both editions.
+
 ## v7.1.2-shooter.20260818.54
 
 Mode-13 performance, optimized-kernel recovery, and opt-in timing diagnostics.

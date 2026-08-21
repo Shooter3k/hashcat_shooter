@@ -20,6 +20,7 @@
 #include "outfile_check.h"
 #include "backend.h"
 #include "terminal.h"
+#include "candidate_policy.h"
 
 #if defined (_WIN)
 #include <psapi.h>
@@ -4021,6 +4022,16 @@ void status_display (hashcat_ctx_t *hashcat_ctx)
       event_log_info (hashcat_ctx,
         "Guess.Rules......: Rules (Generated), Whole Candidate");
     }
+  }
+
+  if (candidate_policy_active (user_options) == true)
+  {
+    event_log_info (hashcat_ctx,
+      "Candidate.Policy.: upper>=%u, lower>=%u, digit>=%u, symbol>=%u (final candidate)",
+      user_options->candidate_min_upper,
+      user_options->candidate_min_lower,
+      user_options->candidate_min_digit,
+      user_options->candidate_min_symbol);
   }
 
   switch (hashcat_status->guess_mode)

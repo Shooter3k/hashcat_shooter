@@ -614,3 +614,73 @@ field limits. It cannot repair malformed input or a hash supplied to the
 wrong mode. For example, mode 1800 requires sha512crypt input beginning with
 `$6$`; a line without that structure is retried once but remains a
 `Separator unmatched` error under the pure kernel.
+
+## Statistical candidate generation
+
+### 54. Native PCFG feed
+
+Shooter ships a deterministic probabilistic context-free grammar generator as
+the `pcfg` feed for attack mode 8. It is not a new attack number: run it as
+`-a 8 pcfg MODEL`, so it inherits the generic feed interface's rule
+amplification, per-device instances, keyspace, skip/limit, status, and restore
+behavior.
+
+`tools/train_pcfg.py` learns ASCII uppercase, lowercase, digit, and
+symbol/other run structures plus terminal frequencies from an authorized
+plaintext corpus. It stores integer negative-log scores in a versioned,
+hex-safe model. The native feed globally merges every retained structure's
+Cartesian product in probability order with deterministic tie breaking.
+
+Model loading validates classes, lengths, references, hexadecimal data,
+candidate limits, and 64-bit score/keyspace arithmetic. The distributed
+source identity covers the complete model contents. Version 1 restores exact
+candidate positions by deterministic replay, which can make a deep seek CPU
+intensive without changing its result. See the comprehensive
+[PCFG guide](pcfg-attack.md).
+
+The other proposed candidate methods remain clearly labeled as planned in the
+[candidate-generation roadmap](candidate-generation-roadmap.md); they are not
+listed here as shipped enhancements.
+
+## Candidate selection policy
+
+### 55. Final-candidate class requirements
+
+The independent `--require-upper`, `--require-lower`, `--require-digit`, and
+`--require-symbol` flags require at least one byte from each selected class.
+The numeric `--candidate-min-upper=N`, `--candidate-min-lower=N`,
+`--candidate-min-digit=N`, and `--candidate-min-symbol=N` forms support larger
+minimums. Every option is disabled by default.
+
+The check runs after the complete supported candidate and its rules or ordered
+mode-13 stages have been assembled. Rejected candidates retain their original
+positions, so skip, restore, multi-GPU ranges, progress, and the `Rejected`
+counter remain consistent. Status displays the active minimums on a
+`Candidate.Policy` line.
+
+Exact post-rule inspection selects host generation and can reduce fast-hash
+throughput. Unsupported layouts are refused instead of checking an incomplete
+prefix. Class byte definitions, examples, performance behavior, and current
+compatibility limits are documented in
+[Final-candidate requirements](candidate-requirements.md).
+
+## Windows Unicode status output
+
+### 56. Code-page-independent UTF-8 candidate display
+
+Hashcat candidates are byte strings. When a candidate preview is valid,
+printable UTF-8, status shows the text directly; candidates containing invalid
+UTF-8 or control bytes continue to use the unambiguous `$HEX[...]` form. The
+bytes tested by the hash kernel are never converted for display.
+
+On Windows, human-readable status and diagnostic messages sent to a real
+console are now converted from Hashcat's internal UTF-8 to UTF-16 and written
+with the Windows Unicode console API. This fixes mojibake in `Candidates.#...`
+without requiring `chcp 65001` and without changing the console's global code
+page.
+
+Redirection is deliberately different: output sent to a file, pipe, or capture
+remains byte-for-byte UTF-8. Candidate-data streams such as `--stdout` also
+remain raw, because converting those bytes would change the attack data. A
+terminal font still needs a glyph for the requested character; a missing-glyph
+box is a font limitation rather than an encoding conversion error.

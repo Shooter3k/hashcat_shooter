@@ -53,6 +53,19 @@ A directory contributes the files directly inside it, in name order. Because thi
 
 The status display names the feed on the `Guess.Base` line. A feed may name what it is generating from rather than itself, so the wordlist feed shows `Guess.Base.......: Feed (example.dict)`.
 
+Shooter also ships a native probabilistic context-free grammar feed. Train a
+model with `tools/train_pcfg.py`, then select it by name:
+
+```
+./hashcat -m 0 example0.hash -a 8 pcfg models/organization.pcfg
+```
+
+PCFG is a generator within mode 8, not another attack number. Its global
+probability order is deterministic across skip, restore, and multiple devices,
+and normal `-r` rules transform each complete PCFG base candidate. See
+[Native PCFG candidate generation](pcfg-attack.md) for training, model format,
+ordering, performance, privacy, and troubleshooting.
+
 Keep in mind that hashcat always parses the full command line first. All options are interpreted by hashcat's getopt process, and only the `loose parameters` are forwarded to the feed.
 
 ## 2. Main Features
@@ -155,4 +168,3 @@ Notes:
 One final note. Attack-mode 8 reuses attack-mode 0 kernels. That means you can optionally add `-r` rules, including stacked rules, exactly as in -a 0 mode.
 
 This also makes the mode useful for `fast hashes` and allows very high speeds. Ideally a feed is designed so that it is aware that users can add rules and returns candidates with this in mind. Even better, the feed developer may publish a feed with a matching ruleset, but this is not required.
-
